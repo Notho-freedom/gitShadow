@@ -3,6 +3,7 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
+  output: 'standalone',
   images: {
     remotePatterns: [
       {

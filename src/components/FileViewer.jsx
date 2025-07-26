@@ -5,7 +5,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function FileViewer({ file, content, loading }) {
-  // Détection du langage pour la coloration syntaxique basique
+  // Détection du langage pour la coloration syntaxique
   const getLanguage = (filename) => {
     if (!filename) return 'text';
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -53,8 +53,6 @@ export default function FileViewer({ file, content, loading }) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
-
-  // Supprimer la numérotation manuelle
 
   if (!file) {
     return (
@@ -140,6 +138,7 @@ export default function FileViewer({ file, content, loading }) {
             )}
           </div>
         </div>
+
         <div className="relative">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -177,6 +176,7 @@ export default function FileViewer({ file, content, loading }) {
               </p>
             </div>
           )}
+
           {/* Indicateur de défilement */}
           {content && content.split('\n').length > 20 && (
             <div className="absolute bottom-2 right-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded text-xs text-muted-foreground">
