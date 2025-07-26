@@ -19,20 +19,65 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
     
     setLoading(true);
     try {
-      // Utiliser les vraies données du repository si disponibles
-      if (repo.tree && Array.isArray(repo.tree)) {
-        setFileTree(repo.tree);
+      // Utiliser l'API fetchCommit pour récupérer l'état complet du commit
+      const response = await fetch('/api/fetchCommit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          owner: repo.owner || 'demo',
+          repo: repo.name || 'demo-repo',
+          commitSha: commit.sha || 'demo-commit'
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.tree) {
+          setFileTree(data.tree);
+        } else {
+          throw new Error(data.error || 'Erreur lors du chargement');
+        }
       } else {
-        // Fallback vers des données simulées si pas de vraies données
-        const mockFiles = [
-          { path: 'README.md', type: 'blob', size: 2048, name: 'README.md', download_url: 'data:text/plain;base64,' + btoa('# README\n\nContenu de démonstration') },
-          { path: 'package.json', type: 'blob', size: 1024, name: 'package.json', download_url: 'data:application/json;base64,' + btoa(JSON.stringify({ name: 'demo', version: '1.0.0' }, null, 2)) },
-          { path: 'src/index.js', type: 'blob', size: 1536, name: 'index.js', download_url: 'data:text/javascript;base64,' + btoa('console.log("Hello World");') }
-        ];
-        setFileTree(mockFiles);
+        throw new Error('Erreur de réponse du serveur');
       }
     } catch (error) {
       console.error('Erreur lors du chargement de l\'arborescence:', error);
+      // Fallback vers des données simulées
+      const mockFiles = [
+        { 
+          path: 'README.md', 
+          type: 'blob', 
+          size: 2048, 
+          name: 'README.md', 
+          download_url: 'data:text/plain;base64,' + btoa('# README\n\nContenu de démonstration'),
+          changeStatus: 'modified',
+          additions: 15,
+          deletions: 2
+        },
+        { 
+          path: 'package.json', 
+          type: 'blob', 
+          size: 1024, 
+          name: 'package.json', 
+          download_url: 'data:application/json;base64,' + btoa(JSON.stringify({ name: 'demo', version: '1.0.0' }, null, 2)),
+          changeStatus: 'added',
+          additions: 25,
+          deletions: 0
+        },
+        { 
+          path: 'src/index.js', 
+          type: 'blob', 
+          size: 1536, 
+          name: 'index.js', 
+          download_url: 'data:text/javascript;base64,' + btoa('console.log("Hello World");'),
+          changeStatus: 'added',
+          additions: 35,
+          deletions: 0
+        }
+      ];
+      setFileTree(mockFiles);
     } finally {
       setLoading(false);
     }
@@ -167,15 +212,45 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
               )}
             </span>
 
-            {/* Nom du fichier/dossier */}
-            <span className={`flex-1 text-sm truncate ${
-              node.type === 'folder' ? 'font-medium text-gray-200' : 'text-gray-300'
-            } group-hover:text-white transition-colors`}>
-              {node.name}
-            </span>
+            {/* Nom du fichier/dossier avec indicateur de changement */}
+            <div className="flex-1 flex items-center space-x-2">
+              <span className={`text-sm truncate ${
+                node.type === 'tree' ? 'font-medium text-gray-200' : 'text-gray-300'
+              } group-hover:text-white transition-colors`}>
+                {node.name}
+              </span>
+              
+              {/* Indicateur de changement */}
+              {node.changeStatus && node.changeStatus !== 'unchanged' && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                  node.changeStatus === 'added' ? 'bg-green-500/20 text-green-400' :
+                  node.changeStatus === 'modified' ? 'bg-yellow-500/20 text-yellow-400' :
+                  node.changeStatus === 'removed' ? 'bg-red-500/20 text-red-400' :
+                  node.changeStatus === 'renamed' ? 'bg-blue-500/20 text-blue-400' :
+                  'bg-gray-500/20 text-gray-400'
+                }`}>
+                  {node.changeStatus === 'added' ? '➕' :
+                   node.changeStatus === 'modified' ? '✏️' :
+                   node.changeStatus === 'removed' ? '🗑️' :
+                   node.changeStatus === 'renamed' ? '🔄' : '•'}
+                </span>
+              )}
+            </div>
+
+            {/* Statistiques de changement */}
+            {node.type === 'blob' && node.changeStatus && node.changeStatus !== 'unchanged' && (
+              <div className="flex items-center space-x-1 text-xs">
+                {node.additions > 0 && (
+                  <span className="text-green-400">+{node.additions}</span>
+                )}
+                {node.deletions > 0 && (
+                  <span className="text-red-400">-{node.deletions}</span>
+                )}
+              </div>
+            )}
 
             {/* Taille du fichier */}
-            {node.type === 'file' && node.size > 0 && (
+            {node.type === 'blob' && node.size > 0 && (
               <span className="text-xs text-gray-500 ml-2">
                 {formatSize(node.size)}
               </span>
@@ -244,7 +319,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           )}
         </div>
 
-        {/* Info du commit */}
+        {/* Info du commit avec résumé des changements */}
         <div className="mt-3 p-2 bg-gray-700/50 rounded-md">
           <div className="text-xs text-gray-400">
             <div className="flex items-center space-x-2">
@@ -254,6 +329,40 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
             <div className="mt-1 truncate">
               {commit.commit.message.split('\n')[0]}
             </div>
+            
+            {/* Résumé des changements */}
+            {fileTree.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-gray-600/50">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-3">
+                    <span className="flex items-center space-x-1">
+                      <span className="text-green-400">➕</span>
+                      <span>{fileTree.filter(f => f.changeStatus === 'added').length}</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <span className="text-yellow-400">✏️</span>
+                      <span>{fileTree.filter(f => f.changeStatus === 'modified').length}</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <span className="text-red-400">🗑️</span>
+                      <span>{fileTree.filter(f => f.changeStatus === 'removed').length}</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <span className="text-blue-400">🔄</span>
+                      <span>{fileTree.filter(f => f.changeStatus === 'renamed').length}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-400">
+                      +{fileTree.reduce((sum, f) => sum + (f.additions || 0), 0)}
+                    </span>
+                    <span className="text-red-400">
+                      -{fileTree.reduce((sum, f) => sum + (f.deletions || 0), 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
