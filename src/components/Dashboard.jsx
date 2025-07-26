@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
 import RepositoryExplorer from './RepositoryExplorer';
-import CodeEditor from './CodeEditor';
+import FileTreeExplorer from './FileTreeExplorer';
+import CodeEditorWithTree from './CodeEditorWithTree';
 import DocumentationPanel from './DocumentationPanel';
 import AnalyticsPanel from './AnalyticsPanel';
 import CollaborationPanel from './CollaborationPanel';
@@ -19,6 +20,8 @@ export default function Dashboard({ user, onLogout }) {
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
+  const [currentView, setCurrentView] = useState('repos'); // 'repos', 'explorer', 'editor'
+  const [repoFiles, setRepoFiles] = useState([]);
   const [documentation, setDocumentation] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -44,7 +47,21 @@ export default function Dashboard({ user, onLogout }) {
     setSelectedFile(null);
     setFileContent('');
     setDocumentation('');
-    setActiveView('explorer');
+    setCurrentView('explorer');
+  }, []);
+
+  const handleBackToRepos = useCallback(() => {
+    setSelectedRepo(null);
+    setSelectedFile(null);
+    setFileContent('');
+    setRepoFiles([]);
+    setCurrentView('repos');
+  }, []);
+
+  const handleBackToExplorer = useCallback(() => {
+    setSelectedFile(null);
+    setFileContent('');
+    setCurrentView('explorer');
   }, []);
 
   const handleFileSelect = useCallback(async (file) => {
@@ -68,7 +85,7 @@ export default function Dashboard({ user, onLogout }) {
         const data = await response.json();
         if (data.success) {
           setFileContent(data.content);
-          setActiveView('editor');
+          setCurrentView('editor');
         } else {
           throw new Error(data.error || 'Erreur lors du chargement du fichier');
         }
@@ -103,7 +120,7 @@ export default function Dashboard({ user, onLogout }) {
       if (response.ok) {
         const data = await response.json();
         setDocumentation(data.documentation);
-        setActiveView('documentation');
+        setCurrentView('documentation');
       }
     } catch (error) {
       console.error('Erreur lors de la génération de documentation:', error);
@@ -113,8 +130,8 @@ export default function Dashboard({ user, onLogout }) {
   }, [selectedFile, fileContent, selectedRepo, user]);
 
   const renderMainContent = () => {
-    switch (activeView) {
-      case 'explorer':
+    switch (currentView) {
+      case 'repos':
         return (
           <RepositoryExplorer
             user={user}
@@ -124,14 +141,27 @@ export default function Dashboard({ user, onLogout }) {
             loading={loading}
           />
         );
+      case 'explorer':
+        return (
+          <FileTreeExplorer
+            user={user}
+            selectedRepo={selectedRepo}
+            onFileSelect={handleFileSelect}
+            onBackToRepos={handleBackToRepos}
+            loading={loading}
+          />
+        );
       case 'editor':
         return (
-          <CodeEditor
+          <CodeEditorWithTree
             file={selectedFile}
             content={fileContent}
             onGenerateDoc={handleGenerateDocumentation}
             loading={loading}
             theme={theme}
+            onBackToExplorer={handleBackToExplorer}
+            onFileSelect={handleFileSelect}
+            files={repoFiles}
           />
         );
       case 'documentation':
@@ -140,7 +170,7 @@ export default function Dashboard({ user, onLogout }) {
             file={selectedFile}
             content={fileContent}
             documentation={documentation}
-            onBackToEditor={() => setActiveView('editor')}
+            onBackToEditor={() => setCurrentView('editor')}
             theme={theme}
           />
         );
@@ -183,7 +213,7 @@ export default function Dashboard({ user, onLogout }) {
           user={user}
           selectedRepo={selectedRepo}
           selectedFile={selectedFile}
-          activeView={activeView}
+          activeView={currentView}
           onSearchOpen={() => setIsSearchOpen(true)}
           onNotificationOpen={() => setIsNotificationOpen(true)}
           onLogout={onLogout}
@@ -196,7 +226,7 @@ export default function Dashboard({ user, onLogout }) {
         <main className="flex-1 overflow-hidden relative">
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeView}
+              key={currentView}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -210,7 +240,7 @@ export default function Dashboard({ user, onLogout }) {
 
         {/* Quick Actions Floating Panel */}
         <QuickActions
-          activeView={activeView}
+          activeView={currentView}
           selectedFile={selectedFile}
           onGenerateDoc={handleGenerateDocumentation}
           loading={loading}

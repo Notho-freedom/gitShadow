@@ -4,13 +4,13 @@ import { motion } from 'framer-motion';
 import Logo from './Logo';
 
 export default function Sidebar({ activeView, onViewChange, user, selectedRepo, collapsed, onToggleCollapse }) {
-  const menuItems = [
-    {
-      id: 'explorer',
-      name: 'Explorateur',
-      icon: '📁',
-      description: 'Parcourir les dépôts et fichiers'
-    },
+          const menuItems = [
+          {
+            id: 'repos',
+            name: 'Dépôts',
+            icon: '📁',
+            description: 'Parcourir vos dépôts GitHub'
+          },
     {
       id: 'editor',
       name: 'Éditeur',

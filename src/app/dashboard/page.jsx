@@ -15,6 +15,10 @@ export default function DashboardPage() {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser);
+        // S'assurer que l'utilisateur a un plan défini
+        if (!userData.plan) {
+          userData.plan = 'free'; // Plan par défaut
+        }
         setUser(userData);
       } catch (error) {
         console.error('Erreur lors du parsing des données utilisateur:', error);
