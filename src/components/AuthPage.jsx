@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Logo from './Logo';
 
 export default function AuthPage({ onAuthSuccess }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -36,8 +37,8 @@ export default function AuthPage({ onAuthSuccess }) {
         {/* Logo et titre */}
         <div className="text-center mb-8">
           <div className="relative mb-6">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
-              <span className="text-2xl font-bold text-white">gS</span>
+            <div className="flex justify-center">
+              <Logo size="lg" animate={false} />
             </div>
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-30"></div>
           </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Logo from './Logo';
 
 export default function LoadingScreen({ onComplete }) {
   const [progress, setProgress] = useState(0);
@@ -41,8 +42,8 @@ export default function LoadingScreen({ onComplete }) {
       {/* Logo et titre */}
       <div className="text-center mb-12">
         <div className="relative mb-6">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
-            <span className="text-3xl font-bold text-white">gS</span>
+          <div className="flex justify-center">
+            <Logo size="xl" animate={false} />
           </div>
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-30 animate-pulse"></div>
         </div>

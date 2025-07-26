@@ -1,5 +1,7 @@
 'use client';
 
+import Logo from './Logo';
+
 export default function Sidebar({ activeView, onViewChange, views, user, selectedRepo, selectedCommit }) {
   const menuItems = [
     { id: 'repositories', label: 'Dépôts', icon: '📁' },
@@ -13,9 +15,7 @@ export default function Sidebar({ activeView, onViewChange, views, user, selecte
       {/* Logo */}
       <div className="p-6 border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <span className="text-xl font-bold text-white">gS</span>
-          </div>
+          <Logo size="md" animate={false} />
           <div>
             <h2 className="text-white font-bold text-lg">gitShadow</h2>
             <p className="text-gray-400 text-xs">v2.0.0</p>

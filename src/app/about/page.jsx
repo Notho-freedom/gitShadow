@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Logo from '../../components/Logo';
 import Navbar from '../../components/Navbar';
 import AuthModal from '../../components/AuthModal';
 
@@ -311,9 +312,7 @@ export default function AboutPage() {
       <footer className="bg-black/40 border-t border-white/10 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">G</span>
-            </div>
+            <Logo size="md" animate={false} />
           </div>
           <p className="text-gray-400 mb-4">
             © 2024 gitShadow. Tous droits réservés.

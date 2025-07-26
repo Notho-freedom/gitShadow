@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Logo from './Logo';
 
 export default function LandingPage({ onGetStarted }) {
   const [selectedPlan, setSelectedPlan] = useState('pro');
@@ -110,9 +111,7 @@ export default function LandingPage({ onGetStarted }) {
       <header className="container mx-auto px-6 py-8">
         <nav className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-xl font-bold">gS</span>
-            </div>
+            <Logo size="md" animate={false} />
             <span className="text-2xl font-bold">gitShadow</span>
           </div>
           <div className="flex items-center space-x-6">
@@ -255,9 +254,7 @@ export default function LandingPage({ onGetStarted }) {
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-sm font-bold">gS</span>
-              </div>
+              <Logo size="sm" animate={false} />
               <span className="text-lg font-semibold">gitShadow</span>
             </div>
             <div className="text-gray-400 text-sm">
