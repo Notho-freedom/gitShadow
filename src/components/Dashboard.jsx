@@ -73,6 +73,8 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
       console.error('Erreur lors du chargement du fichier:', error);
       setFileContent('Erreur lors du chargement du fichier');
       setLoading(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,7 +107,7 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
                 selectedFile={selectedFile}
               />
             </Panel>
-            <PanelResizeHandle className="w-2 bg-gray-700 hover:bg-gray-600 transition-colors" />
+            <PanelResizeHandle className="w-2 transition-colors bg-gray-700 hover:bg-gray-600" />
             <Panel defaultSize={70}>
               <PanelGroup direction="vertical">
                 <Panel defaultSize={60} minSize={30}>
@@ -117,7 +119,7 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
                     commit={selectedCommit}
                   />
                 </Panel>
-                <PanelResizeHandle className="h-2 bg-gray-700 hover:bg-gray-600 transition-colors" />
+                <PanelResizeHandle className="h-2 transition-colors bg-gray-700 hover:bg-gray-600" />
                 <Panel defaultSize={40} minSize={20}>
                   <DocumentationPanel 
                     fileContent={fileContent}
@@ -134,18 +136,18 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
       case 'settings':
         return (
           <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Paramètres</h2>
+            <h2 className="mb-6 text-2xl font-bold text-white">Paramètres</h2>
             <div className="space-y-6">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Profil utilisateur</h3>
-                <div className="flex items-center space-x-4 mb-4">
+              <div className="p-6 border border-gray-700 rounded-lg bg-gray-800/50">
+                <h3 className="mb-4 text-lg font-semibold text-white">Profil utilisateur</h3>
+                <div className="flex items-center mb-4 space-x-4">
                   <img 
                     src={user.avatar_url} 
                     alt={user.name}
                     className="w-16 h-16 rounded-full"
                   />
                   <div>
-                    <p className="text-white font-medium">{user.name}</p>
+                    <p className="font-medium text-white">{user.name}</p>
                     <p className="text-gray-400">@{user.login}</p>
                     <p className="text-gray-400">{user.email}</p>
                   </div>
@@ -161,18 +163,18 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
                 </div>
               </div>
 
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Préférences</h3>
+              <div className="p-6 border border-gray-700 rounded-lg bg-gray-800/50">
+                <h3 className="mb-4 text-lg font-semibold text-white">Préférences</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-300">Thème sombre</span>
-                    <button className="w-12 h-6 bg-blue-500 rounded-full relative">
+                    <button className="relative w-12 h-6 bg-blue-500 rounded-full">
                       <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                     </button>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-300">Notifications</span>
-                    <button className="w-12 h-6 bg-blue-500 rounded-full relative">
+                    <button className="relative w-12 h-6 bg-blue-500 rounded-full">
                       <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                     </button>
                   </div>
@@ -181,7 +183,7 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
 
               <button 
                 onClick={onLogout}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                className="px-6 py-3 text-white transition-colors bg-red-600 rounded-lg hover:bg-red-700"
               >
                 Se déconnecter
               </button>
@@ -194,7 +196,7 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
   };
 
   return (
-    <div className="h-screen bg-gray-900 flex">
+    <div className="flex h-screen bg-gray-900">
       {/* Sidebar */}
       <Sidebar 
         activeView={activeView}
@@ -206,9 +208,9 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <header className="px-6 py-4 bg-gray-800 border-b border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-xl font-semibold text-white">
@@ -228,7 +230,7 @@ export default ${file.name.replace(/\.[^/.]+$/, "")};
                   alt={user.name}
                   className="w-8 h-8 rounded-full"
                 />
-                <span className="text-white text-sm">{user.name}</span>
+                <span className="text-sm text-white">{user.name}</span>
               </div>
             </div>
           </div>
