@@ -1,40 +1,102 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomOneDark, tomorrow, dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import MediaViewer from './MediaViewer';
 
 export default function CodeViewer({ file, content, loading, repo, commit }) {
   const [showLineNumbers, setShowLineNumbers] = useState(true);
   const [wrapLines, setWrapLines] = useState(false);
   const [fontSize, setFontSize] = useState('sm');
+  const [theme, setTheme] = useState('atomOneDark');
 
-  // Détection du langage pour la coloration syntaxique basique
+  // Détection du langage pour la coloration syntaxique
   const getLanguage = (filename) => {
     if (!filename) return 'text';
     const ext = filename.split('.').pop()?.toLowerCase();
     const langMap = {
       'js': 'javascript',
-      'jsx': 'javascript',
+      'jsx': 'jsx',
       'ts': 'typescript',
-      'tsx': 'typescript',
+      'tsx': 'tsx',
       'css': 'css',
       'scss': 'scss',
+      'sass': 'sass',
       'html': 'html',
+      'htm': 'html',
       'json': 'json',
       'md': 'markdown',
       'py': 'python',
       'java': 'java',
       'cpp': 'cpp',
+      'cc': 'cpp',
+      'cxx': 'cpp',
       'c': 'c',
+      'cs': 'csharp',
       'php': 'php',
       'rb': 'ruby',
       'go': 'go',
       'rs': 'rust',
+      'swift': 'swift',
+      'kt': 'kotlin',
+      'dart': 'dart',
       'vue': 'vue',
       'svelte': 'svelte',
       'yml': 'yaml',
-      'yaml': 'yaml'
+      'yaml': 'yaml',
+      'xml': 'xml',
+      'svg': 'svg',
+      'sql': 'sql',
+      'sh': 'bash',
+      'bash': 'bash',
+      'zsh': 'bash',
+      'fish': 'bash',
+      'ps1': 'powershell',
+      'psm1': 'powershell',
+      'dockerfile': 'dockerfile',
+      'docker': 'dockerfile',
+      'gitignore': 'gitignore',
+      'gitattributes': 'gitattributes',
+      'env': 'env',
+      'toml': 'toml',
+      'ini': 'ini',
+      'cfg': 'ini',
+      'conf': 'ini',
+      'lock': 'json',
+      'log': 'text',
+      'txt': 'text'
     };
     return langMap[ext] || 'text';
+  };
+
+  // Détection du type de fichier pour la prévisualisation
+  const getFileType = (filename) => {
+    if (!filename) return 'text';
+    const ext = filename.split('.').pop()?.toLowerCase();
+    
+    // Images
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext)) {
+      return 'image';
+    }
+    
+    // Vidéos
+    if (['mp4', 'webm', 'ogg', 'avi', 'mov', 'mkv'].includes(ext)) {
+      return 'video';
+    }
+    
+    // Audio
+    if (['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext)) {
+      return 'audio';
+    }
+    
+    // PDF
+    if (ext === 'pdf') {
+      return 'pdf';
+    }
+    
+    // Code
+    return 'code';
   };
 
   // Statistiques du fichier
@@ -53,7 +115,7 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
       const trimmed = line.trim();
       return trimmed.startsWith('//') || trimmed.startsWith('#') || 
              trimmed.startsWith('/*') || trimmed.startsWith('*') ||
-             trimmed.startsWith('<!--');
+             trimmed.startsWith('<!--') || trimmed.startsWith('--');
     }).length;
     
     return { 
@@ -76,13 +138,12 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  // Numérotation des lignes
-  const numberedContent = useMemo(() => {
-    if (!content || !showLineNumbers) return content;
-    return content.split('\n').map((line, index) => 
-      `${(index + 1).toString().padStart(4, ' ')} │ ${line}`
-    ).join('\n');
-  }, [content, showLineNumbers]);
+  // Thèmes disponibles
+  const themes = {
+    atomOneDark,
+    tomorrow,
+    dracula
+  };
 
   const copyToClipboard = () => {
     if (content) {
@@ -106,168 +167,167 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
 
   if (!file) {
     return (
-      <div className="h-full bg-gray-800/30 flex items-center justify-center">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-8">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-800 flex items-center justify-center">
             <span className="text-3xl">📄</span>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Aucun fichier sélectionné</h3>
+          <h3 className="text-lg font-semibold mb-2 text-white">Aucun fichier sélectionné</h3>
           <p className="text-gray-400">
-            Sélectionnez un fichier dans l'explorateur pour voir son contenu
+            Sélectionnez un fichier dans l'arborescence pour voir son contenu
           </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="h-full flex flex-col bg-gray-800/30">
-      {/* Header avec onglet */}
-      <div className="border-b border-gray-700">
-        {/* Onglet du fichier */}
-        <div className="flex items-center bg-gray-700/50 border-b border-gray-600">
-          <div className="flex items-center space-x-2 px-4 py-2 bg-gray-800 border-r border-gray-600">
-            <span className="text-lg">{file.type === 'file' ? '📄' : '📁'}</span>
-            <span className="text-white text-sm font-medium">{file.path.split('/').pop()}</span>
-            <button className="text-gray-400 hover:text-white ml-2">×</button>
-          </div>
-        </div>
+  const fileType = getFileType(file.name);
+  const language = getLanguage(file.name);
 
-        {/* Barre d'outils */}
-        <div className="flex items-center justify-between p-3 bg-gray-800/50">
-          <div className="flex items-center space-x-4">
-            {/* Info du fichier */}
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl">{file.type === 'file' ? '📄' : '📁'}</span>
+  // Si c'est un fichier média, utiliser le MediaViewer
+  if (fileType !== 'code') {
+    return <MediaViewer file={file} repo={repo} commit={commit} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* En-tête du fichier */}
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-2">
+              <span className="text-2xl">📝</span>
               <div>
-                <h2 className="text-white font-medium">{file.path.split('/').pop()}</h2>
-                <p className="text-gray-400 text-xs font-mono">{file.path}</p>
+                <h2 className="text-lg font-semibold text-white">{file.name}</h2>
+                <p className="text-sm text-gray-400 font-mono">{file.path}</p>
               </div>
             </div>
             
             {/* Badges */}
             <div className="flex items-center space-x-2">
               <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full font-medium">
-                {getLanguage(file.path)}
+                {language}
               </span>
               {fileStats && (
                 <>
-                  <span className="px-2 py-1 bg-gray-600/50 text-gray-300 text-xs rounded-full">
+                  <span className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded-full">
                     {fileStats.lines} lignes
                   </span>
-                  <span className="px-2 py-1 bg-gray-600/50 text-gray-300 text-xs rounded-full">
+                  <span className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded-full">
                     {formatSize(fileStats.size)}
                   </span>
+                  {fileStats.codeLines > 0 && (
+                    <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+                      {fileStats.codeLines} lignes de code
+                    </span>
+                  )}
                 </>
               )}
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Contrôles */}
           <div className="flex items-center space-x-2">
-            {/* Options d'affichage */}
-            <div className="flex items-center space-x-2 mr-4">
-              <button
-                onClick={() => setShowLineNumbers(!showLineNumbers)}
-                className={`px-2 py-1 text-xs rounded transition-colors ${
-                  showLineNumbers ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-600/50 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                Numéros
-              </button>
-              <button
-                onClick={() => setWrapLines(!wrapLines)}
-                className={`px-2 py-1 text-xs rounded transition-colors ${
-                  wrapLines ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-600/50 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                Retour ligne
-              </button>
-              <select
-                value={fontSize}
-                onChange={(e) => setFontSize(e.target.value)}
-                className="px-2 py-1 bg-gray-600/50 text-gray-300 text-xs rounded border-none focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="xs">Très petit</option>
-                <option value="sm">Petit</option>
-                <option value="base">Normal</option>
-                <option value="lg">Grand</option>
-              </select>
-            </div>
+            {/* Sélecteur de thème */}
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="atomOneDark">Atom Dark</option>
+              <option value="tomorrow">Tomorrow</option>
+              <option value="dracula">Dracula</option>
+            </select>
 
+            {/* Taille de police */}
+            <select
+              value={fontSize}
+              onChange={(e) => setFontSize(e.target.value)}
+              className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="xs">Très petit</option>
+              <option value="sm">Petit</option>
+              <option value="base">Normal</option>
+              <option value="lg">Grand</option>
+              <option value="xl">Très grand</option>
+            </select>
+
+            {/* Numérotation des lignes */}
+            <button
+              onClick={() => setShowLineNumbers(!showLineNumbers)}
+              className={`px-2 py-1 rounded text-xs transition-colors ${
+                showLineNumbers 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Lignes
+            </button>
+
+            {/* Retour à la ligne */}
+            <button
+              onClick={() => setWrapLines(!wrapLines)}
+              className={`px-2 py-1 rounded text-xs transition-colors ${
+                wrapLines 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              Wrap
+            </button>
+
+            {/* Copier */}
             <button
               onClick={copyToClipboard}
-              className="px-3 py-1.5 text-xs bg-gray-600/50 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+              className="px-2 py-1 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded text-xs transition-colors"
             >
-              Copier
+              📋
             </button>
+
+            {/* Télécharger */}
             <button
               onClick={downloadFile}
-              className="px-3 py-1.5 text-xs bg-gray-600/50 hover:bg-gray-600 text-gray-300 rounded transition-colors"
+              className="px-2 py-1 bg-gray-700 text-gray-300 hover:bg-gray-600 rounded text-xs transition-colors"
             >
-              Télécharger
+              💾
             </button>
-            {repo && commit && (
-              <a
-                href={`https://github.com/${repo.full_name}/blob/${commit.sha}/${file.path}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-              >
-                Voir sur GitHub
-              </a>
-            )}
           </div>
         </div>
       </div>
 
       {/* Contenu du fichier */}
-      <div className="flex-1 overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-400">Chargement du fichier...</p>
-            </div>
+      {loading ? (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg p-8">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+            <div className="h-4 bg-gray-700 rounded w-5/6"></div>
           </div>
-        ) : content ? (
-          <div className="h-full overflow-auto">
-            <pre className={`p-4 text-${fontSize} font-mono leading-relaxed text-gray-300 bg-gray-900/50 h-full ${
-              wrapLines ? 'whitespace-pre-wrap break-words' : 'whitespace-pre'
-            }`}>
-              <code className={`language-${getLanguage(file.path)}`}>
-                {showLineNumbers ? numberedContent : content}
-              </code>
-            </pre>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <span className="text-4xl mb-4 block">⚠️</span>
-              <p className="text-gray-400">
-                Impossible de charger le contenu du fichier
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Footer avec statistiques */}
-      {fileStats && !loading && (
-        <div className="border-t border-gray-700 px-4 py-2 bg-gray-800/50">
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <div className="flex items-center space-x-6">
-              <span>Lignes: {fileStats.lines}</span>
-              <span>Code: {fileStats.codeLines}</span>
-              <span>Commentaires: {fileStats.commentLines}</span>
-              <span>Vides: {fileStats.emptyLines}</span>
-            </div>
-            <div className="flex items-center space-x-6">
-              <span>Mots: {fileStats.words}</span>
-              <span>Caractères: {fileStats.chars}</span>
-              <span>Taille: {formatSize(fileStats.size)}</span>
-              <span>Encodage: UTF-8</span>
-            </div>
+        </div>
+      ) : (
+        <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden">
+          <div className={`text-${fontSize}`}>
+            <SyntaxHighlighter
+              language={language}
+              style={themes[theme]}
+              showLineNumbers={showLineNumbers}
+              wrapLines={wrapLines}
+              customStyle={{
+                margin: 0,
+                padding: '1rem',
+                backgroundColor: 'transparent',
+                fontSize: fontSize === 'xs' ? '0.75rem' : 
+                         fontSize === 'sm' ? '0.875rem' : 
+                         fontSize === 'base' ? '1rem' : 
+                         fontSize === 'lg' ? '1.125rem' : '1.25rem'
+              }}
+              lineNumberStyle={{
+                color: '#6b7280',
+                minWidth: '3em'
+              }}
+            >
+              {content}
+            </SyntaxHighlighter>
           </div>
         </div>
       )}
