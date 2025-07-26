@@ -1,14 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
+import AuthModal from '../components/AuthModal';
 
 export default function HomePage() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
       {/* Navbar fixe */}
       <Navbar />
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
 
       {/* Hero Section */}
       <section id="hero" className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
@@ -29,17 +39,16 @@ export default function HomePage() {
               de vos projets GitHub avec l'intelligence artificielle
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-2xl hover:shadow-3xl group overflow-hidden"
-                >
-                  <span className="relative z-10">Commencer gratuitement</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                </motion.button>
-              </Link>
+              <motion.button
+                onClick={() => setIsAuthModalOpen(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-2xl hover:shadow-3xl group overflow-hidden"
+              >
+                <span className="relative z-10">Commencer gratuitement</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              </motion.button>
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -247,8 +256,23 @@ export default function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  <Link href={plan.id === 'enterprise' ? '/contact' : '/auth'}>
+                  {plan.id === 'enterprise' ? (
+                    <Link href="/contact">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                          plan.popular
+                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                            : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                        }`}
+                      >
+                        {plan.cta}
+                      </motion.button>
+                    </Link>
+                  ) : (
                     <motion.button
+                      onClick={() => setIsAuthModalOpen(true)}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
@@ -259,7 +283,7 @@ export default function HomePage() {
                     >
                       {plan.cta}
                     </motion.button>
-                  </Link>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -366,15 +390,14 @@ export default function HomePage() {
               Rejoignez des milliers de développeurs qui utilisent déjà gitShadow
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
-                >
-                  Commencer maintenant
-                </motion.button>
-              </Link>
+              <motion.button
+                onClick={() => setIsAuthModalOpen(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
+              >
+                Commencer maintenant
+              </motion.button>
               <Link href="/contact">
                 <motion.button
                   whileHover={{ scale: 1.05 }}

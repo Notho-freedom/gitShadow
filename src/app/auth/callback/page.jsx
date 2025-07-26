@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Logo from '../../../components/Logo';
 
 function AuthCallbackContent() {
   const [status, setStatus] = useState('loading');
@@ -53,7 +54,7 @@ function AuthCallbackContent() {
 
         // Rediriger vers le dashboard après un court délai
         setTimeout(() => {
-          router.push('/');
+          router.push('/dashboard');
         }, 1500);
 
       } catch (err) {
@@ -71,10 +72,9 @@ function AuthCallbackContent() {
       <div className="max-w-md w-full text-center">
         {/* Logo */}
         <div className="relative mb-8">
-          <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
-            <span className="text-2xl font-bold text-white">gS</span>
+          <div className="flex justify-center">
+            <Logo size="lg" animate={false} />
           </div>
-          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-30"></div>
         </div>
 
         {status === 'loading' && (

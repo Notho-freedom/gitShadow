@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Dashboard from '../../components/Dashboard';
 import Navbar from '../../components/Navbar';
+import Logo from '../../components/Logo';
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
@@ -66,12 +67,7 @@ export default function DashboardPage() {
           >
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  className="w-16 h-16 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-2xl shadow-2xl border border-white/20 flex items-center justify-center"
-                >
-                  <span className="text-white font-bold text-2xl tracking-wider">GS</span>
-                </motion.div>
+                <Logo size="lg" animate={false} />
                 <div>
                   <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
                   <p className="text-gray-300">Bienvenue, {user.login}</p>

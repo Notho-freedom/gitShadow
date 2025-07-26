@@ -1,10 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '../../components/Navbar';
+import AuthModal from '../../components/AuthModal';
 
 export default function AboutPage() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const team = [
     {
       name: 'Alexandre Dubois',
@@ -53,6 +57,12 @@ export default function AboutPage() {
       {/* Navbar fixe */}
       <Navbar />
 
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
+
       {/* Hero Section */}
       <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
@@ -97,15 +107,14 @@ export default function AboutPage() {
                 puisse bénéficier d'une documentation claire, complète et toujours à jour.
               </p>
               <div className="flex space-x-4">
-                <Link href="/auth">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
-                  >
-                    Commencer maintenant
-                  </motion.button>
-                </Link>
+                <motion.button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Commencer maintenant
+                </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -115,6 +124,7 @@ export default function AboutPage() {
                 </motion.button>
               </div>
             </div>
+
             <motion.div
               whileHover={{ scale: 1.02 }}
               className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl p-8 border border-white/10 shadow-2xl"
@@ -275,15 +285,14 @@ export default function AboutPage() {
               Commencez dès aujourd'hui à créer une documentation exceptionnelle
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
-                >
-                  Commencer gratuitement
-                </motion.button>
-              </Link>
+              <motion.button
+                onClick={() => setIsAuthModalOpen(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
+              >
+                Commencer gratuitement
+              </motion.button>
               <Link href="/">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
