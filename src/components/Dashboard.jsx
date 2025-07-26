@@ -49,30 +49,24 @@ export default function Dashboard({ user, onLogout }) {
     setLoading(true);
 
     try {
-      if (!file || !file.download_url) {
-        setFileContent('Fichier invalide ou URL manquante');
-        setLoading(false);
-        return;
+      if (file.download_url) {
+        // Si c'est une URL data: (mode démo), décoder directement
+        if (file.download_url.startsWith('data:')) {
+          const content = decodeURIComponent(file.download_url.split(',')[1]);
+          setFileContent(content);
+        } else {
+          // Sinon, faire un fetch vers l'URL
+          const response = await fetch(file.download_url);
+          if (response.ok) {
+            const content = await response.text();
+            setFileContent(content);
+          } else {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+          }
+        }
+      } else {
+        throw new Error('URL de téléchargement non disponible');
       }
-
-      // Récupérer le contenu réel du fichier avec authentification
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(file.download_url, {
-        headers: {
-          'Authorization': `token ${user.access_token}`,
-          'Accept': 'application/vnd.github.v3.raw',
-          'User-Agent': 'gitShadow-App'
-        },
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const content = await response.text();
-      setFileContent(content);
     } catch (error) {
       console.error('Erreur lors du chargement du fichier:', error);
       setFileContent(`Erreur lors du chargement du fichier: ${error.message}`);
