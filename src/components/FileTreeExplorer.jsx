@@ -19,6 +19,8 @@ export default function FileTreeExplorer({
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [currentPath, setCurrentPath] = useState(''); // Pour la navigation par niveaux
+  const [breadcrumbs, setBreadcrumbs] = useState([]); // Pour le fil d'Ariane
 
   // Charger les commits quand un dépôt est sélectionné
   useEffect(() => {
@@ -83,6 +85,8 @@ export default function FileTreeExplorer({
         const data = await response.json();
         setFiles(data.files || []);
         setTreeStructure(data.tree || []);
+        setCurrentPath(''); // Réinitialiser le chemin
+        setBreadcrumbs([]); // Réinitialiser le fil d'Ariane
       }
     } catch (error) {
       console.error('Erreur lors du chargement des fichiers:', error);
@@ -99,6 +103,52 @@ export default function FileTreeExplorer({
       newExpanded.add(folderPath);
     }
     setExpandedFolders(newExpanded);
+  };
+
+  // Navigation par niveaux pour la vue grille
+  const navigateToFolder = (folderPath, folderName) => {
+    setCurrentPath(folderPath);
+    const newBreadcrumbs = [...breadcrumbs, { path: folderPath, name: folderName }];
+    setBreadcrumbs(newBreadcrumbs);
+  };
+
+  const navigateToBreadcrumb = (index) => {
+    if (index === -1) {
+      // Retour à la racine
+      setCurrentPath('');
+      setBreadcrumbs([]);
+    } else {
+      // Navigation vers un niveau spécifique
+      const targetBreadcrumb = breadcrumbs[index];
+      setCurrentPath(targetBreadcrumb.path);
+      setBreadcrumbs(breadcrumbs.slice(0, index + 1));
+    }
+  };
+
+  // Obtenir les éléments du niveau actuel
+  const getCurrentLevelItems = () => {
+    if (!treeStructure.length) return [];
+
+    if (currentPath === '') {
+      // Niveau racine
+      return treeStructure;
+    }
+
+    // Trouver le dossier actuel dans l'arborescence
+    const findFolder = (items, targetPath) => {
+      for (const item of items) {
+        if (item.path === targetPath) {
+          return item.children || [];
+        }
+        if (item.children) {
+          const found = findFolder(item.children, targetPath);
+          if (found.length > 0) return found;
+        }
+      }
+      return [];
+    };
+
+    return findFolder(treeStructure, currentPath);
   };
 
   const renderTreeItem = (item, level = 0) => {
@@ -246,28 +296,53 @@ export default function FileTreeExplorer({
           </div>
         </div>
 
-        {/* Sélecteur de commit */}
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-gray-400">Commit:</span>
-          <select
-            value={selectedCommit?.sha || ''}
-            onChange={(e) => {
-              const commit = commits.find(c => c.sha === e.target.value);
-              setSelectedCommit(commit);
-            }}
-            className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-            disabled={loadingCommits}
-          >
-            {loadingCommits ? (
-              <option>Chargement des commits...</option>
-            ) : (
-              commits.map(commit => (
-                <option key={commit.sha} value={commit.sha}>
-                  {commit.sha.substring(0, 7)} - {commit.commit.message}
-                </option>
-              ))
-            )}
-          </select>
+        {/* Sélecteur de commit et fil d'Ariane */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <span className="text-sm text-gray-400">Commit:</span>
+            <select
+              value={selectedCommit?.sha || ''}
+              onChange={(e) => {
+                const commit = commits.find(c => c.sha === e.target.value);
+                setSelectedCommit(commit);
+              }}
+              className="bg-gray-700/50 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+              disabled={loadingCommits}
+            >
+              {loadingCommits ? (
+                <option>Chargement des commits...</option>
+              ) : (
+                commits.map(commit => (
+                  <option key={commit.sha} value={commit.sha}>
+                    {commit.sha.substring(0, 7)} - {commit.commit.message}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          {/* Fil d'Ariane pour la vue grille */}
+          {!treeView && (
+            <div className="flex items-center space-x-2 text-sm">
+              <button
+                onClick={() => navigateToBreadcrumb(-1)}
+                className="text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                📁 {selectedRepo.name}
+              </button>
+              {breadcrumbs.map((crumb, index) => (
+                <div key={crumb.path} className="flex items-center space-x-2">
+                  <span className="text-gray-500">/</span>
+                  <button
+                    onClick={() => navigateToBreadcrumb(index)}
+                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    {crumb.name}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -306,26 +381,45 @@ export default function FileTreeExplorer({
                   <p className="text-gray-400">Chargement des fichiers...</p>
                 </div>
               </div>
-            ) : files.length > 0 ? (
+            ) : getCurrentLevelItems().length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {files.map(file => (
+                {getCurrentLevelItems().map(item => (
                   <motion.div
-                    key={file.path}
+                    key={item.path}
                     className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 hover:border-blue-500/50 cursor-pointer transition-all duration-200"
-                    onClick={() => onFileSelect(file)}
+                    onClick={() => {
+                      if (item.isFolder || item.type === 'tree') {
+                        navigateToFolder(item.path, item.name);
+                      } else {
+                        onFileSelect(item);
+                      }
+                    }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <div className="flex items-center space-x-3 mb-3">
-                      <FileIcon type="blob" name={file.name} size="lg" />
+                      <FileIcon 
+                        type={item.isFolder || item.type === 'tree' ? 'tree' : 'blob'} 
+                        name={item.name} 
+                        size="lg" 
+                      />
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium truncate">{file.name}</h4>
-                        <p className="text-gray-400 text-xs truncate">{file.path}</p>
+                        <h4 className="text-white font-medium truncate">{item.name}</h4>
+                        <p className="text-gray-400 text-xs truncate">
+                          {item.isFolder || item.type === 'tree' ? 'Dossier' : formatFileSize(item.size)}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>{formatFileSize(file.size)}</span>
-                      <span>{file.path.split('/').length - 1} niveaux</span>
+                      <span>
+                        {item.isFolder || item.type === 'tree' 
+                          ? `${item.children?.length || 0} éléments` 
+                          : formatFileSize(item.size)
+                        }
+                      </span>
+                      <span>
+                        {item.isFolder || item.type === 'tree' ? '📁' : '📄'}
+                      </span>
                     </div>
                   </motion.div>
                 ))}

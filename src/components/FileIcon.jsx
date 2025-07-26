@@ -56,15 +56,9 @@ export default function FileIcon({ type, name, size = 'md', className = '' }) {
       'legacy': '📜', 'deprecated': '⚠️'
     };
 
-    // Vérifier d'abord les dossiers spéciaux
+    // Icône unifiée pour tous les dossiers
     if (type === 'tree') {
-      const folderName = name?.toLowerCase();
-      for (const [key, icon] of Object.entries(iconMap)) {
-        if (folderName === key || folderName?.includes(key)) {
-          return icon;
-        }
-      }
-      return '📁'; // Dossier par défaut
+      return '📁'; // Icône unifiée pour tous les dossiers
     }
 
     // Vérifier l'extension pour les fichiers
