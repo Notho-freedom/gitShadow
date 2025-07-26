@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Navbar from '../../components/Navbar';
 
 export default function AboutPage() {
   const team = [
@@ -49,31 +50,11 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {/* Header */}
-      <header className="bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">G</span>
-              </div>
-              <span className="text-white font-bold text-xl">gitShadow</span>
-            </Link>
-            
-            <nav className="flex space-x-8">
-              <Link href="/" className="text-gray-300 hover:text-white transition-colors">
-                Accueil
-              </Link>
-              <Link href="/auth" className="text-gray-300 hover:text-white transition-colors">
-                Connexion
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      {/* Navbar fixe */}
+      <Navbar />
 
       {/* Hero Section */}
-      <section className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -117,16 +98,27 @@ export default function AboutPage() {
               </p>
               <div className="flex space-x-4">
                 <Link href="/auth">
-                  <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
                     Commencer maintenant
-                  </button>
+                  </motion.button>
                 </Link>
-                <button className="border-2 border-gray-600 hover:border-white text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="border-2 border-gray-600 hover:border-white text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:bg-white/10"
+                >
                   En savoir plus
-                </button>
+                </motion.button>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl p-8 border border-white/10">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl p-8 border border-white/10 shadow-2xl"
+            >
               <h3 className="text-2xl font-bold text-white mb-4">Pourquoi gitShadow ?</h3>
               <ul className="space-y-4">
                 <li className="flex items-start space-x-3">
@@ -146,7 +138,7 @@ export default function AboutPage() {
                   <span className="text-gray-300">Intégration GitHub native</span>
                 </li>
               </ul>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -175,10 +167,11 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="text-center"
+                whileHover={{ scale: 1.05 }}
+                className="text-center group"
               >
-                <div className="text-4xl font-bold text-blue-400 mb-2">{stat.number}</div>
-                <div className="text-gray-400">{stat.label}</div>
+                <div className="text-4xl font-bold text-blue-400 mb-2 group-hover:text-blue-300 transition-colors">{stat.number}</div>
+                <div className="text-gray-400 group-hover:text-gray-300 transition-colors">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -209,12 +202,17 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 text-center hover:bg-white/10 transition-all duration-300"
+                whileHover={{ 
+                  scale: 1.05,
+                  y: -10,
+                  transition: { duration: 0.3 }
+                }}
+                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 text-center group"
               >
-                <div className="text-4xl mb-4">{member.avatar}</div>
-                <h3 className="text-xl font-semibold text-white mb-2">{member.name}</h3>
-                <p className="text-blue-400 mb-3">{member.role}</p>
-                <p className="text-gray-300 text-sm">{member.bio}</p>
+                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{member.avatar}</div>
+                <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-blue-400 transition-colors">{member.name}</h3>
+                <p className="text-blue-400 mb-3 group-hover:text-blue-300 transition-colors">{member.role}</p>
+                <p className="text-gray-300 text-sm group-hover:text-gray-200 transition-colors">{member.bio}</p>
               </motion.div>
             ))}
           </div>
@@ -245,11 +243,16 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300"
+                whileHover={{ 
+                  scale: 1.05,
+                  y: -5,
+                  transition: { duration: 0.3 }
+                }}
+                className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 group"
               >
-                <div className="text-3xl mb-3">{tech.icon}</div>
-                <h3 className="text-lg font-semibold text-white mb-2">{tech.name}</h3>
-                <p className="text-gray-300 text-sm">{tech.description}</p>
+                <div className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300">{tech.icon}</div>
+                <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-blue-400 transition-colors">{tech.name}</h3>
+                <p className="text-gray-300 text-sm group-hover:text-gray-200 transition-colors">{tech.description}</p>
               </motion.div>
             ))}
           </div>
@@ -273,14 +276,22 @@ export default function AboutPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
+                >
                   Commencer gratuitement
-                </button>
+                </motion.button>
               </Link>
               <Link href="/">
-                <button className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:bg-white/10">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:bg-white/10"
+                >
                   Retour à l'accueil
-                </button>
+                </motion.button>
               </Link>
             </div>
           </motion.div>

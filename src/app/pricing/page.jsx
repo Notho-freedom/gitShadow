@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Navbar from '../../components/Navbar';
 
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState('monthly'); // monthly or yearly
@@ -37,13 +38,12 @@ export default function PricingPage() {
       price: { monthly: '29€', yearly: '290€' },
       description: 'Pour les développeurs sérieux',
       features: [
-        'Dépôts illimités (publics + privés)',
+        'Dépôts illimités',
         'Générations illimitées',
-        'Support prioritaire 24/7',
-        'Historique illimité',
-        'Export multi-formats (PDF, HTML, Confluence)',
+        'Support prioritaire',
+        'Export multi-formats',
         'Intégrations CI/CD',
-        'Collaboration équipe (5 membres)',
+        'Collaboration équipe',
         'Templates personnalisés',
         'Analytics avancées',
         'API access',
@@ -88,37 +88,11 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {/* Header */}
-      <header className="bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">G</span>
-              </div>
-              <span className="text-white font-bold text-xl">gitShadow</span>
-            </Link>
-            
-            <nav className="flex space-x-8">
-              <Link href="/" className="text-gray-300 hover:text-white transition-colors">
-                Accueil
-              </Link>
-              <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
-                À propos
-              </Link>
-              <Link href="/contact" className="text-gray-300 hover:text-white transition-colors">
-                Contact
-              </Link>
-              <Link href="/auth" className="text-gray-300 hover:text-white transition-colors">
-                Connexion
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      {/* Navbar fixe */}
+      <Navbar />
 
       {/* Hero Section */}
-      <section className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
+      <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -145,34 +119,43 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/5 backdrop-blur-sm rounded-2xl p-2 border border-white/10"
+            className="bg-white/5 backdrop-blur-sm rounded-2xl p-2 border border-white/10 shadow-xl"
           >
             <div className="flex">
-              <button
+              <motion.button
                 onClick={() => setBillingCycle('monthly')}
-                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
                   billingCycle === 'monthly'
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
                     : 'text-gray-300 hover:text-white'
                 }`}
               >
                 Mensuel
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 onClick={() => setBillingCycle('yearly')}
-                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 relative ${
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-300 relative ${
                   billingCycle === 'yearly'
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
                     : 'text-gray-300 hover:text-white'
                 }`}
               >
                 Annuel
                 {billingCycle === 'yearly' && (
-                  <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full"
+                  >
                     -{savings.yearly}%
-                  </span>
+                  </motion.span>
                 )}
-              </button>
+              </motion.button>
             </div>
           </motion.div>
         </div>
@@ -188,75 +171,69 @@ export default function PricingPage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
+                whileHover={{ 
+                  scale: 1.02,
+                  y: -5,
+                  transition: { duration: 0.3 }
+                }}
                 className={`relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border ${
                   plan.popular 
-                    ? 'border-blue-500 bg-gradient-to-b from-blue-500/20 to-transparent' 
+                    ? 'border-blue-500 bg-gradient-to-b from-blue-500/20 to-transparent shadow-2xl' 
                     : 'border-white/10'
                 } hover:bg-white/10 transition-all duration-300`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                  >
+                    <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium shadow-lg">
                       Populaire
                     </span>
-                  </div>
+                  </motion.div>
                 )}
 
-                <div className="text-center mb-8">
+                <div className="text-center">
                   <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                  <div className="text-4xl font-bold text-white mb-2">
-                    {plan.price[billingCycle]}
-                    {plan.price[billingCycle] !== 'Sur mesure' && (
-                      <span className="text-lg text-gray-400">
-                        /{billingCycle === 'monthly' ? 'mois' : 'an'}
-                      </span>
-                    )}
-                  </div>
+                  <div className="text-4xl font-bold text-white mb-2">{plan.price[billingCycle]}</div>
                   {billingCycle === 'yearly' && plan.price[billingCycle] !== 'Sur mesure' && (
                     <div className="text-green-400 text-sm mb-2">
                       Économisez {savings.yearly}% par rapport au mensuel
                     </div>
                   )}
-                  <p className="text-gray-300">{plan.description}</p>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-white font-semibold mb-3">Fonctionnalités incluses :</h4>
-                    <ul className="space-y-2">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="text-gray-300 flex items-start">
-                          <span className="text-green-400 mr-2 mt-1">✓</span>
-                          <span className="text-sm">{feature}</span>
+                  <p className="text-gray-300 mb-6">{plan.description}</p>
+                  <ul className="space-y-3 mb-8">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="text-gray-300 flex items-center">
+                        <span className="text-green-400 mr-2">✓</span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  {plan.limitations.length > 0 && (
+                    <ul className="space-y-3 mb-8">
+                      {plan.limitations.map((limitation, i) => (
+                        <li key={i} className="text-gray-400 flex items-center">
+                          <span className="text-red-400 mr-2">✗</span>
+                          {limitation}
                         </li>
                       ))}
                     </ul>
-                  </div>
-
-                  {plan.limitations.length > 0 && (
-                    <div>
-                      <h4 className="text-white font-semibold mb-3">Limitations :</h4>
-                      <ul className="space-y-2">
-                        {plan.limitations.map((limitation, i) => (
-                          <li key={i} className="text-gray-400 flex items-start">
-                            <span className="text-red-400 mr-2 mt-1">✗</span>
-                            <span className="text-sm">{limitation}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
                   )}
-                </div>
-
-                <div className="mt-8">
                   <Link href={plan.id === 'enterprise' ? '/contact' : '/auth'}>
-                    <button className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-200 ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                    }`}>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-300 ${
+                        plan.popular
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg'
+                          : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                      }`}
+                    >
                       {plan.cta}
-                    </button>
+                    </motion.button>
                   </Link>
                 </div>
               </motion.div>
@@ -306,10 +283,15 @@ export default function PricingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10"
+                whileHover={{ 
+                  scale: 1.02,
+                  y: -5,
+                  transition: { duration: 0.3 }
+                }}
+                className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 group"
               >
-                <h3 className="text-lg font-semibold text-white mb-3">{faq.question}</h3>
-                <p className="text-gray-300">{faq.answer}</p>
+                <h3 className="text-lg font-semibold text-white mb-3 group-hover:text-blue-400 transition-colors">{faq.question}</h3>
+                <p className="text-gray-300 group-hover:text-gray-200 transition-colors">{faq.answer}</p>
               </motion.div>
             ))}
           </div>
@@ -333,14 +315,22 @@ export default function PricingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
+                >
                   Commencer gratuitement
-                </button>
+                </motion.button>
               </Link>
               <Link href="/contact">
-                <button className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:bg-white/10">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:bg-white/10"
+                >
                   Parler à un expert
-                </button>
+                </motion.button>
               </Link>
             </div>
           </motion.div>

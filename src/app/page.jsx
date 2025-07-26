@@ -1,85 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
+import Navbar from '../components/Navbar';
 
 export default function HomePage() {
-  const [currentSection, setCurrentSection] = useState('hero');
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const scrollToSection = (sectionId) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-    setCurrentSection(sectionId);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-black/80 backdrop-blur-md shadow-lg' : 'bg-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-2"
-            >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">G</span>
-              </div>
-              <span className="text-white font-bold text-xl">gitShadow</span>
-            </motion.div>
-            
-            <div className="hidden md:flex space-x-8">
-              {['hero', 'features', 'pricing', 'about', 'contact'].map((section) => (
-                <button
-                  key={section}
-                  onClick={() => scrollToSection(section)}
-                  className={`text-sm font-medium transition-colors duration-200 ${
-                    currentSection === section 
-                      ? 'text-blue-400 border-b-2 border-blue-400' 
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  {section.charAt(0).toUpperCase() + section.slice(1)}
-                </button>
-              ))}
-              <Link href="/about" className="text-gray-300 hover:text-white transition-colors duration-200">
-                À propos
-              </Link>
-              <Link href="/contact" className="text-gray-300 hover:text-white transition-colors duration-200">
-                Contact
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Link href="/auth">
-                <button className="text-gray-300 hover:text-white transition-colors duration-200">
-                  Connexion
-                </button>
-              </Link>
-              <Link href="/auth">
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105">
-                  Commencer
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Navbar fixe */}
+      <Navbar />
 
       {/* Hero Section */}
       <section id="hero" className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
@@ -101,16 +30,29 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-2xl">
-                  Commencer gratuitement
-                </button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-2xl hover:shadow-3xl group overflow-hidden"
+                >
+                  <span className="relative z-10">Commencer gratuitement</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </motion.button>
               </Link>
-              <button 
-                onClick={() => scrollToSection('features')}
-                className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:bg-white/10"
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  const element = document.getElementById('features');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:bg-white/10 backdrop-blur-sm"
               >
                 Découvrir les fonctionnalités
-              </button>
+              </motion.button>
             </div>
           </motion.div>
 
@@ -121,18 +63,27 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.3 }}
             className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8"
           >
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-400 mb-2">10K+</div>
-              <div className="text-gray-400">Développeurs actifs</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-purple-400 mb-2">50K+</div>
-              <div className="text-gray-400">Documentations générées</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-green-400 mb-2">99%</div>
-              <div className="text-gray-400">Satisfaction client</div>
-            </div>
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="text-center group"
+            >
+              <div className="text-4xl font-bold text-blue-400 mb-2 group-hover:text-blue-300 transition-colors">10K+</div>
+              <div className="text-gray-400 group-hover:text-gray-300 transition-colors">Développeurs actifs</div>
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="text-center group"
+            >
+              <div className="text-4xl font-bold text-purple-400 mb-2 group-hover:text-purple-300 transition-colors">50K+</div>
+              <div className="text-gray-400 group-hover:text-gray-300 transition-colors">Documentations générées</div>
+            </motion.div>
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="text-center group"
+            >
+              <div className="text-4xl font-bold text-green-400 mb-2 group-hover:text-green-300 transition-colors">99%</div>
+              <div className="text-gray-400 group-hover:text-gray-300 transition-colors">Satisfaction client</div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -194,11 +145,16 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 border border-white/10"
+                whileHover={{ 
+                  scale: 1.05,
+                  y: -10,
+                  transition: { duration: 0.3 }
+                }}
+                className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-white/20 group"
               >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
-                <p className="text-gray-300">{feature.description}</p>
+                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{feature.icon}</div>
+                <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-blue-400 transition-colors">{feature.title}</h3>
+                <p className="text-gray-300 group-hover:text-gray-200 transition-colors">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -256,18 +212,28 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
+                whileHover={{ 
+                  scale: 1.02,
+                  y: -5,
+                  transition: { duration: 0.3 }
+                }}
                 className={`relative bg-white/5 backdrop-blur-sm rounded-2xl p-8 border ${
                   plan.popular 
                     ? 'border-blue-500 bg-gradient-to-b from-blue-500/20 to-transparent' 
                     : 'border-white/10'
-                }`}
+                } hover:bg-white/10 transition-all duration-300`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                  >
                     <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">
                       Populaire
                     </span>
-                  </div>
+                  </motion.div>
                 )}
                 <div className="text-center">
                   <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
@@ -281,14 +247,18 @@ export default function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/auth">
-                    <button className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                    }`}>
+                  <Link href={plan.id === 'enterprise' ? '/contact' : '/auth'}>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                        plan.popular
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                          : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                      }`}
+                    >
                       {plan.cta}
-                    </button>
+                    </motion.button>
                   </Link>
                 </div>
               </motion.div>
@@ -366,9 +336,13 @@ export default function HomePage() {
               <h4 className="text-2xl font-bold text-white mb-4">Technologies Utilisées</h4>
               <div className="grid grid-cols-2 gap-4">
                 {['Next.js', 'React', 'Tailwind CSS', 'GitHub API', 'OpenAI', 'Framer Motion'].map((tech, index) => (
-                  <div key={index} className="bg-white/10 rounded-lg p-3 text-center">
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.05 }}
+                    className="bg-white/10 rounded-lg p-3 text-center hover:bg-white/20 transition-colors"
+                  >
                     <span className="text-white font-medium">{tech}</span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
@@ -393,13 +367,23 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth">
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
+                >
                   Commencer maintenant
-                </button>
+                </motion.button>
               </Link>
-              <button className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:bg-white/10">
-                Voir la démo
-              </button>
+              <Link href="/contact">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="border-2 border-gray-600 hover:border-white text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 hover:bg-white/10"
+                >
+                  Voir la démo
+                </motion.button>
+              </Link>
             </div>
           </motion.div>
         </div>

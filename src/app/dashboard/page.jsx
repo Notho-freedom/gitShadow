@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Dashboard from '../../components/Dashboard';
+import Navbar from '../../components/Navbar';
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
@@ -18,7 +19,7 @@ export default function DashboardPage() {
         const userData = JSON.parse(savedUser);
         setUser(userData);
       } catch (error) {
-        console.error('Erreur lors du chargement des données utilisateur:', error);
+        console.error('Erreur lors du parsing des données utilisateur:', error);
         localStorage.removeItem('github_user');
         router.push('/auth');
       }
@@ -30,74 +31,78 @@ export default function DashboardPage() {
 
   const handleLogout = () => {
     localStorage.removeItem('github_user');
-    setUser(null);
     router.push('/');
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg">Chargement de votre espace de travail...</p>
-        </div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
 
   if (!user) {
-    return null; // Redirection en cours
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {/* Header */}
-      <header className="bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-3"
-            >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">G</span>
-              </div>
-              <span className="text-white font-bold text-xl">gitShadow</span>
-            </motion.div>
+      {/* Navbar fixe */}
+      <Navbar />
 
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-4"
-            >
-              <div className="flex items-center space-x-3">
-                <img 
-                  src={user.avatar_url} 
-                  alt={user.login}
-                  className="w-8 h-8 rounded-full border-2 border-white/20"
-                />
-                <span className="text-white font-medium hidden md:block">{user.login}</span>
+      {/* Header du Dashboard */}
+      <section className="pt-32 pb-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 shadow-2xl"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div className="flex items-center space-x-4 mb-4 md:mb-0">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  className="w-16 h-16 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-2xl shadow-2xl border border-white/20 flex items-center justify-center"
+                >
+                  <span className="text-white font-bold text-2xl tracking-wider">GS</span>
+                </motion.div>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Tableau de bord</h1>
+                  <p className="text-gray-300">Bienvenue, {user.login}</p>
+                </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-gray-300 hover:text-white transition-colors duration-200"
-              >
-                Déconnexion
-              </button>
-            </motion.div>
-          </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-white font-medium">{user.name || user.login}</p>
+                  <p className="text-gray-400 text-sm">{user.email}</p>
+                </div>
+                <motion.button
+                  onClick={handleLogout}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Déconnexion
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </header>
+      </section>
 
-      {/* Dashboard Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <Dashboard user={user} onLogout={handleLogout} />
-      </motion.div>
+      {/* Contenu principal du Dashboard */}
+      <section className="px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="max-w-7xl mx-auto">
+          <Dashboard />
+        </div>
+      </section>
     </div>
   );
 } 
