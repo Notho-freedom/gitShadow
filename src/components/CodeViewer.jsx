@@ -75,12 +75,32 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
     if (!filename) return 'text';
     const ext = filename.split('.').pop()?.toLowerCase();
     
-    // Seules les images pour la prévisualisation
+    // Images
     if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext)) {
       return 'image';
     }
     
-    // Tous les autres fichiers sont traités comme du texte/code
+    // Vidéos
+    if (['mp4', 'webm', 'ogg', 'avi', 'mov', 'mkv', 'flv', 'wmv'].includes(ext)) {
+      return 'video';
+    }
+    
+    // Audio
+    if (['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'].includes(ext)) {
+      return 'audio';
+    }
+    
+    // PDF
+    if (ext === 'pdf') {
+      return 'pdf';
+    }
+    
+    // Documents Office
+    if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
+      return 'office';
+    }
+    
+    // Code et autres fichiers texte
     return 'code';
   };
 
@@ -170,7 +190,7 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
   const language = getLanguage(file.name);
 
   // Si c'est un fichier média, utiliser le MediaViewer
-  if (fileType === 'image') {
+  if (fileType !== 'code') {
     return <MediaViewer file={file} repo={repo} commit={commit} />;
   }
 
