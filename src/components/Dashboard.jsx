@@ -8,6 +8,8 @@ import CommitHistory from './CommitHistory';
 import FileExplorer from './FileExplorer';
 import CodeViewer from './CodeViewer';
 import DocumentationPanel from './DocumentationPanel';
+import AnalyticsPanel from './AnalyticsPanel';
+import UserStats from './UserStats';
 
 export default function Dashboard({ user, onLogout }) {
   const [activeView, setActiveView] = useState('repositories');
@@ -17,6 +19,7 @@ export default function Dashboard({ user, onLogout }) {
   const [fileContent, setFileContent] = useState('');
   const [documentation, setDocumentation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [commits, setCommits] = useState([]);
 
   // Gestion des vues
   const views = {
@@ -33,6 +36,7 @@ export default function Dashboard({ user, onLogout }) {
     setSelectedRepo(repo);
     setSelectedCommit(null);
     setSelectedFile(null);
+    setCommits([]);
     setActiveView('commits');
   };
 
@@ -40,6 +44,10 @@ export default function Dashboard({ user, onLogout }) {
     setSelectedCommit(commit);
     setSelectedFile(null);
     setActiveView('files');
+  };
+
+  const handleCommitsLoaded = (loadedCommits) => {
+    setCommits(loadedCommits);
   };
 
   const handleFileSelect = async (file) => {
@@ -91,6 +99,13 @@ export default function Dashboard({ user, onLogout }) {
             repo={selectedRepo}
             onCommitSelect={handleCommitSelect}
             selectedCommit={selectedCommit}
+            onCommitsLoaded={handleCommitsLoaded}
+          />
+        );
+      case 'analytics':
+        return (
+          <UserStats 
+            user={user}
           />
         );
       case 'files':

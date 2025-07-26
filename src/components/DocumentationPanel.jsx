@@ -72,107 +72,32 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
     setDocumentation('');
 
     try {
-      // Simulation de l'appel API
-      setTimeout(() => {
-        const mockDoc = `# Documentation - ${selectedFile.path}
+      // Appel réel à l'API de génération de documentation
+      const response = await fetch('/api/generateDoc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: fileContent,
+          filename: selectedFile.path,
+          docType: docType,
+          prompt: customPrompt
+        }),
+      });
 
-## Vue d'ensemble
-Ce fichier fait partie du projet ${selectedFile.path.split('/')[0]} et implémente des fonctionnalités essentielles pour l'application.
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la génération de documentation');
+      }
 
-## Description
-${selectedDocType.label === 'Documentation complète' ? `
-### Fonctionnalités principales
-- Gestion des états de l'application
-- Interface utilisateur réactive
-- Intégration avec les APIs externes
-
-### Architecture
-Le code suit les bonnes pratiques React avec:
-- Hooks personnalisés pour la logique métier
-- Composants fonctionnels optimisés
-- Gestion d'état avec useState et useEffect
-
-### Exemples d'utilisation
-\`\`\`javascript
-// Exemple d'utilisation du composant
-import Component from './${selectedFile.path}';
-
-function App() {
-  return <Component prop1="value" prop2={data} />;
-}
-\`\`\`
-
-### Paramètres
-- \`prop1\`: String - Description du premier paramètre
-- \`prop2\`: Object - Données à traiter par le composant
-
-### Valeurs de retour
-Le composant retourne un élément JSX configuré selon les props fournies.
-` : selectedDocType.label === 'Résumé rapide' ? `
-Ce fichier implémente un composant React qui gère l'affichage et l'interaction utilisateur. Il utilise les hooks modernes et suit les conventions de développement recommandées.
-` : selectedDocType.label === 'Documentation API' ? `
-### Endpoints disponibles
-- \`GET /api/data\` - Récupère les données
-- \`POST /api/data\` - Crée une nouvelle entrée
-- \`PUT /api/data/:id\` - Met à jour une entrée
-- \`DELETE /api/data/:id\` - Supprime une entrée
-
-### Formats de réponse
-\`\`\`json
-{
-  "status": "success",
-  "data": {...},
-  "message": "Operation completed"
-}
-\`\`\`
-` : selectedDocType.label === 'Analyse technique' ? `
-### Complexité du code
-- Complexité cyclomatique: Moyenne
-- Lignes de code: ${fileContent.split('\n').length}
-- Fonctions: Estimation basée sur l'analyse
-
-### Patterns identifiés
-- Pattern Observer pour la gestion d'état
-- Pattern Component pour la réutilisabilité
-- Pattern Hook pour la logique métier
-
-### Optimisations recommandées
-1. Utiliser React.memo pour éviter les re-renders
-2. Implémenter le lazy loading pour les composants lourds
-3. Optimiser les dépendances des useEffect
-` : `
-### Analyse de sécurité
-
-#### Vulnérabilités potentielles
-- Validation des entrées utilisateur
-- Gestion des erreurs sensibles
-- Protection contre les injections
-
-#### Recommandations
-1. Valider toutes les entrées côté client et serveur
-2. Utiliser des bibliothèques de sécurité éprouvées
-3. Implémenter une gestion d'erreur robuste
-4. Chiffrer les données sensibles
-`}
-
-## Bonnes pratiques
-- Suivre les conventions de nommage
-- Documenter les fonctions complexes
-- Tester les cas limites
-- Maintenir la cohérence du style
-
-## Maintenance
-Dernière mise à jour: ${new Date().toLocaleDateString('fr-FR')}
-Généré par: gitShadow IA v2.0.0
-`;
-
-        setDocumentation(mockDoc);
-        setGenerationsUsed(prev => prev + 1);
-        setLoading(false);
-      }, 2000);
-
-    } catch (err) {
-      setError(err.message);
+      const data = await response.json();
+      setDocumentation(data.documentation);
+      setGenerationsUsed(prev => prev + 1);
+    } catch (error) {
+      console.error('Erreur lors de la génération de documentation:', error);
+      setError(error.message);
+    } finally {
       setLoading(false);
     }
   };

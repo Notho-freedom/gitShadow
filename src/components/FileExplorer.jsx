@@ -26,9 +26,9 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          owner: repo.owner || 'demo',
-          repo: repo.name || 'demo-repo',
-          commitSha: commit.sha || 'demo-commit'
+          owner: repo.owner?.login || repo.owner,
+          repo: repo.name,
+          commitSha: commit.sha
         }),
       });
 
@@ -40,44 +40,12 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           throw new Error(data.error || 'Erreur lors du chargement');
         }
       } else {
-        throw new Error('Erreur de réponse du serveur');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur de réponse du serveur');
       }
     } catch (error) {
       console.error('Erreur lors du chargement de l\'arborescence:', error);
-      // Fallback vers des données simulées
-      const mockFiles = [
-        { 
-          path: 'README.md', 
-          type: 'blob', 
-          size: 2048, 
-          name: 'README.md', 
-          download_url: 'data:text/plain;base64,' + btoa('# README\n\nContenu de démonstration'),
-          changeStatus: 'modified',
-          additions: 15,
-          deletions: 2
-        },
-        { 
-          path: 'package.json', 
-          type: 'blob', 
-          size: 1024, 
-          name: 'package.json', 
-          download_url: 'data:application/json;base64,' + btoa(JSON.stringify({ name: 'demo', version: '1.0.0' }, null, 2)),
-          changeStatus: 'added',
-          additions: 25,
-          deletions: 0
-        },
-        { 
-          path: 'src/index.js', 
-          type: 'blob', 
-          size: 1536, 
-          name: 'index.js', 
-          download_url: 'data:text/javascript;base64,' + btoa('console.log("Hello World");'),
-          changeStatus: 'added',
-          additions: 35,
-          deletions: 0
-        }
-      ];
-      setFileTree(mockFiles);
+      setFileTree([]);
     } finally {
       setLoading(false);
     }
