@@ -19,37 +19,18 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
     
     setLoading(true);
     try {
-      // Simulation de l'arborescence des fichiers
-      const mockFiles = [
-        { path: 'README.md', type: 'file', size: 2048 },
-        { path: 'package.json', type: 'file', size: 1024 },
-        { path: 'package-lock.json', type: 'file', size: 45678 },
-        { path: '.gitignore', type: 'file', size: 512 },
-        { path: 'src/index.js', type: 'file', size: 1536 },
-        { path: 'src/App.js', type: 'file', size: 2048 },
-        { path: 'src/components/Header.jsx', type: 'file', size: 1024 },
-        { path: 'src/components/Footer.jsx', type: 'file', size: 768 },
-        { path: 'src/components/Dashboard/index.jsx', type: 'file', size: 3072 },
-        { path: 'src/components/Dashboard/Dashboard.module.css', type: 'file', size: 1536 },
-        { path: 'src/hooks/useAuth.js', type: 'file', size: 2048 },
-        { path: 'src/hooks/useApi.js', type: 'file', size: 1792 },
-        { path: 'src/utils/helpers.js', type: 'file', size: 1024 },
-        { path: 'src/utils/constants.js', type: 'file', size: 512 },
-        { path: 'src/styles/globals.css', type: 'file', size: 2048 },
-        { path: 'src/styles/components.css', type: 'file', size: 1536 },
-        { path: 'public/index.html', type: 'file', size: 1024 },
-        { path: 'public/favicon.ico', type: 'file', size: 4096 },
-        { path: 'public/images/logo.png', type: 'file', size: 8192 },
-        { path: 'docs/README.md', type: 'file', size: 3072 },
-        { path: 'docs/api.md', type: 'file', size: 4096 },
-        { path: 'tests/App.test.js', type: 'file', size: 1024 },
-        { path: 'tests/components/Header.test.jsx', type: 'file', size: 1536 },
-        { path: 'tests/utils/helpers.test.js', type: 'file', size: 2048 },
-        { path: '.github/workflows/ci.yml', type: 'file', size: 1024 },
-        { path: '.github/workflows/deploy.yml', type: 'file', size: 1536 }
-      ];
-
-      setFileTree(mockFiles);
+      // Utiliser les vraies données du repository si disponibles
+      if (repo.tree && Array.isArray(repo.tree)) {
+        setFileTree(repo.tree);
+      } else {
+        // Fallback vers des données simulées si pas de vraies données
+        const mockFiles = [
+          { path: 'README.md', type: 'blob', size: 2048, name: 'README.md', download_url: 'data:text/plain;base64,' + btoa('# README\n\nContenu de démonstration') },
+          { path: 'package.json', type: 'blob', size: 1024, name: 'package.json', download_url: 'data:application/json;base64,' + btoa(JSON.stringify({ name: 'demo', version: '1.0.0' }, null, 2)) },
+          { path: 'src/index.js', type: 'blob', size: 1536, name: 'index.js', download_url: 'data:text/javascript;base64,' + btoa('console.log("Hello World");') }
+        ];
+        setFileTree(mockFiles);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement de l\'arborescence:', error);
     } finally {
@@ -75,7 +56,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           current[part] = {
             name: part,
             path: parts.slice(0, index + 1).join('/'),
-            type: index === parts.length - 1 ? 'file' : 'folder',
+            type: index === parts.length - 1 ? 'blob' : 'tree',
             children: {},
             item: index === parts.length - 1 ? item : null,
             size: index === parts.length - 1 ? item.size : 0
@@ -93,8 +74,8 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
         }))
         .sort((a, b) => {
           // Dossiers en premier, puis fichiers
-          if (a.type === 'folder' && b.type === 'file') return -1;
-          if (a.type === 'file' && b.type === 'folder') return 1;
+          if (a.type === 'tree' && b.type === 'blob') return -1;
+          if (a.type === 'blob' && b.type === 'tree') return 1;
           return a.name.localeCompare(b.name);
         });
     };
@@ -168,9 +149,9 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
               isSelected ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-gray-700/50'
             } ${level > 0 ? `ml-${Math.min(level * 4, 16)}` : ''}`}
             onClick={() => {
-              if (node.type === 'folder' && hasChildren) {
+              if (node.type === 'tree' && hasChildren) {
                 toggleFolder(node.path);
-              } else if (node.type === 'file' && node.item) {
+              } else if (node.type === 'blob' && node.item) {
                 onFileSelect(node.item);
               }
             }}

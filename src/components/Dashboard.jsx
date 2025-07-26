@@ -49,33 +49,27 @@ export default function Dashboard({ user, onLogout }) {
     setLoading(true);
 
     try {
-      // Simulation du chargement du contenu du fichier
-      setTimeout(() => {
-        const mockContent = `// ${file.name}
-// Commit: ${selectedCommit?.sha?.substring(0, 7) || 'latest'}
-// Repository: ${selectedRepo?.name}
-
-${file.type === 'file' ? `
-function ${file.name.replace(/\.[^/.]+$/, "")}() {
-  // Implementation here
-  console.log('Hello from ${file.name}');
-  
-  return {
-    status: 'success',
-    message: 'File loaded successfully'
-  };
-}
-
-export default ${file.name.replace(/\.[^/.]+$/, "")};
-` : '// Directory content'}`;
-        
-        setFileContent(mockContent);
-        setLoading(false);
-      }, 1000);
+      if (file.download_url) {
+        // Si c'est une URL data: (mode démo), décoder directement
+        if (file.download_url.startsWith('data:')) {
+          const content = decodeURIComponent(file.download_url.split(',')[1]);
+          setFileContent(content);
+        } else {
+          // Sinon, faire un fetch vers l'URL
+          const response = await fetch(file.download_url);
+          if (response.ok) {
+            const content = await response.text();
+            setFileContent(content);
+          } else {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+          }
+        }
+      } else {
+        throw new Error('URL de téléchargement non disponible');
+      }
     } catch (error) {
       console.error('Erreur lors du chargement du fichier:', error);
-      setFileContent('Erreur lors du chargement du fichier');
-      setLoading(false);
+      setFileContent(`Erreur lors du chargement du fichier: ${error.message}`);
     } finally {
       setLoading(false);
     }
