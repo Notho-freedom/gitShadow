@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { owner, repo, branch = 'main', page = 1, per_page = 30 } = await request.json();
+    const { owner, repo, branch = 'main', page = 1, per_page = 30, accessToken } = await request.json();
 
     if (!owner || !repo) {
       return NextResponse.json(
@@ -17,7 +17,10 @@ export async function POST(request) {
       'User-Agent': 'gitShadow-App'
     };
 
-    if (process.env.GITHUB_TOKEN) {
+    // Utiliser le token utilisateur s'il est fourni, sinon utiliser le token serveur
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    } else if (process.env.GITHUB_TOKEN) {
       headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
     }
 

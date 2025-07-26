@@ -37,7 +37,8 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
         },
         body: JSON.stringify({
           owner: repo.owner?.login || repo.owner,
-          repo: repo.name
+          repo: repo.name,
+          accessToken: repo.accessToken || null
         }),
       });
 
@@ -72,7 +73,8 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
           repo: repo.name,
           branch: branch,
           page: pageNum,
-          per_page: 30
+          per_page: 30,
+          accessToken: repo.accessToken || null
         }),
       });
 
@@ -214,7 +216,7 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
 
       {/* Liste des commits */}
       {loading && page === 1 ? (
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="animate-pulse">
               <div className="h-20 bg-gray-800 rounded-lg"></div>
@@ -222,7 +224,7 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
           ))}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
           {filteredCommits.map((commit) => {
             const commitType = getCommitType(commit.commit.message);
             const isSelected = selectedCommit?.sha === commit.sha;

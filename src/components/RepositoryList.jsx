@@ -41,7 +41,31 @@ export default function RepositoryList({ user, onRepoSelect, selectedRepo }) {
         repos = repos.filter(repo => !repo.private).slice(0, 5);
       }
 
-      setRepositories(repos);
+      // Formater les données des dépôts
+      const formattedRepos = repos.map(repo => ({
+        id: repo.id,
+        name: repo.name,
+        full_name: repo.full_name,
+        description: repo.description,
+        private: repo.private,
+        language: repo.language,
+        stargazers_count: repo.stargazers_count,
+        forks_count: repo.forks_count,
+        updated_at: repo.updated_at,
+        created_at: repo.created_at,
+        size: repo.size,
+        default_branch: repo.default_branch,
+        html_url: repo.html_url,
+        clone_url: repo.clone_url,
+        topics: repo.topics || [],
+        owner: {
+          login: repo.owner.login,
+          avatar_url: repo.owner.avatar_url
+        },
+        accessToken: user.access_token // Ajouter le token d'accès
+      }));
+
+      setRepositories(formattedRepos);
     } catch (error) {
       console.error('Erreur lors du chargement des dépôts:', error);
       // Fallback en cas d'erreur
@@ -168,7 +192,7 @@ export default function RepositoryList({ user, onRepoSelect, selectedRepo }) {
       </div>
 
       {/* Liste des dépôts */}
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
         {filteredAndSortedRepos.map((repo) => (
           <div
             key={repo.id}

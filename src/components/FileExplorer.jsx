@@ -28,7 +28,8 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
         body: JSON.stringify({
           owner: repo.owner?.login || repo.owner,
           repo: repo.name,
-          commitSha: commit.sha
+          commitSha: commit.sha,
+          accessToken: repo.accessToken || null
         }),
       });
 
@@ -270,129 +271,49 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
   return (
     <div className="h-full flex flex-col bg-gray-800/30">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
-            Explorateur
-          </h3>
-          <span className="text-xs text-gray-500">
-            {organizedTree.length} éléments
-          </span>
+      <div className="border-b border-gray-700 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-2xl">📁</span>
+            <h2 className="text-lg font-semibold text-white">Explorateur de Fichiers</h2>
+          </div>
         </div>
 
         {/* Barre de recherche */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Rechercher des fichiers..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {/* Info du commit avec résumé des changements */}
-        <div className="mt-3 p-2 bg-gray-700/50 rounded-md">
-          <div className="text-xs text-gray-400">
-            <div className="flex items-center space-x-2">
-              <span>📝</span>
-              <span className="font-mono">{commit.sha.substring(0, 7)}</span>
-            </div>
-            <div className="mt-1 truncate">
-              {commit.commit.message.split('\n')[0]}
-            </div>
-            
-            {/* Résumé des changements */}
-            {fileTree.length > 0 && (
-              <div className="mt-2 pt-2 border-t border-gray-600/50">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-3">
-                    <span className="flex items-center space-x-1">
-                      <span className="text-green-400">➕</span>
-                      <span>{fileTree.filter(f => f.changeStatus === 'added').length}</span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <span className="text-yellow-400">✏️</span>
-                      <span>{fileTree.filter(f => f.changeStatus === 'modified').length}</span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <span className="text-red-400">🗑️</span>
-                      <span>{fileTree.filter(f => f.changeStatus === 'removed').length}</span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <span className="text-blue-400">🔄</span>
-                      <span>{fileTree.filter(f => f.changeStatus === 'renamed').length}</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-400">
-                      +{fileTree.reduce((sum, f) => sum + (f.additions || 0), 0)}
-                    </span>
-                    <span className="text-red-400">
-                      -{fileTree.reduce((sum, f) => sum + (f.deletions || 0), 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <input
+          type="text"
+          placeholder="Rechercher des fichiers..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
-      {/* Arborescence */}
-      <div className="flex-1 overflow-y-auto p-2">
+      {/* Contenu */}
+      <div className="flex-1 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-              <p className="text-gray-400 text-sm">Chargement des fichiers...</p>
-            </div>
-          </div>
-        ) : organizedTree.length > 0 ? (
-          <div className="space-y-1">
-            {renderTree(organizedTree)}
+          <div className="p-4 text-center text-gray-400">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            Chargement de l'arborescence...
           </div>
         ) : (
-          <div className="text-center py-8">
-            <span className="text-2xl mb-2 block">🔍</span>
-            <p className="text-sm text-gray-400">
-              {searchQuery ? `Aucun fichier trouvé pour "${searchQuery}"` : 'Aucun fichier trouvé'}
-            </p>
+          <div className="p-4 max-h-full overflow-y-auto">
+            {organizedTree.length > 0 ? (
+              renderTree(organizedTree)
+            ) : (
+              <div className="text-center py-12 text-gray-400">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
+                  <span className="text-2xl">📁</span>
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Aucun fichier trouvé</h3>
+                <p className="text-gray-400">
+                  {searchQuery ? 'Aucun fichier ne correspond à votre recherche' : 'Ce dépôt ne contient aucun fichier'}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
-
-      {/* Statistiques */}
-      {!loading && fileTree.length > 0 && (
-        <div className="p-4 border-t border-gray-700">
-          <div className="text-xs text-gray-500 space-y-1">
-            <div className="flex justify-between">
-              <span>Total des fichiers:</span>
-              <span className="font-mono">{fileTree.length}</span>
-            </div>
-            {searchQuery && (
-              <div className="flex justify-between">
-                <span>Résultats filtrés:</span>
-                <span className="font-mono">{organizedTree.length}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span>Taille totale:</span>
-              <span className="font-mono">
-                {formatSize(fileTree.reduce((acc, file) => acc + file.size, 0))}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

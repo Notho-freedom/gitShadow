@@ -82,7 +82,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
           code: fileContent,
           filename: selectedFile.path,
           docType: docType,
-          prompt: customPrompt
+          prompt: selectedDocType.prompt
         }),
       });
 
