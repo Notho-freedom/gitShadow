@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomOneDark, tomorrow, dracula, oneDark, materialDark, nightOwl } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import MediaViewer from './MediaViewer';
 
 export default function CodeViewer({ file, content, loading, repo, commit }) {
   const [showLineNumbers, setShowLineNumbers] = useState(true);
@@ -69,40 +68,6 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
       'txt': 'text'
     };
     return langMap[ext] || 'text';
-  };
-
-  // Détection du type de fichier pour la prévisualisation
-  const getFileType = (filename) => {
-    if (!filename) return 'text';
-    const ext = filename.split('.').pop()?.toLowerCase();
-    
-    // Images
-    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico'].includes(ext)) {
-      return 'image';
-    }
-    
-    // Vidéos
-    if (['mp4', 'webm', 'ogg', 'avi', 'mov', 'mkv', 'flv', 'wmv'].includes(ext)) {
-      return 'video';
-    }
-    
-    // Audio
-    if (['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'].includes(ext)) {
-      return 'audio';
-    }
-    
-    // PDF
-    if (ext === 'pdf') {
-      return 'pdf';
-    }
-    
-    // Documents Office
-    if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
-      return 'office';
-    }
-    
-    // Code et autres fichiers texte
-    return 'code';
   };
 
   // Statistiques du fichier
@@ -190,13 +155,7 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
     );
   }
 
-  const fileType = getFileType(file.name);
   const language = getLanguage(file.name);
-
-  // Si c'est un fichier média, utiliser le MediaViewer
-  if (fileType !== 'code') {
-    return <MediaViewer file={file} repo={repo} commit={commit} />;
-  }
 
   return (
     <div className="h-full flex flex-col bg-gray-900 border border-gray-700 rounded-lg overflow-hidden code-editor">
