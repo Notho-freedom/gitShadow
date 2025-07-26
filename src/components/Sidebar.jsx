@@ -36,6 +36,12 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
       description: 'Gérer l\'équipe et les permissions'
     },
     {
+      id: 'billing',
+      name: 'Facturation',
+      icon: '💳',
+      description: 'Gérer votre abonnement'
+    },
+    {
       id: 'settings',
       name: 'Paramètres',
       icon: '⚙️',

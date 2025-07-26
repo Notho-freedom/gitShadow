@@ -11,6 +11,7 @@ import DocumentationPanel from './DocumentationPanel';
 import AnalyticsPanel from './AnalyticsPanel';
 import CollaborationPanel from './CollaborationPanel';
 import SettingsPanel from './SettingsPanel';
+import BillingPanel from './BillingPanel';
 import QuickActions from './QuickActions';
 import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
@@ -180,17 +181,23 @@ export default function Dashboard({ user, onLogout }) {
         return <AnalyticsPanel user={user} selectedRepo={selectedRepo} />;
       case 'collaboration':
         return <CollaborationPanel user={user} selectedRepo={selectedRepo} />;
-      case 'settings':
-        return (
-          <SettingsPanel
-            user={user}
-            theme={theme}
-            setTheme={setTheme}
-            layout={layout}
-            setLayout={setLayout}
-            onLogout={onLogout}
-          />
-        );
+                     case 'settings':
+                 return (
+                   <SettingsPanel
+                     user={user}
+                     theme={theme}
+                     setTheme={setTheme}
+                     layout={layout}
+                     setLayout={setLayout}
+                     onLogout={onLogout}
+                   />
+                 );
+               case 'billing':
+                 return (
+                   <BillingPanel
+                     user={user}
+                   />
+                 );
       default:
         return null;
     }
