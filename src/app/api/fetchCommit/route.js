@@ -70,13 +70,21 @@ export async function POST(request) {
       });
     });
 
-    // Filtrer et enrichir les données de l'arbre
+    // Filtrer et enrichir les données de l'arbre (intégralité du projet)
     const tree = treeData.tree
       .filter(item => {
+        // Exclure seulement les fichiers/dossiers vraiment inutiles
         const excludePatterns = [
-          /^\./, /node_modules/, /\.git/, /dist/, /build/, /coverage/,
-          /\.next/, /\.nuxt/, /vendor/, /__pycache__/, /\.pytest_cache/,
-          /\.vscode/, /\.idea/
+          /^\.git/,                  // Git files (garder .gitignore, .gitattributes, etc.)
+          /node_modules/,            // Dependencies
+          /dist/,                    // Build files
+          /build/,                   // Build files
+          /coverage/,                // Test coverage
+          /\.next/,                  // Next.js build
+          /\.nuxt/,                  // Nuxt.js build
+          /vendor/,                  // PHP vendor
+          /__pycache__/,             // Python cache
+          /\.pytest_cache/,          // Pytest cache
         ];
         return !excludePatterns.some(pattern => pattern.test(item.path));
       })
@@ -93,7 +101,7 @@ export async function POST(request) {
           download_url: item.type === 'blob' 
             ? `https://raw.githubusercontent.com/${owner}/${repo}/${commitSha}/${item.path}`
             : null,
-          // Informations sur les changements
+          // Informations sur les changements (seulement pour les fichiers modifiés)
           changeStatus: change ? change.status : 'unchanged',
           additions: change ? change.additions : 0,
           deletions: change ? change.deletions : 0,
@@ -108,17 +116,44 @@ export async function POST(request) {
         return a.name.localeCompare(b.name);
       });
 
+    // Ajouter les fichiers supprimés dans ce commit (ils ne sont plus dans l'arbre)
+    const removedFiles = changes
+      .filter(file => file.status === 'removed')
+      .map(file => ({
+        path: file.filename,
+        type: 'blob',
+        name: file.filename.split('/').pop(),
+        size: 0,
+        sha: 'removed',
+        url: null,
+        html_url: null,
+        download_url: null,
+        changeStatus: 'removed',
+        additions: file.additions || 0,
+        deletions: file.deletions || 0,
+        changes: file.changes || 0,
+        previousPath: null
+      }));
+
+    // Combiner l'arbre avec les fichiers supprimés
+    const completeTree = [...tree, ...removedFiles].sort((a, b) => {
+      if (a.type !== b.type) {
+        return a.type === 'tree' ? -1 : 1;
+      }
+      return a.path.localeCompare(b.path);
+    });
+
     // Statistiques du commit
     const stats = {
-      totalFiles: tree.filter(item => item.type === 'blob').length,
-      totalFolders: tree.filter(item => item.type === 'tree').length,
+      totalFiles: completeTree.filter(item => item.type === 'blob').length,
+      totalFolders: completeTree.filter(item => item.type === 'tree').length,
       addedFiles: changes.filter(f => f.status === 'added').length,
       modifiedFiles: changes.filter(f => f.status === 'modified').length,
       removedFiles: changes.filter(f => f.status === 'removed').length,
       renamedFiles: changes.filter(f => f.status === 'renamed').length,
       totalAdditions: changes.reduce((sum, f) => sum + (f.additions || 0), 0),
       totalDeletions: changes.reduce((sum, f) => sum + (f.deletions || 0), 0),
-      languages: getLanguageStats(tree),
+      languages: getLanguageStats(completeTree),
       commitInfo: {
         sha: commitData.sha,
         message: commitData.commit.message,
@@ -130,7 +165,7 @@ export async function POST(request) {
 
     return new Response(
       JSON.stringify({ 
-        tree, 
+        tree: completeTree, 
         stats,
         success: true 
       }), 
@@ -184,20 +219,22 @@ function getLanguageStats(tree) {
 
 // Fonction pour générer un commit de démonstration
 function generateDemoCommit(owner, repo, commitSha) {
-  const demoTree = [
+  // Arborescence complète du projet (état actuel)
+  const completeTree = [
+    // Fichiers de configuration
     {
-      path: 'README.md',
+      path: '.gitignore',
       type: 'blob',
-      name: 'README.md',
-      size: 2048,
-      sha: commitSha + '-readme',
+      name: '.gitignore',
+      size: 512,
+      sha: commitSha + '-gitignore',
       url: 'demo-url',
-      html_url: `https://github.com/${owner}/${repo}/blob/${commitSha}/README.md`,
-      download_url: `data:text/plain;base64,${btoa(`# ${repo}\n\nCommit: ${commitSha.substring(0, 7)}\n\nCeci est l'état du projet au moment de ce commit.\n\n## Changements dans ce commit\n\n- ✅ README.md - Modifié (ajout de documentation)\n- ➕ package.json - Ajouté\n- ➕ src/index.js - Ajouté\n- ➕ src/App.jsx - Ajouté\n- ➕ src/components/Header.jsx - Ajouté\n- ➕ src/utils.js - Ajouté\n\n## Statistiques\n\n- Fichiers ajoutés: 5\n- Fichiers modifiés: 1\n- Lignes ajoutées: +45\n- Lignes supprimées: -2\n\n---\n*État du projet au commit ${commitSha.substring(0, 7)}*`)}`,
-      changeStatus: 'modified',
-      additions: 15,
-      deletions: 2,
-      changes: 17,
+      html_url: `https://github.com/${owner}/${repo}/blob/${commitSha}/.gitignore`,
+      download_url: `data:text/plain;base64,${btoa(`# Dependencies\nnode_modules/\n\n# Build files\ndist/\nbuild/\n\n# Environment\n.env\n.env.local\n\n# IDE\n.vscode/\n.idea/\n\n# OS\n.DS_Store\nThumbs.db`)}`,
+      changeStatus: 'unchanged',
+      additions: 0,
+      deletions: 0,
+      changes: 0,
       previousPath: null
     },
     {
@@ -240,6 +277,22 @@ function generateDemoCommit(owner, repo, commitSha) {
       changes: 25,
       previousPath: null
     },
+    {
+      path: 'README.md',
+      type: 'blob',
+      name: 'README.md',
+      size: 2048,
+      sha: commitSha + '-readme',
+      url: 'demo-url',
+      html_url: `https://github.com/${owner}/${repo}/blob/${commitSha}/README.md`,
+      download_url: `data:text/plain;base64,${btoa(`# ${repo}\n\nCommit: ${commitSha.substring(0, 7)}\n\nCeci est l'état du projet au moment de ce commit.\n\n## Changements dans ce commit\n\n- ✅ README.md - Modifié (ajout de documentation)\n- ➕ package.json - Ajouté\n- ➕ src/index.js - Ajouté\n- ➕ src/App.jsx - Ajouté\n- ➕ src/components/Header.jsx - Ajouté\n- ➕ src/utils.js - Ajouté\n\n## Statistiques\n\n- Fichiers ajoutés: 5\n- Fichiers modifiés: 1\n- Lignes ajoutées: +45\n- Lignes supprimées: -2\n\n---\n*État du projet au commit ${commitSha.substring(0, 7)}*`)}`,
+      changeStatus: 'modified',
+      additions: 15,
+      deletions: 2,
+      changes: 17,
+      previousPath: null
+    },
+    // Dossier src avec tous ses fichiers
     {
       path: 'src/index.js',
       type: 'blob',
@@ -299,12 +352,75 @@ function generateDemoCommit(owner, repo, commitSha) {
       deletions: 0,
       changes: 40,
       previousPath: null
+    },
+    // Fichiers de documentation
+    {
+      path: 'docs/README.md',
+      type: 'blob',
+      name: 'README.md',
+      size: 1536,
+      sha: commitSha + '-docs-readme',
+      url: 'demo-url',
+      html_url: `https://github.com/${owner}/${repo}/blob/${commitSha}/docs/README.md`,
+      download_url: `data:text/plain;base64,${btoa(`# Documentation ${repo}\n\n## Vue d'ensemble\n\nCe projet est une application moderne développée avec React et Next.js.\n\n## Installation\n\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\`\n\n## Structure du projet\n\n- \`src/\` - Code source principal\n- \`docs/\` - Documentation\n- \`public/\` - Fichiers publics\n\n## Commit actuel: ${commitSha.substring(0, 7)}`)}`,
+      changeStatus: 'unchanged',
+      additions: 0,
+      deletions: 0,
+      changes: 0,
+      previousPath: null
+    },
+    {
+      path: 'docs/api.md',
+      type: 'blob',
+      name: 'api.md',
+      size: 2048,
+      sha: commitSha + '-docs-api',
+      url: 'demo-url',
+      html_url: `https://github.com/${owner}/${repo}/blob/${commitSha}/docs/api.md`,
+      download_url: `data:text/plain;base64,${btoa(`# API Documentation\n\n## Endpoints\n\n### GET /api/data\nRécupère les données principales.\n\n### POST /api/process\nTraite les données envoyées.\n\n## Authentification\n\nL'API utilise OAuth2 pour l'authentification.\n\n## Exemples\n\n\`\`\`javascript\nconst response = await fetch('/api/data');\nconst data = await response.json();\n\`\`\`\n\n---\n*Documentation générée pour le commit ${commitSha.substring(0, 7)}*`)}`,
+      changeStatus: 'unchanged',
+      additions: 0,
+      deletions: 0,
+      changes: 0,
+      previousPath: null
+    },
+    // Fichiers de test
+    {
+      path: 'tests/App.test.js',
+      type: 'blob',
+      name: 'App.test.js',
+      size: 1024,
+      sha: commitSha + '-tests-app',
+      url: 'demo-url',
+      html_url: `https://github.com/${owner}/${repo}/blob/${commitSha}/tests/App.test.js`,
+      download_url: `data:text/javascript;base64,${btoa(`import { render, screen } from '@testing-library/react';\nimport App from '../src/App';\n\ndescribe('App Component', () => {\n  test('renders without crashing', () => {\n    render(<App />);\n    expect(screen.getByText(/Bienvenue/i)).toBeInTheDocument();\n  });\n\n  test('displays commit information', () => {\n    render(<App />);\n    expect(screen.getByText(/Commit: ${commitSha.substring(0, 7)}/i)).toBeInTheDocument();\n  });\n});`)}`,
+      changeStatus: 'unchanged',
+      additions: 0,
+      deletions: 0,
+      changes: 0,
+      previousPath: null
+    },
+    // Fichiers supprimés dans ce commit (exemple)
+    {
+      path: 'old-config.json',
+      type: 'blob',
+      name: 'old-config.json',
+      size: 0,
+      sha: 'removed',
+      url: null,
+      html_url: null,
+      download_url: null,
+      changeStatus: 'removed',
+      additions: 0,
+      deletions: 15,
+      changes: 15,
+      previousPath: null
     }
   ];
 
   const stats = {
-    totalFiles: demoTree.filter(item => item.type === 'blob').length,
-    totalFolders: demoTree.filter(item => item.type === 'tree').length,
+    totalFiles: completeTree.filter(item => item.type === 'blob').length,
+    totalFolders: completeTree.filter(item => item.type === 'tree').length,
     addedFiles: 5,
     modifiedFiles: 1,
     removedFiles: 0,
@@ -334,7 +450,7 @@ function generateDemoCommit(owner, repo, commitSha) {
 
   return new Response(
     JSON.stringify({ 
-      tree: demoTree, 
+      tree: completeTree, 
       stats,
       success: true,
       demo: true,

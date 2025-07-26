@@ -132,21 +132,18 @@ export async function POST(request) {
     // Filtrer et enrichir les données de l'arbre
     const tree = treeData.tree
       .filter(item => {
-        // Exclure les fichiers/dossiers cachés et certains dossiers courants
+        // Exclure seulement les fichiers/dossiers vraiment inutiles
         const excludePatterns = [
-          /^\./,                    // Fichiers cachés
-          /node_modules/,           // Dependencies
-          /\.git/,                  // Git files
-          /dist/,                   // Build files
-          /build/,                  // Build files
-          /coverage/,               // Test coverage
-          /\.next/,                 // Next.js build
-          /\.nuxt/,                 // Nuxt.js build
-          /vendor/,                 // PHP vendor
-          /__pycache__/,            // Python cache
-          /\.pytest_cache/,         // Pytest cache
-          /\.vscode/,               // VS Code settings
-          /\.idea/,                 // IntelliJ settings
+          /^\.git/,                  // Git files (garder .gitignore, .gitattributes, etc.)
+          /node_modules/,            // Dependencies
+          /dist/,                    // Build files
+          /build/,                   // Build files
+          /coverage/,                // Test coverage
+          /\.next/,                  // Next.js build
+          /\.nuxt/,                  // Nuxt.js build
+          /vendor/,                  // PHP vendor
+          /__pycache__/,             // Python cache
+          /\.pytest_cache/,          // Pytest cache
         ];
         
         return !excludePatterns.some(pattern => pattern.test(item.path));
@@ -161,7 +158,13 @@ export async function POST(request) {
         html_url: `https://github.com/${owner}/${repo}/blob/${usedBranch}/${item.path}`,
         download_url: item.type === 'blob' 
           ? `https://raw.githubusercontent.com/${owner}/${repo}/${usedBranch}/${item.path}`
-          : null
+          : null,
+        // Informations sur les changements (initialement inchangé)
+        changeStatus: 'unchanged',
+        additions: 0,
+        deletions: 0,
+        changes: 0,
+        previousPath: null
       }))
       .sort((a, b) => {
         // Trier: dossiers d'abord, puis fichiers, alphabétiquement
