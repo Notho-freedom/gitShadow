@@ -23,7 +23,10 @@ export default function Dashboard({ user, onLogout }) {
     repositories: 'Dépôts',
     commits: 'Commits',
     files: 'Fichiers',
-    settings: 'Paramètres'
+    settings: 'Paramètres',
+    analytics: 'Analytics',
+    collaboration: 'Collaboration',
+    billing: 'Facturation'
   };
 
   const handleRepoSelect = (repo) => {
