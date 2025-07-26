@@ -10,6 +10,11 @@ export default function RootLayout({ children }) {
     <html lang="fr" className="dark">
       <head>
         <link 
+          rel="stylesheet" 
+          href="https://cdn.tailwindcss.com" 
+          key="tailwind-cdn"
+        />
+        <link 
           rel="preconnect" 
           href="https://fonts.googleapis.com" 
           key="font-preconnect-1"
