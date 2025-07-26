@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function FileViewer({ file, content, loading }) {
   // Détection du langage pour la coloration syntaxique basique
@@ -9,9 +11,9 @@ export default function FileViewer({ file, content, loading }) {
     const ext = filename.split('.').pop()?.toLowerCase();
     const langMap = {
       'js': 'javascript',
-      'jsx': 'javascript',
+      'jsx': 'jsx',
       'ts': 'typescript',
-      'tsx': 'typescript',
+      'tsx': 'tsx',
       'css': 'css',
       'scss': 'scss',
       'html': 'html',
@@ -52,13 +54,7 @@ export default function FileViewer({ file, content, loading }) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  // Numérotation des lignes
-  const numberedContent = useMemo(() => {
-    if (!content) return '';
-    return content.split('\n').map((line, index) => 
-      `${(index + 1).toString().padStart(3, ' ')} | ${line}`
-    ).join('\n');
-  }, [content]);
+  // Supprimer la numérotation manuelle
 
   if (!file) {
     return (
@@ -144,7 +140,6 @@ export default function FileViewer({ file, content, loading }) {
             )}
           </div>
         </div>
-
         <div className="relative">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -155,11 +150,24 @@ export default function FileViewer({ file, content, loading }) {
             </div>
           ) : content ? (
             <div className="overflow-auto max-h-96">
-              <pre className="p-4 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words">
-                <code className={`language-${getLanguage(file.name)}`}>
-                  {numberedContent}
-                </code>
-              </pre>
+              <SyntaxHighlighter
+                language={getLanguage(file.name)}
+                style={atomOneDark}
+                showLineNumbers
+                customStyle={{
+                  fontSize: '0.95em',
+                  background: 'transparent',
+                  margin: 0,
+                  padding: '1.25rem',
+                  borderRadius: 0,
+                  lineHeight: '1.7',
+                  fontFamily: 'JetBrains Mono, Fira Mono, monospace',
+                }}
+                lineNumberStyle={{ color: '#888', marginRight: '16px' }}
+                wrapLongLines
+              >
+                {content}
+              </SyntaxHighlighter>
             </div>
           ) : (
             <div className="p-8 text-center">
@@ -169,7 +177,6 @@ export default function FileViewer({ file, content, loading }) {
               </p>
             </div>
           )}
-
           {/* Indicateur de défilement */}
           {content && content.split('\n').length > 20 && (
             <div className="absolute bottom-2 right-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded text-xs text-muted-foreground">
