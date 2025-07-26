@@ -1,0 +1,124 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+export default function AuthCallback() {
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        const code = searchParams.get('code');
+        const state = searchParams.get('state');
+        const storedState = localStorage.getItem('github_oauth_state');
+
+        // Vérifier l'état pour la sécurité
+        if (!state || state !== storedState) {
+          throw new Error('État OAuth invalide');
+        }
+
+        if (!code) {
+          throw new Error('Code d\'autorisation manquant');
+        }
+
+        // Nettoyer l'état stocké
+        localStorage.removeItem('github_oauth_state');
+
+        setStatus('exchanging');
+
+        // Échanger le code contre un token d'accès
+        const response = await fetch('/api/auth/github', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ code }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Erreur d\'authentification');
+        }
+
+        const { user } = await response.json();
+
+        // Stocker les données utilisateur
+        localStorage.setItem('github_user', JSON.stringify(user));
+
+        setStatus('success');
+
+        // Rediriger vers le dashboard après un court délai
+        setTimeout(() => {
+          router.push('/');
+        }, 1500);
+
+      } catch (err) {
+        console.error('Erreur de callback OAuth:', err);
+        setError(err.message);
+        setStatus('error');
+      }
+    };
+
+    handleCallback();
+  }, [searchParams, router]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-6">
+      <div className="max-w-md w-full text-center">
+        {/* Logo */}
+        <div className="relative mb-8">
+          <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+            <span className="text-2xl font-bold text-white">gS</span>
+          </div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-30"></div>
+        </div>
+
+        {status === 'loading' && (
+          <div className="space-y-4">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <h2 className="text-xl font-semibold text-white">Vérification...</h2>
+            <p className="text-gray-400">Traitement de votre authentification GitHub</p>
+          </div>
+        )}
+
+        {status === 'exchanging' && (
+          <div className="space-y-4">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <h2 className="text-xl font-semibold text-white">Connexion en cours...</h2>
+            <p className="text-gray-400">Récupération de vos informations GitHub</p>
+          </div>
+        )}
+
+        {status === 'success' && (
+          <div className="space-y-4">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-white text-lg">✓</span>
+            </div>
+            <h2 className="text-xl font-semibold text-white">Connexion réussie !</h2>
+            <p className="text-gray-400">Redirection vers votre dashboard...</p>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div className="space-y-4">
+            <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center mx-auto">
+              <span className="text-white text-lg">✗</span>
+            </div>
+            <h2 className="text-xl font-semibold text-white">Erreur de connexion</h2>
+            <p className="text-red-400 text-sm">{error}</p>
+            <button
+              onClick={() => router.push('/')}
+              className="mt-4 px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
