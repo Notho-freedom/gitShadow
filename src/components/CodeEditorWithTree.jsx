@@ -101,11 +101,11 @@ export default function CodeEditorWithTree({
     if (isFolder) {
       
       return (
-        <div key={path} className="select-none">
+        <div key={item.path} className="select-none">
           <motion.div
             className="flex items-center py-1 px-2 hover:bg-gray-700/50 rounded cursor-pointer"
             style={{ paddingLeft: `${indent + 8}px` }}
-            onClick={() => toggleFolder(path)}
+            onClick={() => toggleFolder(item.path)}
             whileHover={{ x: 2 }}
             transition={{ duration: 0.1 }}
           >
@@ -143,7 +143,7 @@ export default function CodeEditorWithTree({
     } else {
       return (
         <motion.div
-          key={path}
+          key={item.path}
           className={`flex items-center py-1 px-2 rounded cursor-pointer ${
             isSelected 
               ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' 

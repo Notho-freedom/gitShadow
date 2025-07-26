@@ -45,7 +45,7 @@ export default function FileTreeExplorer({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          owner: selectedRepo.owner.login,
+          owner: selectedRepo.owner?.login || selectedRepo.owner,
           repo: selectedRepo.name,
           accessToken: user.access_token
         })
@@ -57,6 +57,21 @@ export default function FileTreeExplorer({
         // Sélectionner le premier commit par défaut
         if (data.commits && data.commits.length > 0) {
           setSelectedCommit(data.commits[0]);
+        }
+      } else {
+        console.error('Erreur HTTP lors du chargement des commits:', response.status);
+        // En cas d'erreur, essayer avec une requête GET
+        try {
+          const getResponse = await fetch(`/api/fetchCommits?owner=${encodeURIComponent(selectedRepo.owner?.login || selectedRepo.owner)}&repo=${encodeURIComponent(selectedRepo.name)}&accessToken=${encodeURIComponent(user.access_token)}`);
+          if (getResponse.ok) {
+            const getData = await getResponse.json();
+            setCommits(getData.commits || []);
+            if (getData.commits && getData.commits.length > 0) {
+              setSelectedCommit(getData.commits[0]);
+            }
+          }
+        } catch (getError) {
+          console.error('Erreur lors de la tentative GET:', getError);
         }
       }
     } catch (error) {
