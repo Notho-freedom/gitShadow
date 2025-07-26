@@ -21,7 +21,8 @@ export default function AuthPage({ onAuthSuccess }) {
       localStorage.setItem('github_oauth_state', state);
       
       // Redirection vers GitHub OAuth
-      window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+      const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
+      window.location.assign(authUrl);
       
     } catch (err) {
       setError('Erreur lors de la connexion à GitHub');
