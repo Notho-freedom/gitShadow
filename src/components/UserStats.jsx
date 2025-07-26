@@ -77,6 +77,18 @@ export default function UserStats({ user }) {
     );
   }
 
+  if (!stats.user) {
+    return (
+      <div className="p-6 text-center text-gray-400">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
+          <span className="text-2xl">👤</span>
+        </div>
+        <h3 className="text-lg font-semibold text-white mb-2">Données utilisateur manquantes</h3>
+        <p className="text-gray-400">Les informations utilisateur ne sont pas disponibles</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold text-white mb-6">Statistiques Utilisateur</h2>

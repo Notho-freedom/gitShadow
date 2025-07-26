@@ -10,6 +10,32 @@ export default function Sidebar({ activeView, onViewChange, views, user, selecte
     { id: 'settings', label: 'Paramètres', icon: '⚙️' }
   ];
 
+  // Vérifier si user existe
+  if (!user) {
+    return (
+      <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+        {/* Logo */}
+        <div className="p-6 border-b border-gray-700">
+          <div className="flex items-center space-x-3">
+            <Logo size="md" animate={false} />
+            <div>
+              <h2 className="text-white font-bold text-lg">gitShadow</h2>
+              <p className="text-gray-400 text-xs">v2.0.0</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Loading state */}
+        <div className="flex-1 p-4 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-400 text-sm">Chargement...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
       {/* Logo */}

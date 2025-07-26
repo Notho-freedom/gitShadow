@@ -21,6 +21,18 @@ export default function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [commits, setCommits] = useState([]);
 
+  // Vérifier si user existe
+  if (!user) {
+    return (
+      <div className="flex h-screen bg-gray-900 items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Chargement de votre profil...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Gestion des vues
   const views = {
     repositories: 'Dépôts',
