@@ -192,7 +192,7 @@ export default function RepositoryList({ user, onRepoSelect, selectedRepo }) {
       </div>
 
       {/* Liste des dépôts */}
-      <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+      <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin">
         {filteredAndSortedRepos.map((repo) => (
           <div
             key={repo.id}

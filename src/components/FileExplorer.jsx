@@ -61,34 +61,43 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
       item.path.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Créer la structure d'arbre
     filteredFiles.forEach(item => {
       const parts = item.path.split('/');
       let current = tree;
 
-      parts.forEach((part, index) => {
+      // Créer les dossiers parents
+      for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i];
         if (!current[part]) {
           current[part] = {
             name: part,
-            path: parts.slice(0, index + 1).join('/'),
-            type: index === parts.length - 1 ? 'blob' : 'tree',
+            path: parts.slice(0, i + 1).join('/'),
+            type: 'tree', // C'est un dossier
             children: {},
-            item: index === parts.length - 1 ? item : null,
-            size: index === parts.length - 1 ? item.size : 0,
-            // Propager les informations de changement aux dossiers parents
-            changeStatus: index === parts.length - 1 ? item.changeStatus : null,
-            additions: index === parts.length - 1 ? item.additions : 0,
-            deletions: index === parts.length - 1 ? item.deletions : 0
+            item: null,
+            size: 0,
+            changeStatus: null,
+            additions: 0,
+            deletions: 0
           };
-        } else {
-          // Si c'est un dossier, propager les changements des enfants
-          if (index === parts.length - 1 && item.changeStatus) {
-            current[part].changeStatus = item.changeStatus;
-            current[part].additions = (current[part].additions || 0) + (item.additions || 0);
-            current[part].deletions = (current[part].deletions || 0) + (item.deletions || 0);
-          }
         }
         current = current[part].children;
-      });
+      }
+
+      // Ajouter le fichier
+      const fileName = parts[parts.length - 1];
+      current[fileName] = {
+        name: fileName,
+        path: item.path,
+        type: 'blob', // C'est un fichier
+        children: {},
+        item: item,
+        size: item.size || 0,
+        changeStatus: item.changeStatus || null,
+        additions: item.additions || 0,
+        deletions: item.deletions || 0
+      };
     });
 
     const convertToArray = (obj) => {
@@ -184,7 +193,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           >
             {/* Indicateur d'expansion pour les dossiers */}
             <span className="w-4 h-4 flex items-center justify-center mr-2 text-xs">
-              {node.type === 'folder' && hasChildren ? (
+              {node.type === 'tree' && hasChildren ? (
                 <span className="text-gray-400 group-hover:text-white transition-colors">
                   {isExpanded ? '📂' : '📁'}
                 </span>
@@ -244,7 +253,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           </div>
 
           {/* Enfants (récursif) */}
-          {node.type === 'folder' && hasChildren && isExpanded && (
+          {node.type === 'tree' && hasChildren && isExpanded && (
             <div className="ml-2 border-l border-gray-700/50 pl-2">
               {renderTree(node.children, level + 1)}
             </div>
@@ -297,7 +306,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
             Chargement de l'arborescence...
           </div>
         ) : (
-          <div className="p-4 max-h-full overflow-y-auto">
+          <div className="p-4 max-h-full overflow-y-auto scrollbar-thin">
             {organizedTree.length > 0 ? (
               renderTree(organizedTree)
             ) : (
