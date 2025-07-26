@@ -34,32 +34,6 @@ export default function Logo({ size = 'md', className = '', animate = true }) {
       className="relative"
     >
       <LogoContent />
-      {/* Particules flottantes subtiles */}
-      <motion.div
-        animate={{ 
-          y: [0, -5, 0],
-          opacity: [0.3, 0.8, 0.3]
-        }}
-        transition={{ 
-          duration: 3,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-blue-400 rounded-full blur-sm"
-      />
-      <motion.div
-        animate={{ 
-          y: [0, -3, 0],
-          opacity: [0.2, 0.6, 0.2]
-        }}
-        transition={{ 
-          duration: 2.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 0.5
-        }}
-        className="absolute -bottom-1 -left-1 w-1 h-1 bg-purple-400 rounded-full blur-sm"
-      />
     </motion.div>
   );
 } 

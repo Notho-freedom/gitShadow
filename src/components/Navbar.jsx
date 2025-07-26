@@ -38,10 +38,7 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.nav
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+      <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           isScrolled 
             ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-2xl' 
@@ -65,13 +62,8 @@ export default function Navbar() {
 
             {/* Navigation Desktop */}
             <div className="hidden lg:flex items-center space-x-8">
-              {navItems.map((item, index) => (
-                <motion.div
-                  key={item.name}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
+              {navItems.map((item) => (
+                <div key={item.name}>
                   {item.href === '/' ? (
                     <button
                       onClick={() => scrollToSection(item.scrollTo)}
@@ -88,30 +80,26 @@ export default function Navbar() {
                       </span>
                     </Link>
                   )}
-                </motion.div>
+                </div>
               ))}
             </div>
 
             {/* Boutons CTA */}
             <div className="hidden lg:flex items-center space-x-4">
-              <motion.button
+              <button
                 onClick={() => setIsAuthModalOpen(true)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 className="text-gray-300 hover:text-white transition-colors duration-300 font-medium"
               >
                 Connexion
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 onClick={() => setIsAuthModalOpen(true)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl group overflow-hidden"
               >
                 <span className="relative z-10">Commencer</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              </motion.button>
+              </button>
             </div>
 
             {/* Menu Mobile */}
@@ -132,23 +120,14 @@ export default function Navbar() {
           </div>
 
           {/* Menu Mobile Dropdown */}
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ 
-              opacity: isMobileMenuOpen ? 1 : 0,
-              height: isMobileMenuOpen ? 'auto' : 0
-            }}
-            transition={{ duration: 0.3 }}
-            className="lg:hidden overflow-hidden"
+          <div
+            className={`lg:hidden overflow-hidden transition-all duration-300 ${
+              isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            }`}
           >
             <div className="py-4 space-y-2 border-t border-white/10">
-              {navItems.map((item, index) => (
-                <motion.div
-                  key={item.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
+              {navItems.map((item) => (
+                <div key={item.name}>
                   {item.href === '/' ? (
                     <button
                       onClick={() => {
@@ -169,7 +148,7 @@ export default function Navbar() {
                       </span>
                     </Link>
                   )}
-                </motion.div>
+                </div>
               ))}
               <div className="pt-4 border-t border-white/10 space-y-2">
                 <button
@@ -192,9 +171,9 @@ export default function Navbar() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Auth Modal */}
       <AuthModal 

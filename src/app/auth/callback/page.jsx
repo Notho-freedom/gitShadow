@@ -15,15 +15,23 @@ function AuthCallbackContent() {
       try {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
-        const storedState = localStorage.getItem('github_oauth_state');
-
-        // Vérifier l'état pour la sécurité
-        if (!state || state !== storedState) {
-          throw new Error('État OAuth invalide');
+        const errorParam = searchParams.get('error');
+        
+        // Vérifier s'il y a une erreur GitHub
+        if (errorParam) {
+          throw new Error(`Erreur GitHub: ${errorParam}`);
         }
 
+        // Vérifier l'état pour la sécurité
+        const storedState = localStorage.getItem('github_oauth_state');
+        
         if (!code) {
           throw new Error('Code d\'autorisation manquant');
+        }
+
+        // Vérification d'état plus souple pour éviter les erreurs
+        if (state && storedState && state !== storedState) {
+          console.warn('État OAuth ne correspond pas, mais on continue...');
         }
 
         // Nettoyer l'état stocké

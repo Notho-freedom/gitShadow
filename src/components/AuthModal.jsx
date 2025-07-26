@@ -68,10 +68,10 @@ export default function AuthModal({ isOpen, onClose }) {
 
         {/* Modal */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.2 }}
           className="relative bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl max-w-md w-full"
         >
           {/* Close button */}
@@ -95,19 +95,13 @@ export default function AuthModal({ isOpen, onClose }) {
             <p className="text-gray-300 mb-8">Accédez à votre espace de travail</p>
 
             {/* GitHub Auth Button */}
-            <motion.button
+            <button
               onClick={handleGitHubAuth}
               disabled={isLoading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
             >
               {isLoading ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                />
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -116,17 +110,13 @@ export default function AuthModal({ isOpen, onClose }) {
                   <span>Continuer avec GitHub</span>
                 </>
               )}
-            </motion.button>
+            </button>
 
             {/* Error Message */}
             {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm"
-              >
+              <div className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
                 {error}
-              </motion.div>
+              </div>
             )}
 
             {/* Info */}
@@ -145,22 +135,22 @@ export default function AuthModal({ isOpen, onClose }) {
 
             {/* Features */}
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="text-center group">
-                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-500/30 transition-colors">
+              <div className="text-center">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <span className="text-lg">🔒</span>
                 </div>
                 <h3 className="text-white font-medium text-sm mb-1">Sécurisé</h3>
                 <p className="text-gray-400 text-xs">OAuth 2.0 avec GitHub</p>
               </div>
-              <div className="text-center group">
-                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-purple-500/30 transition-colors">
+              <div className="text-center">
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <span className="text-lg">⚡</span>
                 </div>
                 <h3 className="text-white font-medium text-sm mb-1">Rapide</h3>
                 <p className="text-gray-400 text-xs">Connexion en quelques secondes</p>
               </div>
-              <div className="text-center group">
-                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-green-500/30 transition-colors">
+              <div className="text-center">
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <span className="text-lg">🚀</span>
                 </div>
                 <h3 className="text-white font-medium text-sm mb-1">Gratuit</h3>
