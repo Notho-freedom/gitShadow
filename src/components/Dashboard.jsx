@@ -162,6 +162,8 @@ export default function Dashboard({ user, onLogout }) {
             onBackToExplorer={handleBackToExplorer}
             onFileSelect={handleFileSelect}
             files={repoFiles}
+            selectedRepo={selectedRepo}
+            user={user}
           />
         );
       case 'documentation':

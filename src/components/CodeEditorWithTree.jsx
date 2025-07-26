@@ -14,7 +14,9 @@ export default function CodeEditorWithTree({
   theme,
   onBackToExplorer,
   onFileSelect,
-  files = []
+  files = [],
+  selectedRepo,
+  user
 }) {
   const [showTree, setShowTree] = useState(true);
   const [treeWidth, setTreeWidth] = useState(280);
@@ -24,6 +26,7 @@ export default function CodeEditorWithTree({
   const [lineNumbers, setLineNumbers] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [treeStructure, setTreeStructure] = useState([]);
+  const [loadingTree, setLoadingTree] = useState(false);
   const resizeRef = useRef(null);
 
   const getLanguageFromExtension = (filename) => {
@@ -54,66 +57,38 @@ export default function CodeEditorWithTree({
     setExpandedFolders(newExpanded);
   };
 
-  // Charger la structure arborescente quand les fichiers changent
+  // Charger la structure arborescente du commit quand le fichier est sélectionné
   useEffect(() => {
-    if (files.length > 0) {
-      // Construire la structure arborescente comme Windows Explorer
-      const buildTreeStructure = (fileList) => {
-        const rootStructure = [];
-        const pathMap = new Map();
-        
-        // Trier les fichiers par chemin
-        const sortedFiles = fileList.sort((a, b) => a.path.localeCompare(b.path));
-        
-        sortedFiles.forEach(file => {
-          const pathParts = file.path.split('/');
-          let currentPath = '';
-          let currentParent = null;
-          
-          // Créer chaque nœud du chemin comme Windows Explorer
-          for (let i = 0; i < pathParts.length; i++) {
-            const isLastPart = i === pathParts.length - 1;
-            const partName = pathParts[i];
-            const nodePath = currentPath ? `${currentPath}/${partName}` : partName;
-            
-            // Vérifier si ce nœud existe déjà
-            if (!pathMap.has(nodePath)) {
-              const nodeData = {
-                name: partName,
-                path: nodePath,
-                type: isLastPart ? 'blob' : 'tree',
-                children: [],
-                size: isLastPart ? file.size : 0,
-                sha: isLastPart ? file.sha : '',
-                url: isLastPart ? file.url : '',
-                html_url: isLastPart ? file.html_url : '',
-                updated_at: isLastPart ? file.updated_at : new Date().toISOString(),
-                created_at: isLastPart ? file.created_at : new Date().toISOString(),
-                isFolder: !isLastPart
-              };
-              
-              pathMap.set(nodePath, nodeData);
-              
-              // Ajouter au parent ou à la racine
-              if (currentParent) {
-                currentParent.children.push(nodeData);
-              } else {
-                rootStructure.push(nodeData);
-              }
-            }
-            
-            // Mettre à jour le parent pour la prochaine itération
-            currentParent = pathMap.get(nodePath);
-            currentPath = nodePath;
-          }
-        });
-        
-        return rootStructure;
-      };
-      
-      setTreeStructure(buildTreeStructure(files));
+    if (file && file.path) {
+      loadCommitTree();
     }
-  }, [files]);
+  }, [file]);
+
+  const loadCommitTree = async () => {
+    if (!file || !file.path || !selectedRepo || !user?.access_token) return;
+    
+    setLoadingTree(true);
+    try {
+      const response = await fetch('/api/fetchRepo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: selectedRepo.owner?.login || selectedRepo.owner,
+          repo: selectedRepo.name,
+          accessToken: user.access_token
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTreeStructure(data.tree || []);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'arborescence du commit:', error);
+    } finally {
+      setLoadingTree(false);
+    }
+  };
 
   const renderTreeItem = (item, level = 0) => {
     const isExpanded = expandedFolders.has(item.path);
@@ -262,7 +237,12 @@ export default function CodeEditorWithTree({
 
             {/* Arborescence des fichiers */}
             <div className="flex-1 overflow-y-auto p-2">
-              {treeStructure.length > 0 ? (
+              {loadingTree ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-400 text-sm">Chargement de l'arborescence...</p>
+                </div>
+              ) : treeStructure.length > 0 ? (
                 <div className="space-y-1">
                   {treeStructure.map(item => renderTreeItem(item))}
                 </div>
