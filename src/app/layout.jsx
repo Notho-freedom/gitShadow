@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr" className="dark">
+    <html lang="fr">
       <head>
         <link 
           rel="preconnect" 
@@ -26,16 +26,8 @@ export default function RootLayout({ children }) {
           key="font-stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-gray-900 text-white font-sans antialiased">
-        <div className="relative min-h-screen">
-          {/* Futuristic background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 pointer-events-none" />
-          
-          {/* Main content */}
-          <div className="relative z-10">
-            {children}
-          </div>
-        </div>
+      <body className="font-sans antialiased">
+        {children}
       </body>
     </html>
   );
