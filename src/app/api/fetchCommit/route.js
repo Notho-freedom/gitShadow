@@ -9,8 +9,8 @@ export async function POST(request) {
       );
     }
 
-    // Mode démo activé par défaut
-    const shouldUseDemoMode = true;
+      // Mode démo désactivé pour utiliser les vraies données GitHub
+  const shouldUseDemoMode = false;
     
     if (shouldUseDemoMode) {
       return generateDemoCommit(owner, repo, commitSha);

@@ -37,9 +37,9 @@ export async function POST(request) {
 
     const [owner, repo] = pathParts;
 
-    // Mode démo activé par défaut pour la démonstration
-    // Changez cette valeur à false si vous avez configuré un token GitHub
-    const shouldUseDemoMode = true; // Force le mode démo
+    // Mode démo désactivé pour utiliser les vraies données GitHub
+    // Changez cette valeur à true pour activer le mode démo
+    const shouldUseDemoMode = false; // Utiliser les vraies données GitHub
     
     if (shouldUseDemoMode) {
       return generateDemoRepository(owner, repo, url);
