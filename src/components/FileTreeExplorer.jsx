@@ -14,6 +14,7 @@ export default function FileTreeExplorer({
   const [commits, setCommits] = useState([]);
   const [selectedCommit, setSelectedCommit] = useState(null);
   const [files, setFiles] = useState([]);
+  const [treeStructure, setTreeStructure] = useState([]);
   const [treeView, setTreeView] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [loadingCommits, setLoadingCommits] = useState(false);
@@ -81,6 +82,7 @@ export default function FileTreeExplorer({
       if (response.ok) {
         const data = await response.json();
         setFiles(data.files || []);
+        setTreeStructure(data.tree || []);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des fichiers:', error);
@@ -99,48 +101,17 @@ export default function FileTreeExplorer({
     setExpandedFolders(newExpanded);
   };
 
-  const getFolderStructure = () => {
-    const folders = {};
-    
-    files.forEach(file => {
-      const parts = file.path.split('/');
-      let currentPath = '';
-      
-      parts.forEach((part, index) => {
-        if (index === parts.length - 1) {
-          // Fichier
-          if (!folders[currentPath]) folders[currentPath] = { files: [], folders: [] };
-          folders[currentPath].files.push(file);
-        } else {
-          // Dossier
-          const folderPath = currentPath ? `${currentPath}/${part}` : part;
-          if (!folders[folderPath]) folders[folderPath] = { files: [], folders: [] };
-          if (!folders[currentPath]) folders[currentPath] = { files: [], folders: [] };
-          if (!folders[currentPath].folders.includes(folderPath)) {
-            folders[currentPath].folders.push(folderPath);
-          }
-          currentPath = folderPath;
-        }
-      });
-    });
-    
-    return folders;
-  };
-
-  const renderTreeItem = (item, path = '', level = 0) => {
-    const isExpanded = expandedFolders.has(path);
+  const renderTreeItem = (item, level = 0) => {
+    const isExpanded = expandedFolders.has(item.path);
     const indent = level * 20;
 
     if (item.type === 'tree') {
-      const folderStructure = getFolderStructure();
-      const folder = folderStructure[path] || { files: [], folders: [] };
-      
       return (
-        <div key={path} className="select-none">
+        <div key={item.path} className="select-none">
           <motion.div
             className="flex items-center py-1 px-2 hover:bg-gray-700/50 rounded cursor-pointer"
             style={{ paddingLeft: `${indent + 8}px` }}
-            onClick={() => toggleFolder(path)}
+            onClick={() => toggleFolder(item.path)}
             whileHover={{ x: 2 }}
             transition={{ duration: 0.1 }}
           >
@@ -161,7 +132,7 @@ export default function FileTreeExplorer({
           </motion.div>
           
           <AnimatePresence>
-            {isExpanded && (
+            {isExpanded && item.children && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -169,15 +140,7 @@ export default function FileTreeExplorer({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                {folder.folders.map(folderPath => {
-                  const folderName = folderPath.split('/').pop();
-                  return renderTreeItem(
-                    { type: 'tree', name: folderName, path: folderPath },
-                    folderPath,
-                    level + 1
-                  );
-                })}
-                {folder.files.map(file => renderTreeItem(file, file.path, level + 1))}
+                {item.children.map(child => renderTreeItem(child, level + 1))}
               </motion.div>
             )}
           </AnimatePresence>
@@ -186,10 +149,10 @@ export default function FileTreeExplorer({
     } else {
       return (
         <motion.div
-          key={path}
+          key={item.path}
           className="flex items-center py-1 px-2 hover:bg-blue-600/20 rounded cursor-pointer"
           style={{ paddingLeft: `${indent + 8}px` }}
-          onClick={() => onFileSelect(file)}
+          onClick={() => onFileSelect(item)}
           whileHover={{ x: 2, backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
           transition={{ duration: 0.1 }}
         >
@@ -207,6 +170,8 @@ export default function FileTreeExplorer({
       );
     }
   };
+
+
 
   const formatFileSize = (bytes) => {
     if (!bytes) return '';
@@ -317,9 +282,9 @@ export default function FileTreeExplorer({
                   <p className="text-gray-400">Chargement de l'arborescence...</p>
                 </div>
               </div>
-            ) : files.length > 0 ? (
+            ) : treeStructure.length > 0 ? (
               <div className="space-y-1">
-                {files.map(file => renderTreeItem(file, file.path))}
+                {treeStructure.map(item => renderTreeItem(item))}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">

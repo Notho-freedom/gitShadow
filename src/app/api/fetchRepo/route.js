@@ -200,24 +200,95 @@ export async function POST(request) {
       }
     };
 
-    // Retourner les fichiers au format attendu par le composant
-    const files = tree
-      .filter(item => item.type === 'blob')
-      .map(item => ({
-        name: item.name,
-        path: item.path,
-        size: item.size,
-        sha: item.sha,
-        url: item.url,
-        html_url: item.html_url,
-        updated_at: new Date().toISOString(), // Approximation
-        created_at: new Date().toISOString()  // Approximation
-      }));
+    // Construire la vraie structure arborescente
+    const buildTreeStructure = (items) => {
+      const structure = [];
+      const pathMap = new Map();
+      
+      // Trier les éléments : dossiers d'abord, puis fichiers
+      const sortedItems = items.sort((a, b) => {
+        if (a.type !== b.type) {
+          return a.type === 'tree' ? -1 : 1;
+        }
+        return a.path.localeCompare(b.path);
+      });
+      
+      sortedItems.forEach(item => {
+        const pathParts = item.path.split('/');
+        let currentPath = '';
+        
+        // Créer la hiérarchie des dossiers
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          const folderPath = currentPath ? `${currentPath}/${pathParts[i]}` : pathParts[i];
+          if (!pathMap.has(folderPath)) {
+            const folderItem = {
+              name: pathParts[i],
+              path: folderPath,
+              type: 'tree',
+              children: [],
+              size: 0,
+              sha: '',
+              url: '',
+              html_url: `https://github.com/${owner}/${repo}/tree/${usedBranch}/${folderPath}`,
+              updated_at: new Date().toISOString(),
+              created_at: new Date().toISOString()
+            };
+            pathMap.set(folderPath, folderItem);
+            
+            if (currentPath && pathMap.has(currentPath)) {
+              pathMap.get(currentPath).children.push(folderItem);
+            } else {
+              structure.push(folderItem);
+            }
+          }
+          currentPath = folderPath;
+        }
+        
+        // Ajouter le fichier ou le dossier final
+        const fullPath = item.path;
+        const itemData = {
+          name: item.name,
+          path: fullPath,
+          type: item.type,
+          size: item.size,
+          sha: item.sha,
+          url: item.url,
+          html_url: item.html_url,
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+        
+        if (item.type === 'tree') {
+          itemData.children = [];
+          pathMap.set(fullPath, itemData);
+        }
+        
+        if (currentPath && pathMap.has(currentPath)) {
+          pathMap.get(currentPath).children.push(itemData);
+        } else {
+          structure.push(itemData);
+        }
+      });
+      
+      return structure;
+    };
+
+    const treeStructure = buildTreeStructure(tree);
+    const allFiles = tree.filter(item => item.type === 'blob').map(item => ({
+      name: item.name,
+      path: item.path,
+      size: item.size,
+      sha: item.sha,
+      url: item.url,
+      html_url: item.html_url,
+      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
+    }));
 
     return new Response(
       JSON.stringify({ 
-        files,
-        tree, 
+        files: allFiles,
+        tree: treeStructure, 
         stats,
         success: true 
       }), 

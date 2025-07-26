@@ -77,7 +77,7 @@ export default function Dashboard({ user, onLogout }) {
           repo: selectedRepo.name,
           path: file.path,
           branch: selectedRepo.default_branch || 'main',
-          accessToken: selectedRepo.accessToken || null
+          accessToken: user.access_token
         }),
       });
 
@@ -98,7 +98,7 @@ export default function Dashboard({ user, onLogout }) {
     } finally {
       setLoading(false);
     }
-  }, [selectedRepo]);
+  }, [selectedRepo, user.access_token]);
 
   const handleGenerateDocumentation = useCallback(async () => {
     if (!selectedFile || !fileContent) return;

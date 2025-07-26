@@ -23,6 +23,7 @@ export default function CodeEditorWithTree({
   const [wordWrap, setWordWrap] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState(new Set());
+  const [treeStructure, setTreeStructure] = useState([]);
   const resizeRef = useRef(null);
 
   const getLanguageFromExtension = (filename) => {
@@ -53,42 +54,81 @@ export default function CodeEditorWithTree({
     setExpandedFolders(newExpanded);
   };
 
-  const getFolderStructure = () => {
-    const folders = {};
-    
-    files.forEach(file => {
-      const parts = file.path.split('/');
-      let currentPath = '';
-      
-      parts.forEach((part, index) => {
-        if (index === parts.length - 1) {
-          // Fichier
-          if (!folders[currentPath]) folders[currentPath] = { files: [], folders: [] };
-          folders[currentPath].files.push(file);
-        } else {
-          // Dossier
-          const folderPath = currentPath ? `${currentPath}/${part}` : part;
-          if (!folders[folderPath]) folders[folderPath] = { files: [], folders: [] };
-          if (!folders[currentPath]) folders[currentPath] = { files: [], folders: [] };
-          if (!folders[currentPath].folders.includes(folderPath)) {
-            folders[currentPath].folders.push(folderPath);
+  // Charger la structure arborescente quand les fichiers changent
+  useEffect(() => {
+    if (files.length > 0) {
+      // Construire la structure arborescente à partir des fichiers
+      const buildTreeStructure = (fileList) => {
+        const structure = [];
+        const pathMap = new Map();
+        
+        // Trier les fichiers par chemin
+        const sortedFiles = fileList.sort((a, b) => a.path.localeCompare(b.path));
+        
+        sortedFiles.forEach(file => {
+          const pathParts = file.path.split('/');
+          let currentPath = '';
+          
+          // Créer la hiérarchie des dossiers
+          for (let i = 0; i < pathParts.length - 1; i++) {
+            const folderPath = currentPath ? `${currentPath}/${pathParts[i]}` : pathParts[i];
+            if (!pathMap.has(folderPath)) {
+              const folderItem = {
+                name: pathParts[i],
+                path: folderPath,
+                type: 'tree',
+                children: [],
+                size: 0,
+                sha: '',
+                url: '',
+                html_url: '',
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
+              };
+              pathMap.set(folderPath, folderItem);
+              
+              if (currentPath && pathMap.has(currentPath)) {
+                pathMap.get(currentPath).children.push(folderItem);
+              } else {
+                structure.push(folderItem);
+              }
+            }
+            currentPath = folderPath;
           }
-          currentPath = folderPath;
-        }
-      });
-    });
-    
-    return folders;
-  };
+          
+          // Ajouter le fichier
+          const fileData = {
+            name: file.name,
+            path: file.path,
+            type: 'blob',
+            size: file.size,
+            sha: file.sha,
+            url: file.url,
+            html_url: file.html_url,
+            updated_at: file.updated_at,
+            created_at: file.created_at
+          };
+          
+          if (currentPath && pathMap.has(currentPath)) {
+            pathMap.get(currentPath).children.push(fileData);
+          } else {
+            structure.push(fileData);
+          }
+        });
+        
+        return structure;
+      };
+      
+      setTreeStructure(buildTreeStructure(files));
+    }
+  }, [files]);
 
-  const renderTreeItem = (item, path = '', level = 0) => {
-    const isExpanded = expandedFolders.has(path);
+  const renderTreeItem = (item, level = 0) => {
+    const isExpanded = expandedFolders.has(item.path);
     const indent = level * 16;
     const isSelected = file?.path === item.path;
 
     if (item.type === 'tree') {
-      const folderStructure = getFolderStructure();
-      const folder = folderStructure[path] || { files: [], folders: [] };
       
       return (
         <div key={path} className="select-none">
@@ -116,7 +156,7 @@ export default function CodeEditorWithTree({
           </motion.div>
           
           <AnimatePresence>
-            {isExpanded && (
+            {isExpanded && item.children && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -124,15 +164,7 @@ export default function CodeEditorWithTree({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                {folder.folders.map(folderPath => {
-                  const folderName = folderPath.split('/').pop();
-                  return renderTreeItem(
-                    { type: 'tree', name: folderName, path: folderPath },
-                    folderPath,
-                    level + 1
-                  );
-                })}
-                {folder.files.map(file => renderTreeItem(file, file.path, level + 1))}
+                {item.children.map(child => renderTreeItem(child, level + 1))}
               </motion.div>
             )}
           </AnimatePresence>
@@ -237,9 +269,9 @@ export default function CodeEditorWithTree({
 
             {/* Arborescence des fichiers */}
             <div className="flex-1 overflow-y-auto p-2">
-              {files.length > 0 ? (
+              {treeStructure.length > 0 ? (
                 <div className="space-y-1">
-                  {files.map(file => renderTreeItem(file, file.path))}
+                  {treeStructure.map(item => renderTreeItem(item))}
                 </div>
               ) : (
                 <div className="text-center py-8">
