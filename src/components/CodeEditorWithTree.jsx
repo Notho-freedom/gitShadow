@@ -91,6 +91,8 @@ export default function CodeEditorWithTree({
   };
 
   const renderTreeItem = (item, level = 0) => {
+    if (!item || !item.path) return null;
+    
     const isExpanded = expandedFolders.has(item.path);
     const indent = level * 16;
     const isSelected = file?.path === item.path;
@@ -244,7 +246,7 @@ export default function CodeEditorWithTree({
                 </div>
               ) : treeStructure.length > 0 ? (
                 <div className="space-y-1">
-                  {treeStructure.map(item => renderTreeItem(item))}
+                  {treeStructure.map(item => renderTreeItem(item)).filter(Boolean)}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -281,10 +283,10 @@ export default function CodeEditorWithTree({
                 </button>
               )}
               <div className="flex items-center space-x-2">
-                <FileIcon type="blob" name={file.name} size="md" />
+                <FileIcon type="blob" name={file?.name || ''} size="md" />
                 <div>
-                  <h2 className="text-lg font-semibold text-white">{file.name}</h2>
-                  <p className="text-sm text-gray-400">{file.path}</p>
+                  <h2 className="text-lg font-semibold text-white">{file?.name || 'Fichier'}</h2>
+                  <p className="text-sm text-gray-400">{file?.path || ''}</p>
                 </div>
               </div>
             </div>
@@ -318,9 +320,9 @@ export default function CodeEditorWithTree({
             <div className="flex items-center space-x-2 text-sm text-gray-400">
               <span>Ligne {cursorPosition.line}, Colonne {cursorPosition.column}</span>
               <span>•</span>
-              <span>{formatFileSize(file.size)}</span>
+              <span>{formatFileSize(file?.size || 0)}</span>
               <span>•</span>
-              <span>{getLanguageFromExtension(file.name)}</span>
+              <span>{getLanguageFromExtension(file?.name || '')}</span>
             </div>
 
             <div className="flex items-center space-x-2">

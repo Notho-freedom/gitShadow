@@ -152,6 +152,8 @@ export default function FileTreeExplorer({
   };
 
   const renderTreeItem = (item, level = 0) => {
+    if (!item || !item.path) return null;
+    
     const isExpanded = expandedFolders.has(item.path);
     const indent = level * 20;
     const isFolder = item.isFolder || item.type === 'tree';
@@ -360,7 +362,7 @@ export default function FileTreeExplorer({
               </div>
             ) : treeStructure.length > 0 ? (
               <div className="space-y-1">
-                {treeStructure.map(item => renderTreeItem(item))}
+                {treeStructure.map(item => renderTreeItem(item)).filter(Boolean)}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
