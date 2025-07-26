@@ -1,41 +1,59 @@
 export async function POST(request) {
   try {
-    const { url } = await request.json();
+    const body = await request.json();
     
-    if (!url) {
-      return new Response(
-        JSON.stringify({ error: 'URL du dépôt manquante' }), 
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    // Support pour les deux formats : URL complète ou paramètres séparés
+    let owner, repo, accessToken;
+    
+    if (body.url) {
+      // Format original avec URL complète
+      const { url } = body;
+      
+      if (!url) {
+        return new Response(
+          JSON.stringify({ error: 'URL du dépôt manquante' }), 
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
 
-    // Validation et parsing de l'URL GitHub
-    let parsed;
-    try {
-      parsed = new URL(url);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: 'URL invalide' }), 
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+      // Validation et parsing de l'URL GitHub
+      let parsed;
+      try {
+        parsed = new URL(url);
+      } catch {
+        return new Response(
+          JSON.stringify({ error: 'URL invalide' }), 
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
 
-    if (!parsed.hostname.includes('github.com')) {
-      return new Response(
-        JSON.stringify({ error: 'Seuls les dépôts GitHub sont supportés actuellement' }), 
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+      if (!parsed.hostname.includes('github.com')) {
+        return new Response(
+          JSON.stringify({ error: 'Seuls les dépôts GitHub sont supportés actuellement' }), 
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
 
-    const pathParts = parsed.pathname.split('/').filter(part => part);
-    if (pathParts.length < 2) {
-      return new Response(
-        JSON.stringify({ error: 'URL de dépôt GitHub invalide. Format attendu: https://github.com/owner/repo' }), 
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+      const pathParts = parsed.pathname.split('/').filter(part => part);
+      if (pathParts.length < 2) {
+        return new Response(
+          JSON.stringify({ error: 'URL de dépôt GitHub invalide. Format attendu: https://github.com/owner/repo' }), 
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
 
-    const [owner, repo] = pathParts;
+      [owner, repo] = pathParts;
+    } else {
+      // Nouveau format avec paramètres séparés
+      ({ owner, repo, accessToken } = body);
+      
+      if (!owner || !repo) {
+        return new Response(
+          JSON.stringify({ error: 'Owner et repo requis' }), 
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Préparer les headers pour l'API GitHub
     const headers = {
@@ -43,8 +61,10 @@ export async function POST(request) {
       'User-Agent': 'gitShadow-App'
     };
 
-    // Ajouter le token GitHub si disponible (optionnel)
-    if (process.env.GITHUB_TOKEN) {
+    // Ajouter le token GitHub si disponible
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    } else if (process.env.GITHUB_TOKEN) {
       headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
     }
 
@@ -180,8 +200,23 @@ export async function POST(request) {
       }
     };
 
+    // Retourner les fichiers au format attendu par le composant
+    const files = tree
+      .filter(item => item.type === 'blob')
+      .map(item => ({
+        name: item.name,
+        path: item.path,
+        size: item.size,
+        sha: item.sha,
+        url: item.url,
+        html_url: item.html_url,
+        updated_at: new Date().toISOString(), // Approximation
+        created_at: new Date().toISOString()  // Approximation
+      }));
+
     return new Response(
       JSON.stringify({ 
+        files,
         tree, 
         stats,
         success: true 
