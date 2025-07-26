@@ -57,23 +57,31 @@ export default function Dashboard({ user, onLogout }) {
     setLoading(true);
 
     try {
-      if (file.download_url) {
-        // Si c'est une URL data: (mode démo), décoder directement
-        if (file.download_url.startsWith('data:')) {
-          const content = decodeURIComponent(file.download_url.split(',')[1]);
-          setFileContent(content);
+      // Utiliser notre nouvelle API pour récupérer le contenu du fichier
+      const response = await fetch('/api/fetchFileContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          owner: selectedRepo.owner?.login || selectedRepo.owner,
+          repo: selectedRepo.name,
+          path: file.path,
+          branch: selectedCommit?.sha || selectedRepo.default_branch || 'main',
+          accessToken: selectedRepo.accessToken || null
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setFileContent(data.content);
         } else {
-          // Sinon, faire un fetch vers l'URL
-          const response = await fetch(file.download_url);
-          if (response.ok) {
-            const content = await response.text();
-            setFileContent(content);
-          } else {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-          }
+          throw new Error(data.error || 'Erreur lors du chargement du fichier');
         }
       } else {
-        throw new Error('URL de téléchargement non disponible');
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erreur HTTP: ${response.status}`);
       }
     } catch (error) {
       console.error('Erreur lors du chargement du fichier:', error);

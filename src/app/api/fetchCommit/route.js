@@ -77,7 +77,6 @@ export async function POST(request) {
         size: item.size,
         sha: item.sha,
         url: item.url,
-        download_url: `https://raw.githubusercontent.com/${owner}/${repo}/${commitSha}/${item.path}`,
         changeInfo: changeMap.get(item.path) || null
       }));
 
@@ -90,7 +89,6 @@ export async function POST(request) {
         size: 0,
         sha: null,
         url: null,
-        download_url: null,
         changeInfo: {
           status: 'removed',
           additions: 0,

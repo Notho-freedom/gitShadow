@@ -148,9 +148,6 @@ export async function POST(request) {
         sha: item.sha,
         url: item.url,
         html_url: `https://github.com/${owner}/${repo}/blob/${usedBranch}/${item.path}`,
-        download_url: item.type === 'blob' 
-          ? `https://raw.githubusercontent.com/${owner}/${repo}/${usedBranch}/${item.path}`
-          : null,
         // Informations sur les changements (initialement inchangé)
         changeStatus: 'unchanged',
         additions: 0,
