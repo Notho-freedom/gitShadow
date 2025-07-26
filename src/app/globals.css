@@ -1,5 +1,8 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @custom-variant dark (&:is(.dark *));
 
@@ -162,4 +165,76 @@
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: rgba(156, 163, 175, 0.4);
+}
+
+/* Styles pour l'éditeur de code */
+.code-editor {
+  font-family: 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+/* Amélioration de la coloration syntaxique */
+pre[class*="language-"] {
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+code[class*="language-"] {
+  font-family: 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace !important;
+  text-shadow: none !important;
+}
+
+/* Styles pour les numéros de ligne */
+.line-numbers .line-numbers-rows {
+  border-right: 1px solid rgba(156, 163, 175, 0.2) !important;
+}
+
+.line-numbers-rows > span:before {
+  color: rgba(156, 163, 175, 0.6) !important;
+  font-family: 'Fira Code', monospace !important;
+}
+
+/* Amélioration du focus et de la sélection */
+.code-editor *::selection {
+  background: rgba(59, 130, 246, 0.3) !important;
+}
+
+.code-editor *::-moz-selection {
+  background: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Animation pour le chargement */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.code-editor {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Styles pour la minimap */
+.minimap {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Amélioration des boutons */
+.btn-code {
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-code:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-code:active {
+  transform: translateY(0);
 }
