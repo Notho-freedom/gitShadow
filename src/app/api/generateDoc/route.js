@@ -239,8 +239,8 @@ Cette documentation a été générée en mode démo. Pour une analyse complète
         language,
         docType,
         generatedAt: new Date().toISOString(),
-        model: "demo-mode",
-        demo: true
+        model: "openrouter-ai",
+        demo: false
       }
     }), 
     { 
