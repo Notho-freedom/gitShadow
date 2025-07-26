@@ -57,9 +57,9 @@ export default function CodeEditorWithTree({
   // Charger la structure arborescente quand les fichiers changent
   useEffect(() => {
     if (files.length > 0) {
-      // Construire la structure arborescente à partir des fichiers
+      // Construire la structure arborescente comme Windows Explorer
       const buildTreeStructure = (fileList) => {
-        const structure = [];
+        const rootStructure = [];
         const pathMap = new Map();
         
         // Trier les fichiers par chemin
@@ -68,55 +68,47 @@ export default function CodeEditorWithTree({
         sortedFiles.forEach(file => {
           const pathParts = file.path.split('/');
           let currentPath = '';
+          let currentParent = null;
           
-          // Créer la hiérarchie des dossiers
-          for (let i = 0; i < pathParts.length - 1; i++) {
-            const folderPath = currentPath ? `${currentPath}/${pathParts[i]}` : pathParts[i];
-            if (!pathMap.has(folderPath)) {
-              const folderItem = {
-                name: pathParts[i],
-                path: folderPath,
-                type: 'tree',
+          // Créer chaque nœud du chemin comme Windows Explorer
+          for (let i = 0; i < pathParts.length; i++) {
+            const isLastPart = i === pathParts.length - 1;
+            const partName = pathParts[i];
+            const nodePath = currentPath ? `${currentPath}/${partName}` : partName;
+            
+            // Vérifier si ce nœud existe déjà
+            if (!pathMap.has(nodePath)) {
+              const nodeData = {
+                name: partName,
+                path: nodePath,
+                type: isLastPart ? 'blob' : 'tree',
                 children: [],
-                size: 0,
-                sha: '',
-                url: '',
-                html_url: '',
-                updated_at: new Date().toISOString(),
-                created_at: new Date().toISOString()
+                size: isLastPart ? file.size : 0,
+                sha: isLastPart ? file.sha : '',
+                url: isLastPart ? file.url : '',
+                html_url: isLastPart ? file.html_url : '',
+                updated_at: isLastPart ? file.updated_at : new Date().toISOString(),
+                created_at: isLastPart ? file.created_at : new Date().toISOString(),
+                isFolder: !isLastPart
               };
-              pathMap.set(folderPath, folderItem);
               
-              if (currentPath && pathMap.has(currentPath)) {
-                pathMap.get(currentPath).children.push(folderItem);
+              pathMap.set(nodePath, nodeData);
+              
+              // Ajouter au parent ou à la racine
+              if (currentParent) {
+                currentParent.children.push(nodeData);
               } else {
-                structure.push(folderItem);
+                rootStructure.push(nodeData);
               }
             }
-            currentPath = folderPath;
-          }
-          
-          // Ajouter le fichier
-          const fileData = {
-            name: file.name,
-            path: file.path,
-            type: 'blob',
-            size: file.size,
-            sha: file.sha,
-            url: file.url,
-            html_url: file.html_url,
-            updated_at: file.updated_at,
-            created_at: file.created_at
-          };
-          
-          if (currentPath && pathMap.has(currentPath)) {
-            pathMap.get(currentPath).children.push(fileData);
-          } else {
-            structure.push(fileData);
+            
+            // Mettre à jour le parent pour la prochaine itération
+            currentParent = pathMap.get(nodePath);
+            currentPath = nodePath;
           }
         });
         
-        return structure;
+        return rootStructure;
       };
       
       setTreeStructure(buildTreeStructure(files));
@@ -127,8 +119,9 @@ export default function CodeEditorWithTree({
     const isExpanded = expandedFolders.has(item.path);
     const indent = level * 16;
     const isSelected = file?.path === item.path;
+    const isFolder = item.isFolder || item.type === 'tree';
 
-    if (item.type === 'tree') {
+    if (isFolder) {
       
       return (
         <div key={path} className="select-none">

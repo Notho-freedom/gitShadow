@@ -200,9 +200,9 @@ export async function POST(request) {
       }
     };
 
-    // Construire la vraie structure arborescente
+    // Construire la vraie structure arborescente comme Windows Explorer
     const buildTreeStructure = (items) => {
-      const structure = [];
+      const rootStructure = [];
       const pathMap = new Map();
       
       // Trier les éléments : dossiers d'abord, puis fichiers
@@ -216,61 +216,47 @@ export async function POST(request) {
       sortedItems.forEach(item => {
         const pathParts = item.path.split('/');
         let currentPath = '';
+        let currentParent = null;
         
-        // Créer la hiérarchie des dossiers
-        for (let i = 0; i < pathParts.length - 1; i++) {
-          const folderPath = currentPath ? `${currentPath}/${pathParts[i]}` : pathParts[i];
-          if (!pathMap.has(folderPath)) {
-            const folderItem = {
-              name: pathParts[i],
-              path: folderPath,
-              type: 'tree',
+        // Créer chaque nœud du chemin comme Windows Explorer
+        for (let i = 0; i < pathParts.length; i++) {
+          const isLastPart = i === pathParts.length - 1;
+          const partName = pathParts[i];
+          const nodePath = currentPath ? `${currentPath}/${partName}` : partName;
+          
+          // Vérifier si ce nœud existe déjà
+          if (!pathMap.has(nodePath)) {
+            const nodeData = {
+              name: partName,
+              path: nodePath,
+              type: isLastPart ? item.type : 'tree',
               children: [],
-              size: 0,
-              sha: '',
-              url: '',
-              html_url: `https://github.com/${owner}/${repo}/tree/${usedBranch}/${folderPath}`,
+              size: isLastPart ? item.size : 0,
+              sha: isLastPart ? item.sha : '',
+              url: isLastPart ? item.url : '',
+              html_url: isLastPart ? item.html_url : `https://github.com/${owner}/${repo}/tree/${usedBranch}/${nodePath}`,
               updated_at: new Date().toISOString(),
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              isFolder: !isLastPart || item.type === 'tree'
             };
-            pathMap.set(folderPath, folderItem);
             
-            if (currentPath && pathMap.has(currentPath)) {
-              pathMap.get(currentPath).children.push(folderItem);
+            pathMap.set(nodePath, nodeData);
+            
+            // Ajouter au parent ou à la racine
+            if (currentParent) {
+              currentParent.children.push(nodeData);
             } else {
-              structure.push(folderItem);
+              rootStructure.push(nodeData);
             }
           }
-          currentPath = folderPath;
-        }
-        
-        // Ajouter le fichier ou le dossier final
-        const fullPath = item.path;
-        const itemData = {
-          name: item.name,
-          path: fullPath,
-          type: item.type,
-          size: item.size,
-          sha: item.sha,
-          url: item.url,
-          html_url: item.html_url,
-          updated_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        };
-        
-        if (item.type === 'tree') {
-          itemData.children = [];
-          pathMap.set(fullPath, itemData);
-        }
-        
-        if (currentPath && pathMap.has(currentPath)) {
-          pathMap.get(currentPath).children.push(itemData);
-        } else {
-          structure.push(itemData);
+          
+          // Mettre à jour le parent pour la prochaine itération
+          currentParent = pathMap.get(nodePath);
+          currentPath = nodePath;
         }
       });
       
-      return structure;
+      return rootStructure;
     };
 
     const treeStructure = buildTreeStructure(tree);

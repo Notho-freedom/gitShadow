@@ -104,8 +104,9 @@ export default function FileTreeExplorer({
   const renderTreeItem = (item, level = 0) => {
     const isExpanded = expandedFolders.has(item.path);
     const indent = level * 20;
+    const isFolder = item.isFolder || item.type === 'tree';
 
-    if (item.type === 'tree') {
+    if (isFolder) {
       return (
         <div key={item.path} className="select-none">
           <motion.div
