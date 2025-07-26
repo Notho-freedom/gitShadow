@@ -1,30 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
-import RepositoryList from './RepositoryList';
-import CommitHistory from './CommitHistory';
-import FileExplorer from './FileExplorer';
-import CodeViewer from './CodeViewer';
+import TopNavbar from './TopNavbar';
+import RepositoryExplorer from './RepositoryExplorer';
+import CodeEditor from './CodeEditor';
 import DocumentationPanel from './DocumentationPanel';
 import AnalyticsPanel from './AnalyticsPanel';
-import UserStats from './UserStats';
+import CollaborationPanel from './CollaborationPanel';
+import SettingsPanel from './SettingsPanel';
+import QuickActions from './QuickActions';
+import NotificationCenter from './NotificationCenter';
+import SearchOverlay from './SearchOverlay';
 
 export default function Dashboard({ user, onLogout }) {
-  const [activeView, setActiveView] = useState('repositories');
+  const [activeView, setActiveView] = useState('explorer');
   const [selectedRepo, setSelectedRepo] = useState(null);
-  const [selectedCommit, setSelectedCommit] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
   const [documentation, setDocumentation] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [theme, setTheme] = useState('dark');
+  const [layout, setLayout] = useState('default'); // default, code-focus, documentation-focus
   const [loading, setLoading] = useState(false);
-  const [commits, setCommits] = useState([]);
 
   // Vérifier si user existe
   if (!user) {
     return (
-      <div className="flex h-screen bg-gray-900 items-center justify-center">
+      <div className="flex h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Chargement de votre profil...</p>
@@ -33,53 +39,27 @@ export default function Dashboard({ user, onLogout }) {
     );
   }
 
-  // Gestion des vues
-  const views = {
-    repositories: 'Dépôts',
-    commits: 'Commits',
-    files: 'Fichiers',
-    settings: 'Paramètres',
-    analytics: 'Analytics',
-    collaboration: 'Collaboration',
-    billing: 'Facturation'
-  };
-
-  const handleRepoSelect = (repo) => {
+  const handleRepoSelect = useCallback((repo) => {
     setSelectedRepo(repo);
-    setSelectedCommit(null);
     setSelectedFile(null);
-    setCommits([]);
-    setActiveView('commits');
-  };
-
-  const handleCommitSelect = (commit) => {
-    setSelectedCommit(commit);
-    setSelectedFile(null);
-    setActiveView('files');
-  };
-
-  const handleCommitsLoaded = (loadedCommits) => {
-    setCommits(loadedCommits);
-  };
-
-  const handleFileSelect = async (file) => {
-    setSelectedFile(file);
     setFileContent('');
     setDocumentation('');
+    setActiveView('explorer');
+  }, []);
+
+  const handleFileSelect = useCallback(async (file) => {
+    setSelectedFile(file);
     setLoading(true);
 
     try {
-      // Utiliser notre nouvelle API pour récupérer le contenu du fichier
       const response = await fetch('/api/fetchFileContent', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           owner: selectedRepo.owner?.login || selectedRepo.owner,
           repo: selectedRepo.name,
           path: file.path,
-          branch: selectedCommit?.sha || selectedRepo.default_branch || 'main',
+          branch: selectedRepo.default_branch || 'main',
           accessToken: selectedRepo.accessToken || null
         }),
       });
@@ -88,139 +68,96 @@ export default function Dashboard({ user, onLogout }) {
         const data = await response.json();
         if (data.success) {
           setFileContent(data.content);
+          setActiveView('editor');
         } else {
           throw new Error(data.error || 'Erreur lors du chargement du fichier');
         }
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Erreur HTTP: ${response.status}`);
+        throw new Error(`Erreur HTTP: ${response.status}`);
       }
     } catch (error) {
       console.error('Erreur lors du chargement du fichier:', error);
-      setFileContent(`Erreur lors du chargement du fichier: ${error.message}`);
+      setFileContent(`// Erreur: ${error.message}`);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRepo]);
+
+  const handleGenerateDocumentation = useCallback(async () => {
+    if (!selectedFile || !fileContent) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/generateDoc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: fileContent,
+          filename: selectedFile.name,
+          filepath: selectedFile.path,
+          repo: selectedRepo.name,
+          user: user.login
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDocumentation(data.documentation);
+        setActiveView('documentation');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération de documentation:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedFile, fileContent, selectedRepo, user]);
 
   const renderMainContent = () => {
     switch (activeView) {
-      case 'repositories':
+      case 'explorer':
         return (
-          <RepositoryList 
+          <RepositoryExplorer
             user={user}
-            onRepoSelect={handleRepoSelect}
             selectedRepo={selectedRepo}
+            onRepoSelect={handleRepoSelect}
+            onFileSelect={handleFileSelect}
+            loading={loading}
           />
         );
-      case 'commits':
+      case 'editor':
         return (
-          <CommitHistory 
-            repo={selectedRepo}
-            onCommitSelect={handleCommitSelect}
-            selectedCommit={selectedCommit}
-            onCommitsLoaded={handleCommitsLoaded}
+          <CodeEditor
+            file={selectedFile}
+            content={fileContent}
+            onGenerateDoc={handleGenerateDocumentation}
+            loading={loading}
+            theme={theme}
+          />
+        );
+      case 'documentation':
+        return (
+          <DocumentationPanel
+            file={selectedFile}
+            content={fileContent}
+            documentation={documentation}
+            onBackToEditor={() => setActiveView('editor')}
+            theme={theme}
           />
         );
       case 'analytics':
-        return (
-          <UserStats 
-            user={user}
-          />
-        );
-      case 'files':
-        return (
-          <PanelGroup direction="horizontal">
-            <Panel defaultSize={30} minSize={20}>
-              <FileExplorer 
-                repo={selectedRepo}
-                commit={selectedCommit}
-                onFileSelect={handleFileSelect}
-                selectedFile={selectedFile}
-              />
-            </Panel>
-            <PanelResizeHandle className="w-2 transition-colors bg-gray-700 hover:bg-gray-600" />
-            <Panel defaultSize={70}>
-              <PanelGroup direction="vertical">
-                <Panel defaultSize={60} minSize={30}>
-                  <CodeViewer 
-                    file={selectedFile}
-                    content={fileContent}
-                    loading={loading}
-                    repo={selectedRepo}
-                    commit={selectedCommit}
-                  />
-                </Panel>
-                <PanelResizeHandle className="h-2 transition-colors bg-gray-700 hover:bg-gray-600" />
-                <Panel defaultSize={40} minSize={20}>
-                  <DocumentationPanel 
-                    fileContent={fileContent}
-                    documentation={documentation}
-                    setDocumentation={setDocumentation}
-                    selectedFile={selectedFile}
-                    user={user}
-                  />
-                </Panel>
-              </PanelGroup>
-            </Panel>
-          </PanelGroup>
-        );
+        return <AnalyticsPanel user={user} selectedRepo={selectedRepo} />;
+      case 'collaboration':
+        return <CollaborationPanel user={user} selectedRepo={selectedRepo} />;
       case 'settings':
         return (
-          <div className="p-6">
-            <h2 className="mb-6 text-2xl font-bold text-white">Paramètres</h2>
-            <div className="space-y-6">
-              <div className="p-6 border border-gray-700 rounded-lg bg-gray-800/50">
-                <h3 className="mb-4 text-lg font-semibold text-white">Profil utilisateur</h3>
-                <div className="flex items-center mb-4 space-x-4">
-                  <img 
-                    src={user.avatar_url} 
-                    alt={user.name}
-                    className="w-16 h-16 rounded-full"
-                  />
-                  <div>
-                    <p className="font-medium text-white">{user.name}</p>
-                    <p className="text-gray-400">@{user.login}</p>
-                    <p className="text-gray-400">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    user.plan === 'pro' ? 'bg-blue-500/20 text-blue-400' :
-                    user.plan === 'enterprise' ? 'bg-purple-500/20 text-purple-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    Plan {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-6 border border-gray-700 rounded-lg bg-gray-800/50">
-                <h3 className="mb-4 text-lg font-semibold text-white">Préférences</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300">Thème sombre</span>
-                    <button className="relative w-12 h-6 bg-blue-500 rounded-full">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300">Notifications</span>
-                    <button className="relative w-12 h-6 bg-blue-500 rounded-full">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={onLogout}
-                className="px-6 py-3 text-white transition-colors bg-red-600 rounded-lg hover:bg-red-700"
-              >
-                Se déconnecter
-              </button>
-            </div>
-          </div>
+          <SettingsPanel
+            user={user}
+            theme={theme}
+            setTheme={setTheme}
+            layout={layout}
+            setLayout={setLayout}
+            onLogout={onLogout}
+          />
         );
       default:
         return null;
@@ -228,51 +165,73 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900">
+    <div className="h-screen bg-gray-900 flex overflow-hidden">
       {/* Sidebar */}
-      <Sidebar 
+      <Sidebar
         activeView={activeView}
         onViewChange={setActiveView}
-        views={views}
         user={user}
         selectedRepo={selectedRepo}
-        selectedCommit={selectedCommit}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
-      {/* Main Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header */}
-        <header className="px-6 py-4 bg-gray-800 border-b border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold text-white">
-                {views[activeView]}
-              </h1>
-              {selectedRepo && (
-                <span className="text-gray-400">
-                  / {selectedRepo.name}
-                  {selectedCommit && ` / ${selectedCommit.sha.substring(0, 7)}`}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <img 
-                  src={user.avatar_url} 
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full"
-                />
-                <span className="text-sm text-white">{user.name}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Navigation */}
+        <TopNavbar
+          user={user}
+          selectedRepo={selectedRepo}
+          selectedFile={selectedFile}
+          activeView={activeView}
+          onSearchOpen={() => setIsSearchOpen(true)}
+          onNotificationOpen={() => setIsNotificationOpen(true)}
+          onLogout={onLogout}
+          theme={theme}
+          layout={layout}
+          onLayoutChange={setLayout}
+        />
 
-        {/* Content */}
-        <main className="flex-1 overflow-hidden">
-          {renderMainContent()}
+        {/* Main Content */}
+        <main className="flex-1 overflow-hidden relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeView}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+              {renderMainContent()}
+            </motion.div>
+          </AnimatePresence>
         </main>
+
+        {/* Quick Actions Floating Panel */}
+        <QuickActions
+          activeView={activeView}
+          selectedFile={selectedFile}
+          onGenerateDoc={handleGenerateDocumentation}
+          loading={loading}
+        />
       </div>
+
+      {/* Search Overlay */}
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        user={user}
+        selectedRepo={selectedRepo}
+        onFileSelect={handleFileSelect}
+      />
+
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        user={user}
+      />
     </div>
   );
 }
