@@ -29,7 +29,7 @@ export default function PricingPage() {
     }
   }, []);
 
-  const plans = isAnnual ? annualPlans : pricingPlans;
+  const plans = isAnnual ? (annualPlans || []) : (pricingPlans || []);
 
   const handlePlanSelect = (plan) => {
     setSelectedPlan(plan);
@@ -128,8 +128,8 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {plans.map((plan, index) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {plans && plans.length > 0 ? plans.map((plan, index) => (
               <motion.div
                 key={plan.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -143,7 +143,11 @@ export default function PricingPage() {
                   isSelected={selectedPlan?.id === plan.id}
                 />
               </motion.div>
-            ))}
+            )) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-600 dark:text-gray-400">Chargement des plans...</p>
+              </div>
+            )}
           </div>
         </div>
       </section>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createCustomerPortalSession } from '@/lib/stripe';
+import { createCustomerPortalSession } from '../../../../lib/stripe';
 
 export async function POST(request) {
   try {
