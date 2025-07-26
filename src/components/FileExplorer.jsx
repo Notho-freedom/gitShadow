@@ -104,8 +104,19 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
             type: index === parts.length - 1 ? 'blob' : 'tree',
             children: {},
             item: index === parts.length - 1 ? item : null,
-            size: index === parts.length - 1 ? item.size : 0
+            size: index === parts.length - 1 ? item.size : 0,
+            // Propager les informations de changement aux dossiers parents
+            changeStatus: index === parts.length - 1 ? item.changeStatus : null,
+            additions: index === parts.length - 1 ? item.additions : 0,
+            deletions: index === parts.length - 1 ? item.deletions : 0
           };
+        } else {
+          // Si c'est un dossier, propager les changements des enfants
+          if (index === parts.length - 1 && item.changeStatus) {
+            current[part].changeStatus = item.changeStatus;
+            current[part].additions = (current[part].additions || 0) + (item.additions || 0);
+            current[part].deletions = (current[part].deletions || 0) + (item.deletions || 0);
+          }
         }
         current = current[part].children;
       });
@@ -118,9 +129,10 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           children: Object.keys(node.children).length > 0 ? convertToArray(node.children) : []
         }))
         .sort((a, b) => {
-          // Dossiers en premier, puis fichiers
-          if (a.type === 'tree' && b.type === 'blob') return -1;
-          if (a.type === 'blob' && b.type === 'tree') return 1;
+          // Dossiers en premier, puis fichiers, alphabétiquement
+          if (a.type !== b.type) {
+            return a.type === 'tree' ? -1 : 1;
+          }
           return a.name.localeCompare(b.name);
         });
     };
@@ -196,7 +208,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
             onClick={() => {
               if (node.type === 'tree' && hasChildren) {
                 toggleFolder(node.path);
-              } else if (node.type === 'blob' && node.item) {
+              } else if (node.type === 'blob' && node.item && node.changeStatus !== 'removed') {
                 onFileSelect(node.item);
               }
             }}
@@ -216,7 +228,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
             <div className="flex-1 flex items-center space-x-2">
               <span className={`text-sm truncate ${
                 node.type === 'tree' ? 'font-medium text-gray-200' : 'text-gray-300'
-              } group-hover:text-white transition-colors`}>
+              } ${node.changeStatus === 'removed' ? 'line-through text-red-400' : ''} group-hover:text-white transition-colors`}>
                 {node.name}
               </span>
               
@@ -249,8 +261,8 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
               </div>
             )}
 
-            {/* Taille du fichier */}
-            {node.type === 'blob' && node.size > 0 && (
+            {/* Taille du fichier (pas pour les fichiers supprimés) */}
+            {node.type === 'blob' && node.size > 0 && node.changeStatus !== 'removed' && (
               <span className="text-xs text-gray-500 ml-2">
                 {formatSize(node.size)}
               </span>
