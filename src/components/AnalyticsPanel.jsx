@@ -1,188 +1,116 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import AdvancedAnalyticsPanel from './analytics/AdvancedAnalyticsPanel';
 
 export default function AnalyticsPanel({ user, selectedRepo }) {
-  const [usageStats, setUsageStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  useEffect(() => {
-    if (selectedRepo) {
-      calculateRealStats();
-    }
-  }, [selectedRepo]);
-
-  const calculateRealStats = () => {
-    setLoading(true);
-    
-    try {
-      // Statistiques basées sur les données du dépôt sélectionné
-      const repoInfo = {
-        name: selectedRepo.name,
-        owner: selectedRepo.owner?.login || selectedRepo.owner,
-        language: selectedRepo.language,
-        stars: selectedRepo.stargazers_count || 0,
-        forks: selectedRepo.forks_count || 0,
-        updatedAt: selectedRepo.updated_at
-      };
-
-      // Données simulées pour la démonstration
-      const mockStats = {
-        totalCommits: Math.floor(Math.random() * 1000) + 100,
-        totalFiles: Math.floor(Math.random() * 500) + 50,
-        topAuthors: [
-          { name: user.name, count: Math.floor(Math.random() * 200) + 50 },
-          { name: 'Alice Johnson', count: Math.floor(Math.random() * 150) + 30 },
-          { name: 'Bob Smith', count: Math.floor(Math.random() * 100) + 20 }
-        ],
-        topFileTypes: [
-          { ext: 'js', count: Math.floor(Math.random() * 100) + 20 },
-          { ext: 'ts', count: Math.floor(Math.random() * 80) + 15 },
-          { ext: 'css', count: Math.floor(Math.random() * 60) + 10 },
-          { ext: 'md', count: Math.floor(Math.random() * 40) + 5 },
-          { ext: 'json', count: Math.floor(Math.random() * 30) + 5 }
-        ],
-        topCommitTypes: [
-          { type: 'feat', count: Math.floor(Math.random() * 200) + 50 },
-          { type: 'fix', count: Math.floor(Math.random() * 150) + 30 },
-          { type: 'docs', count: Math.floor(Math.random() * 100) + 20 },
-          { type: 'refactor', count: Math.floor(Math.random() * 80) + 15 },
-          { type: 'style', count: Math.floor(Math.random() * 60) + 10 }
-        ]
-      };
-
-      setUsageStats({
-        ...mockStats,
-        repoInfo
-      });
-    } catch (error) {
-      console.error('Erreur lors du calcul des statistiques:', error);
-      setUsageStats(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (!selectedRepo) {
     return (
-      <div className="p-6 text-center text-gray-400">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        Calcul des statistiques...
-      </div>
-    );
-  }
-
-  if (!usageStats) {
-    return (
-      <div className="p-6 text-center text-gray-400">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
-          <span className="text-2xl">📊</span>
+      <div className="p-8 text-center">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <span className="text-3xl">📊</span>
         </div>
-        <h3 className="text-lg font-semibold text-white mb-2">Aucune donnée disponible</h3>
-        <p className="text-gray-400">Sélectionnez un dépôt pour voir les statistiques</p>
+        <h3 className="text-xl font-bold text-white mb-2">Analytics Avancés</h3>
+        <p className="text-gray-400">Sélectionnez un dépôt pour voir les analyses détaillées</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">Analytics</h2>
-      
-      {/* Informations du dépôt */}
-      <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-3">Dépôt: {usageStats.repoInfo.name}</h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-400">Propriétaire:</span>
-            <span className="text-white ml-2">{usageStats.repoInfo.owner}</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Langage:</span>
-            <span className="text-white ml-2">{usageStats.repoInfo.language || 'Non spécifié'}</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Étoiles:</span>
-            <span className="text-white ml-2">⭐ {usageStats.repoInfo.stars}</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Forks:</span>
-            <span className="text-white ml-2">🍴 {usageStats.repoInfo.forks}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistiques générales */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gray-800/50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-white">{usageStats.totalCommits}</div>
-          <div className="text-gray-400 text-sm">Total commits</div>
-        </div>
-        <div className="bg-gray-800/50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-white">{usageStats.topAuthors.length}</div>
-          <div className="text-gray-400 text-sm">Contributeurs</div>
-        </div>
-        <div className="bg-gray-800/50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-white">{usageStats.totalFiles}</div>
-          <div className="text-gray-400 text-sm">Fichiers modifiés</div>
-        </div>
-      </div>
-
-
-
-      {/* Top contributeurs */}
-      <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-3">Top Contributeurs</h3>
-        <div className="space-y-2">
-          {usageStats.topAuthors.map((author, index) => (
-            <div key={author.name} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">#{index + 1}</span>
-                <span className="text-white">{author.name}</span>
-              </div>
-              <span className="text-blue-400 font-medium">{author.count} commits</span>
+    <div className="h-full flex flex-col">
+      {/* Header avec toggle */}
+      <div className="border-b border-gray-700 bg-gray-900/50">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1">Analytics Avancés</h2>
+              <p className="text-gray-400 text-sm">Analyse approfondie de {selectedRepo.name}</p>
             </div>
-          ))}
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                showAdvanced
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                  : 'bg-gray-700/50 text-gray-300 hover:text-white hover:bg-gray-600/50'
+              }`}
+            >
+              {showAdvanced ? '📊 Mode Avancé' : '🚀 Activer Analytics Avancés'}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Types de commits */}
-      <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-3">Types de Commits</h3>
-        <div className="space-y-2">
-          {usageStats.topCommitTypes.map((type, index) => (
-            <div key={type.type} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 text-xs rounded ${
-                  type.type === 'feat' ? 'bg-green-500/20 text-green-400' :
-                  type.type === 'fix' ? 'bg-red-500/20 text-red-400' :
-                  type.type === 'docs' ? 'bg-blue-500/20 text-blue-400' :
-                  type.type === 'style' ? 'bg-purple-500/20 text-purple-400' :
-                  type.type === 'refactor' ? 'bg-yellow-500/20 text-yellow-400' :
-                  'bg-gray-500/20 text-gray-400'
-                }`}>
-                  {type.type}
-                </span>
+      {/* Contenu */}
+      <div className="flex-1 overflow-auto">
+        {showAdvanced ? (
+          <AdvancedAnalyticsPanel user={user} selectedRepo={selectedRepo} />
+        ) : (
+          <div className="p-8 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 via-purple-600 to-pink-600 flex items-center justify-center">
+                <span className="text-4xl">🚀</span>
               </div>
-              <span className="text-white font-medium">{type.count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Découvrez les Analytics Ultra-Avancés</h3>
+              <p className="text-gray-400 mb-6">
+                Plongez dans une analyse approfondie de votre repository avec des métriques avancées, 
+                des visualisations sophistiquées et des insights prédictifs.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <FeatureCard
+                  icon="📊"
+                  title="Score de Santé"
+                  description="Analyse complète de la qualité et de la maintenabilité"
+                />
+                <FeatureCard
+                  icon="🔍"
+                  title="Analyse de Complexité"
+                  description="Métriques détaillées sur la complexité cyclomatique"
+                />
+                <FeatureCard
+                  icon="👥"
+                  title="Collaboration d'Équipe"
+                  description="Heatmaps d'activité et métriques de collaboration"
+                />
+                <FeatureCard
+                  icon="⚡"
+                  title="Performance"
+                  description="Métriques de build, test et déploiement"
+                />
+                <FeatureCard
+                  icon="🛡️"
+                  title="Sécurité"
+                  description="Analyse des vulnérabilités et recommandations"
+                />
+                <FeatureCard
+                  icon="📈"
+                  title="Timeline Avancée"
+                  description="Historique détaillé des commits et tendances"
+                />
+              </div>
 
-      {/* Types de fichiers */}
-      <div className="bg-gray-800/50 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-white mb-3">Types de Fichiers Modifiés</h3>
-        <div className="space-y-2">
-          {usageStats.topFileTypes.map((fileType, index) => (
-            <div key={fileType.ext} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">.{fileType.ext}</span>
-              </div>
-              <span className="text-white font-medium">{fileType.count} fichiers</span>
+              <button
+                onClick={() => setShowAdvanced(true)}
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                🚀 Activer les Analytics Ultra-Avancés
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description }) {
+  return (
+    <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-200">
+      <div className="text-2xl mb-3">{icon}</div>
+      <h4 className="text-white font-semibold mb-2">{title}</h4>
+      <p className="text-gray-400 text-sm">{description}</p>
     </div>
   );
 }
