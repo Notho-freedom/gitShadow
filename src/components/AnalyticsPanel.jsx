@@ -23,8 +23,18 @@ export default function AnalyticsPanel({ user, selectedRepo }) {
     
     // Si selectedRepo est un objet avec les propriétés
     if (selectedRepo.owner && selectedRepo.name) {
+      // S'assurer que owner est une chaîne de caractères
+      let ownerName = selectedRepo.owner;
+      if (typeof selectedRepo.owner === 'object' && selectedRepo.owner.login) {
+        ownerName = selectedRepo.owner.login;
+      } else if (typeof selectedRepo.owner === 'string') {
+        ownerName = selectedRepo.owner;
+      } else {
+        ownerName = 'unknown';
+      }
+      
       return {
-        owner: selectedRepo.owner,
+        owner: ownerName,
         name: selectedRepo.name
       };
     }
@@ -58,7 +68,9 @@ export default function AnalyticsPanel({ user, selectedRepo }) {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white mb-1">Analytics Avancés</h2>
-              <p className="text-gray-400 text-sm">Analyse approfondie de {selectedRepo.name || selectedRepo}</p>
+              <p className="text-gray-400 text-sm">
+                Analyse approfondie de {typeof selectedRepo === 'object' && selectedRepo.name ? selectedRepo.name : selectedRepo}
+              </p>
             </div>
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}

@@ -111,10 +111,10 @@ export default function AdvancedAnalyticsPanel({ repositoryData }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold text-white mb-2">
-              {repositoryData?.name || 'Repository'}
+              {typeof repositoryData?.name === 'string' ? repositoryData.name : 'Repository'}
             </h2>
             <p className="text-gray-400 text-sm">
-              {repositoryData?.owner || 'Owner'} • Analyse avancée en temps réel
+              {typeof repositoryData?.owner === 'string' ? repositoryData.owner : 'Owner'} • Analyse avancée en temps réel
             </p>
           </div>
           <div className="text-right">
