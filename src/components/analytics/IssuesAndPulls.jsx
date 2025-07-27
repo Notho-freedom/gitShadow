@@ -35,9 +35,9 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
       const progress = step / steps;
 
       setter({
-        total: Math.floor(data.total * progress),
-        open: Math.floor(data.open * progress),
-        closed: Math.floor(data.closed * progress),
+        total: Math.floor((data.total || 0) * progress),
+        open: Math.floor((data.open || 0) * progress),
+        closed: Math.floor((data.closed || 0) * progress),
         merged: Math.floor((data.merged || 0) * progress)
       });
 
@@ -50,6 +50,7 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'Date inconnue';
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
@@ -58,10 +59,12 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
   };
 
   const getIssueTypeColor = (labels) => {
-    if (labels?.some(label => label.includes('bug'))) return 'text-red-400';
-    if (labels?.some(label => label.includes('feature'))) return 'text-green-400';
-    if (labels?.some(label => label.includes('enhancement'))) return 'text-blue-400';
-    if (labels?.some(label => label.includes('documentation'))) return 'text-purple-400';
+    if (!labels || !Array.isArray(labels)) return 'text-gray-400';
+    
+    if (labels.some(label => label.name?.toLowerCase().includes('bug'))) return 'text-red-400';
+    if (labels.some(label => label.name?.toLowerCase().includes('feature'))) return 'text-green-400';
+    if (labels.some(label => label.name?.toLowerCase().includes('enhancement'))) return 'text-blue-400';
+    if (labels.some(label => label.name?.toLowerCase().includes('documentation'))) return 'text-purple-400';
     return 'text-gray-400';
   };
 
@@ -70,6 +73,11 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
     if (state === 'open') return 'text-blue-400';
     return 'text-red-400';
   };
+
+  // Générer les vraies données
+  const realIssues = generateRealIssues(issuesData);
+  const realPulls = generateRealPulls(pullsData);
+  const issueTypes = generateIssueTypes(issuesData);
 
   return (
     <div className="space-y-6">
@@ -170,11 +178,11 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
         {activeTab === 'issues' && (
           <div className="space-y-4">
             {/* Types d'issues */}
-            {issuesData?.issueTypes && (
+            {Object.keys(issueTypes).length > 0 && (
               <div className="bg-gray-800/30 rounded-lg p-4">
                 <h4 className="text-white font-semibold mb-3">Types d'Issues</h4>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {Object.entries(issuesData.issueTypes).map(([type, count]) => (
+                  {Object.entries(issueTypes).map(([type, count]) => (
                     <div key={type} className="text-center">
                       <div className="text-lg font-bold text-white">{count}</div>
                       <div className="text-xs text-gray-400 capitalize">{type}</div>
@@ -185,11 +193,11 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
             )}
 
             {/* Issues récentes */}
-            {issuesData?.recentIssues && issuesData.recentIssues.length > 0 && (
+            {realIssues.length > 0 && (
               <div className="bg-gray-800/30 rounded-lg p-4">
                 <h4 className="text-white font-semibold mb-3">Issues Récentes</h4>
                 <div className="space-y-3">
-                  {issuesData.recentIssues.slice(0, 5).map((issue, index) => (
+                  {realIssues.slice(0, 5).map((issue, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
@@ -214,7 +222,7 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
                               key={labelIndex}
                               className="px-2 py-1 bg-blue-600 text-white text-xs rounded"
                             >
-                              {label}
+                              {label.name || label}
                             </span>
                           ))}
                         </div>
@@ -230,11 +238,11 @@ export default function IssuesAndPulls({ issuesData, pullsData }) {
         {activeTab === 'pulls' && (
           <div className="space-y-4">
             {/* Pull requests récentes */}
-            {pullsData?.recentPulls && pullsData.recentPulls.length > 0 && (
+            {realPulls.length > 0 && (
               <div className="bg-gray-800/30 rounded-lg p-4">
                 <h4 className="text-white font-semibold mb-3">Pull Requests Récentes</h4>
                 <div className="space-y-3">
-                  {pullsData.recentPulls.slice(0, 5).map((pull, index) => (
+                  {realPulls.slice(0, 5).map((pull, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
@@ -299,4 +307,58 @@ function StatCard({ title, value, icon, color, unit = '' }) {
       </div>
     </div>
   );
+}
+
+// Fonctions pour générer les vraies données
+function generateRealIssues(issuesData) {
+  if (!issuesData?.recent || !Array.isArray(issuesData.recent)) {
+    return [];
+  }
+  
+  return issuesData.recent.map(issue => ({
+    number: issue.number,
+    title: issue.title,
+    state: issue.state,
+    author: issue.user?.login || issue.author || 'Auteur inconnu',
+    createdAt: issue.created_at,
+    labels: issue.labels || []
+  }));
+}
+
+function generateRealPulls(pullsData) {
+  if (!pullsData?.recent || !Array.isArray(pullsData.recent)) {
+    return [];
+  }
+  
+  return pullsData.recent.map(pull => ({
+    number: pull.number,
+    title: pull.title,
+    state: pull.state,
+    author: pull.user?.login || pull.author || 'Auteur inconnu',
+    createdAt: pull.created_at,
+    mergedAt: pull.merged_at,
+    additions: pull.additions,
+    deletions: pull.deletions
+  }));
+}
+
+function generateIssueTypes(issuesData) {
+  if (!issuesData?.recent || !Array.isArray(issuesData.recent)) {
+    return {};
+  }
+  
+  const types = {};
+  
+  issuesData.recent.forEach(issue => {
+    if (issue.labels && Array.isArray(issue.labels)) {
+      issue.labels.forEach(label => {
+        const labelName = label.name || label;
+        if (labelName) {
+          types[labelName] = (types[labelName] || 0) + 1;
+        }
+      });
+    }
+  });
+  
+  return types;
 } 
