@@ -395,30 +395,42 @@ function ComparisonCard({ metric, current, standard, status, color }) {
 
 // Fonctions pour générer les vraies données
 function generateRealCommitHistory(commits) {
+  if (!Array.isArray(commits)) {
+    return [];
+  }
+  
   return commits.slice(0, 10).map(commit => {
+    if (!commit) return null;
+    
     const type = getCommitType(commit.message);
     const time = formatTimeAgo(commit.date);
     
     return {
       type,
-      message: commit.message.split('\n')[0],
-      author: commit.author,
+      message: commit.message ? commit.message.split('\n')[0] : 'Commit sans message',
+      author: commit.author || 'Auteur inconnu',
       time,
       files: commit.files?.length || 0,
-      hash: commit.sha.substring(0, 7),
+      hash: commit.sha ? commit.sha.substring(0, 7) : 'unknown',
       branch: 'main', // On pourrait récupérer la branche si disponible
       avatar_url: commit.avatar_url
     };
-  });
+  }).filter(Boolean); // Filtrer les valeurs null
 }
 
 function generateRealCommitTypes(commits) {
+  if (!Array.isArray(commits)) {
+    return [];
+  }
+  
   const typeCounts = {};
   const total = commits.length;
 
   commits.forEach(commit => {
-    const type = getCommitType(commit.message);
-    typeCounts[type] = (typeCounts[type] || 0) + 1;
+    if (commit && commit.message) {
+      const type = getCommitType(commit.message);
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    }
   });
 
   const colors = {
@@ -440,6 +452,13 @@ function generateRealCommitTypes(commits) {
 }
 
 function generateRealWeeklyActivity(commits) {
+  if (!Array.isArray(commits)) {
+    return Array.from({ length: 30 }, (_, i) => ({
+      day: `${i + 1}`,
+      commits: 0
+    }));
+  }
+  
   const now = new Date();
   const activity = {};
 
@@ -453,9 +472,11 @@ function generateRealWeeklyActivity(commits) {
 
   // Compter les commits par jour
   commits.forEach(commit => {
-    const date = new Date(commit.date).toISOString().split('T')[0];
-    if (activity[date] !== undefined) {
-      activity[date]++;
+    if (commit && commit.date) {
+      const date = new Date(commit.date).toISOString().split('T')[0];
+      if (activity[date] !== undefined) {
+        activity[date]++;
+      }
     }
   });
 
@@ -498,6 +519,10 @@ function generateRealCommitTrends(data) {
 
 // Fonctions utilitaires
 function getCommitType(message) {
+  if (!message || typeof message !== 'string') {
+    return 'chore';
+  }
+  
   const types = ['feat', 'fix', 'docs', 'refactor', 'style', 'test', 'chore'];
   const lowerMessage = message.toLowerCase();
   
@@ -523,38 +548,57 @@ function formatTimeAgo(dateString) {
 }
 
 function calculateThisMonth(commits) {
+  if (!Array.isArray(commits)) {
+    return 0;
+  }
+  
   const now = new Date();
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   
-  return commits.filter(commit => new Date(commit.date) >= thisMonth).length;
+  return commits.filter(commit => commit && commit.date && new Date(commit.date) >= thisMonth).length;
 }
 
 function calculateThisWeek(commits) {
+  if (!Array.isArray(commits)) {
+    return 0;
+  }
+  
   const now = new Date();
   const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   
-  return commits.filter(commit => new Date(commit.date) >= thisWeek).length;
+  return commits.filter(commit => commit && commit.date && new Date(commit.date) >= thisWeek).length;
 }
 
 function calculateAveragePerDay(commits) {
-  if (commits.length === 0) return 0;
+  if (!Array.isArray(commits) || commits.length === 0) {
+    return 0;
+  }
   
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const recentCommits = commits.filter(commit => new Date(commit.date) >= thirtyDaysAgo);
+  const recentCommits = commits.filter(commit => commit && commit.date && new Date(commit.date) >= thirtyDaysAgo);
   
   return recentCommits.length / 30;
 }
 
 function calculateMergeRate(pulls) {
-  if (!pulls.total || pulls.total === 0) return 0;
+  if (!pulls || !pulls.total || pulls.total === 0) {
+    return 0;
+  }
   return Math.round((pulls.merged / pulls.total) * 100);
 }
 
 function calculateAverageCommitTime(commits) {
-  if (commits.length < 2) return 0;
+  if (!Array.isArray(commits) || commits.length < 2) {
+    return 0;
+  }
   
-  const sortedCommits = commits.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const validCommits = commits.filter(commit => commit && commit.date);
+  if (validCommits.length < 2) {
+    return 0;
+  }
+  
+  const sortedCommits = validCommits.sort((a, b) => new Date(b.date) - new Date(a.date));
   const timeDiffs = [];
   
   for (let i = 0; i < sortedCommits.length - 1; i++) {
