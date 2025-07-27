@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function FileViewer({ file, content, loading }) {
   // Détection du langage pour la coloration syntaxique
@@ -151,7 +151,7 @@ export default function FileViewer({ file, content, loading }) {
             <div className="overflow-auto max-h-96">
               <SyntaxHighlighter
                 language={getLanguage(file.name)}
-                style={atomOneDark}
+                style={oneDark}
                 showLineNumbers
                 customStyle={{
                   fontSize: '0.95em',
