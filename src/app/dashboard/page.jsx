@@ -1,42 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../../components/AuthProvider';
 import Dashboard from '../../components/Dashboard';
+import GuestDashboard from '../../components/GuestDashboard';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading, isGuest } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est connecté
-    const savedUser = localStorage.getItem('github_user');
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        // S'assurer que l'utilisateur a un plan défini
-        if (!userData.plan) {
-          userData.plan = 'free'; // Plan par défaut
-        }
-        setUser(userData);
-      } catch (error) {
-        console.error('Erreur lors du parsing des données utilisateur:', error);
-        localStorage.removeItem('github_user');
-        router.push('/');
-      }
-    } else {
+    // Si l'utilisateur n'est pas connecté et que le chargement est terminé, rediriger
+    if (!loading && !user) {
       router.push('/');
     }
-    setIsLoading(false);
-  }, [router]);
+  }, [user, loading, router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('github_user');
-    router.push('/');
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
         <div className="text-center">
@@ -51,5 +32,10 @@ export default function DashboardPage() {
     return null;
   }
 
-  return <Dashboard user={user} onLogout={handleLogout} />;
+  // Afficher le dashboard approprié selon le type d'utilisateur
+  if (isGuest) {
+    return <GuestDashboard />;
+  }
+
+  return <Dashboard user={user} />;
 } 

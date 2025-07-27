@@ -1,103 +1,77 @@
 import { NextResponse } from 'next/server';
-import { createCheckoutSession, createCustomCheckoutSession } from '../../../../lib/stripe';
-import { getPlanById } from '../../../../lib/pricing';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { 
-      planId, 
-      customerEmail, 
-      successUrl, 
-      cancelUrl, 
-      customAmount,
-      metadata = {} 
-    } = body;
+    const { planId, customerEmail, successUrl, cancelUrl, metadata } = await request.json();
 
-    console.log('Checkout session request:', { planId, customerEmail, customAmount });
+    console.log('Création de session de paiement:', { planId, customerEmail });
 
-    if (!customerEmail) {
+    // Validation des données
+    if (!planId || !customerEmail || !successUrl || !cancelUrl) {
       return NextResponse.json(
-        { error: 'Email client requis' },
+        { error: 'Données manquantes pour la création de la session' },
         { status: 400 }
       );
     }
 
-    if (!successUrl || !cancelUrl) {
+    // Définir les prix Stripe selon le plan
+    const priceMap = {
+      'pro': process.env.STRIPE_PRO_PRICE_ID,
+      'enterprise': process.env.STRIPE_ENTERPRISE_PRICE_ID
+    };
+
+    const priceId = priceMap[planId];
+    if (!priceId) {
       return NextResponse.json(
-        { error: 'URLs de succès et d\'annulation requises' },
+        { error: 'Plan invalide' },
         { status: 400 }
       );
     }
 
-    // Vérifier si Stripe est configuré
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.log('Stripe non configuré - retour d\'une URL de test');
-      // Retourner une URL de test pour le développement
-      const testUrl = `${successUrl}?test=true&plan=${planId}&email=${encodeURIComponent(customerEmail)}`;
-      return NextResponse.json({
-        success: true,
-        sessionId: 'test_session_' + Date.now(),
-        url: testUrl
-      });
-    }
-
-    let result;
-
-    if (customAmount) {
-      // Paiement personnalisé (pour le plan Enterprise)
-      result = await createCustomCheckoutSession({
-        amount: customAmount,
-        customerEmail,
-        successUrl,
-        cancelUrl,
+    // Créer la session de paiement Stripe
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      customer_email: customerEmail,
+      metadata: {
+        ...metadata,
+        planId,
+        createdAt: new Date().toISOString()
+      },
+      allow_promotion_codes: true,
+      billing_address_collection: 'required',
+      subscription_data: {
         metadata: {
-          ...metadata,
-          planId: planId || 'enterprise',
-          type: 'custom'
+          planId,
+          userId: metadata?.userId,
+          userLogin: metadata?.userLogin
         }
-      });
-    } else {
-      // Paiement standard avec plan
-      const plan = getPlanById(planId);
-      
-      if (!plan || !plan.stripePriceId) {
-        return NextResponse.json(
-          { error: 'Plan invalide ou non configuré' },
-          { status: 400 }
-        );
       }
+    });
 
-      result = await createCheckoutSession({
-        priceId: plan.stripePriceId,
-        customerEmail,
-        successUrl,
-        cancelUrl,
-        metadata: {
-          ...metadata,
-          planId: plan.id,
-          planName: plan.name
-        }
-      });
-    }
+    console.log('Session créée avec succès:', session.id);
 
-    if (result.success) {
-      return NextResponse.json({
-        success: true,
-        sessionId: result.sessionId,
-        url: result.url
-      });
-    } else {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      sessionId: session.id,
+      sessionUrl: session.url
+    });
 
   } catch (error) {
-    console.error('Erreur lors de la création de la session de paiement:', error);
+    console.error('Erreur lors de la création de la session:', error);
+    
     return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+      { error: 'Erreur lors de la création de la session de paiement' },
       { status: 500 }
     );
   }

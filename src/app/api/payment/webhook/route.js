@@ -1,23 +1,17 @@
 import { NextResponse } from 'next/server';
-import { stripe } from '../../../../lib/stripe';
-import { headers } from 'next/headers';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(request) {
   try {
-    if (!stripe) {
-      return NextResponse.json(
-        { error: 'Stripe not configured' },
-        { status: 500 }
-      );
-    }
-
     const body = await request.text();
-    const headersList = await headers();
-    const signature = headersList.get('stripe-signature');
+    const signature = request.headers.get('stripe-signature');
 
     if (!signature) {
       return NextResponse.json(
-        { error: 'Signature Stripe manquante' },
+        { error: 'Signature manquante' },
         { status: 400 }
       );
     }
@@ -25,20 +19,16 @@ export async function POST(request) {
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err) {
       console.error('Erreur de signature webhook:', err.message);
       return NextResponse.json(
-        { error: 'Signature webhook invalide' },
+        { error: 'Signature invalide' },
         { status: 400 }
       );
     }
 
-    console.log('Événement webhook reçu:', event.type);
+    console.log('Webhook reçu:', event.type);
 
     // Gérer les différents types d'événements
     switch (event.type) {
@@ -59,15 +49,11 @@ export async function POST(request) {
         break;
 
       case 'invoice.payment_succeeded':
-        await handleInvoicePaymentSucceeded(event.data.object);
+        await handlePaymentSucceeded(event.data.object);
         break;
 
       case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object);
-        break;
-
-      case 'customer.subscription.trial_will_end':
-        await handleTrialWillEnd(event.data.object);
+        await handlePaymentFailed(event.data.object);
         break;
 
       default:
@@ -85,84 +71,91 @@ export async function POST(request) {
   }
 }
 
-// Gestionnaires d'événements
 async function handleCheckoutSessionCompleted(session) {
   console.log('Session de paiement complétée:', session.id);
   
-  // Ici vous pouvez :
-  // - Mettre à jour le statut de l'utilisateur
-  // - Envoyer un email de confirmation
-  // - Créer un compte utilisateur
-  // - Activer les fonctionnalités premium
+  // Ici vous pouvez mettre à jour votre base de données
+  // pour marquer l'utilisateur comme ayant un abonnement actif
+  const { planId, userId, userLogin } = session.metadata;
   
-  const customerEmail = session.customer_email;
-  const planId = session.metadata?.planId;
-  
-  console.log(`Utilisateur ${customerEmail} a souscrit au plan ${planId}`);
+  // Exemple de mise à jour (à adapter selon votre base de données)
+  try {
+    // Mettre à jour le plan de l'utilisateur
+    // await updateUserPlan(userId, planId);
+    console.log(`Utilisateur ${userLogin} (${userId}) a souscrit au plan ${planId}`);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du plan utilisateur:', error);
+  }
 }
 
 async function handleSubscriptionCreated(subscription) {
   console.log('Abonnement créé:', subscription.id);
   
-  // Activer les fonctionnalités premium pour l'utilisateur
-  const customerId = subscription.customer;
-  const planId = subscription.metadata?.planId;
+  const { planId, userId, userLogin } = subscription.metadata;
   
-  console.log(`Abonnement créé pour le client ${customerId}, plan: ${planId}`);
+  try {
+    // Marquer l'abonnement comme actif
+    // await activateSubscription(subscription.id, userId, planId);
+    console.log(`Abonnement activé pour ${userLogin} (${userId}) - Plan: ${planId}`);
+  } catch (error) {
+    console.error('Erreur lors de l\'activation de l\'abonnement:', error);
+  }
 }
 
 async function handleSubscriptionUpdated(subscription) {
   console.log('Abonnement mis à jour:', subscription.id);
   
-  // Mettre à jour les fonctionnalités selon le nouveau plan
-  const customerId = subscription.customer;
+  const { planId, userId, userLogin } = subscription.metadata;
   const status = subscription.status;
   
-  console.log(`Abonnement ${subscription.id} mis à jour, statut: ${status}`);
+  try {
+    // Mettre à jour le statut de l'abonnement
+    // await updateSubscriptionStatus(subscription.id, status, planId);
+    console.log(`Abonnement mis à jour pour ${userLogin} (${userId}) - Statut: ${status}`);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'abonnement:', error);
+  }
 }
 
 async function handleSubscriptionDeleted(subscription) {
   console.log('Abonnement supprimé:', subscription.id);
   
-  // Désactiver les fonctionnalités premium
-  const customerId = subscription.customer;
+  const { userId, userLogin } = subscription.metadata;
   
-  console.log(`Abonnement ${subscription.id} supprimé pour le client ${customerId}`);
+  try {
+    // Marquer l'abonnement comme inactif
+    // await deactivateSubscription(subscription.id, userId);
+    console.log(`Abonnement désactivé pour ${userLogin} (${userId})`);
+  } catch (error) {
+    console.error('Erreur lors de la désactivation de l\'abonnement:', error);
+  }
 }
 
-async function handleInvoicePaymentSucceeded(invoice) {
+async function handlePaymentSucceeded(invoice) {
   console.log('Paiement réussi:', invoice.id);
   
-  // Confirmer le paiement et maintenir l'accès
-  const customerId = invoice.customer;
-  const amount = invoice.amount_paid;
+  // Ici vous pouvez gérer les paiements récurrents réussis
+  const subscriptionId = invoice.subscription;
   
-  console.log(`Paiement de ${amount}€ réussi pour le client ${customerId}`);
+  try {
+    // Marquer le paiement comme réussi
+    // await markPaymentSucceeded(invoice.id, subscriptionId);
+    console.log(`Paiement marqué comme réussi pour l'abonnement ${subscriptionId}`);
+  } catch (error) {
+    console.error('Erreur lors du traitement du paiement:', error);
+  }
 }
 
-async function handleInvoicePaymentFailed(invoice) {
+async function handlePaymentFailed(invoice) {
   console.log('Paiement échoué:', invoice.id);
   
-  // Gérer l'échec de paiement
-  const customerId = invoice.customer;
+  const subscriptionId = invoice.subscription;
   
-  console.log(`Paiement échoué pour le client ${customerId}`);
-  
-  // Ici vous pouvez :
-  // - Envoyer un email de rappel
-  // - Limiter l'accès aux fonctionnalités
-  // - Tenter un nouveau prélèvement
-}
-
-async function handleTrialWillEnd(subscription) {
-  console.log('Essai se termine bientôt:', subscription.id);
-  
-  // Notifier l'utilisateur que l'essai se termine
-  const customerId = subscription.customer;
-  
-  console.log(`Essai se termine bientôt pour le client ${customerId}`);
-  
-  // Ici vous pouvez :
-  // - Envoyer un email de rappel
-  // - Afficher une notification dans l'application
+  try {
+    // Gérer l'échec de paiement
+    // await handlePaymentFailure(invoice.id, subscriptionId);
+    console.log(`Échec de paiement traité pour l'abonnement ${subscriptionId}`);
+  } catch (error) {
+    console.error('Erreur lors du traitement de l\'échec de paiement:', error);
+  }
 } 

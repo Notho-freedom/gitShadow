@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthProvider';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
 import RepositoryExplorer from './RepositoryExplorer';
@@ -19,7 +20,8 @@ import CheckoutModal from './CheckoutModal';
 import UpgradeNotifications from './UpgradeNotifications';
 import PaymentSuccessModal from './PaymentSuccessModal';
 
-export default function Dashboard({ user, onLogout }) {
+export default function Dashboard() {
+  const { user, loading } = useAuth();
   const [activeView, setActiveView] = useState('repos');
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -31,7 +33,7 @@ export default function Dashboard({ user, onLogout }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [layout, setLayout] = useState('default');
-  const [loading, setLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showUpgradeNotice, setShowUpgradeNotice] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
@@ -40,30 +42,29 @@ export default function Dashboard({ user, onLogout }) {
   // Vérifier les paramètres de succès de paiement
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const test = urlParams.get('test');
+    const payment = urlParams.get('payment');
     const plan = urlParams.get('plan');
-    const portal = urlParams.get('portal');
     
-    if (test === 'true' && plan) {
-      setPaymentSuccessData({ plan, isTest: true });
+    if (payment === 'success' && plan) {
+      setPaymentSuccessData({ plan, isTest: false });
       setShowPaymentSuccess(true);
       // Nettoyer l'URL
       window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (portal === 'test') {
-      alert('Portail client en mode test - Fonctionnalité simulée');
+    } else if (payment === 'cancelled') {
+      alert('Paiement annulé');
       // Nettoyer l'URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
   // Vérifier si user existe et a les propriétés nécessaires
-  if (!user || !user.plan) {
+  if (loading || !user || !user.plan) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Chargement de votre profil...</p>
-          {!user && (
+          {!user && !loading && (
             <p className="text-gray-500 text-sm mt-2">Redirection vers l'authentification...</p>
           )}
         </div>
@@ -117,7 +118,7 @@ export default function Dashboard({ user, onLogout }) {
 
   const handleFileSelect = useCallback(async (file) => {
     setSelectedFile(file);
-    setLoading(true);
+    setLoadingState(true);
 
     try {
       const response = await fetch('/api/fetchFileContent', {
@@ -147,7 +148,7 @@ export default function Dashboard({ user, onLogout }) {
       console.error('Erreur lors du chargement du fichier:', error);
       setFileContent(`// Erreur: ${error.message}`);
     } finally {
-      setLoading(false);
+      setLoadingState(false);
     }
   }, [selectedRepo, user.access_token]);
 
@@ -159,7 +160,7 @@ export default function Dashboard({ user, onLogout }) {
       return;
     }
 
-    setLoading(true);
+    setLoadingState(true);
     try {
       const response = await fetch('/api/generateDoc', {
         method: 'POST',
@@ -181,7 +182,7 @@ export default function Dashboard({ user, onLogout }) {
     } catch (error) {
       console.error('Erreur lors de la génération de documentation:', error);
     } finally {
-      setLoading(false);
+      setLoadingState(false);
     }
   }, [selectedFile, fileContent, selectedRepo, user]);
 
@@ -194,7 +195,7 @@ export default function Dashboard({ user, onLogout }) {
             selectedRepo={selectedRepo}
             onRepoSelect={handleRepoSelect}
             onFileSelect={handleFileSelect}
-            loading={loading}
+            loading={loadingState}
           />
         );
       case 'explorer':
@@ -204,7 +205,7 @@ export default function Dashboard({ user, onLogout }) {
             selectedRepo={selectedRepo}
             onFileSelect={handleFileSelect}
             onBackToRepos={handleBackToRepos}
-            loading={loading}
+            loading={loadingState}
           />
         );
       case 'editor':
@@ -213,7 +214,7 @@ export default function Dashboard({ user, onLogout }) {
             file={selectedFile}
             content={fileContent}
             onGenerateDoc={handleGenerateDocumentation}
-            loading={loading}
+            loading={loadingState}
             theme={theme}
             onBackToExplorer={handleBackToExplorer}
             onFileSelect={handleFileSelect}
@@ -244,7 +245,7 @@ export default function Dashboard({ user, onLogout }) {
             setTheme={setTheme}
             layout={layout}
             setLayout={setLayout}
-            onLogout={onLogout}
+            onLogout={() => {}} // onLogout is now handled by AuthProvider
           />
         );
       case 'billing':
@@ -282,7 +283,7 @@ export default function Dashboard({ user, onLogout }) {
           activeView={activeView}
           onSearchOpen={() => setIsSearchOpen(true)}
           onNotificationOpen={() => setIsNotificationOpen(true)}
-          onLogout={onLogout}
+          onLogout={() => {}} // onLogout is now handled by AuthProvider
           theme={theme}
           layout={layout}
           onLayoutChange={setLayout}
@@ -309,7 +310,7 @@ export default function Dashboard({ user, onLogout }) {
           activeView={activeView}
           selectedFile={selectedFile}
           onGenerateDoc={handleGenerateDocumentation}
-          loading={loading}
+          loading={loadingState}
         />
       </div>
 

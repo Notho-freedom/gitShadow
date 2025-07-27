@@ -1,4 +1,5 @@
 import './globals.css';
+import { AuthProvider } from '../components/AuthProvider';
 
 export const metadata = {
   title: 'gitShadow - AI Documentation Generator',
@@ -27,7 +28,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="font-sans antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

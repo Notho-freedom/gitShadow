@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from './Logo';
 
-export default function AuthModal({ isOpen, onClose }) {
+export default function AuthModal({ isOpen, onClose, onGuestMode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,6 +44,12 @@ export default function AuthModal({ isOpen, onClose }) {
     } catch (error) {
       setError('Erreur lors de la connexion avec GitHub');
       setIsLoading(false);
+    }
+  };
+
+  const handleGuestMode = () => {
+    if (onGuestMode) {
+      onGuestMode();
     }
   };
 
@@ -98,7 +104,7 @@ export default function AuthModal({ isOpen, onClose }) {
             <button
               onClick={handleGitHubAuth}
               disabled={isLoading}
-              className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl mb-4"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -111,6 +117,36 @@ export default function AuthModal({ isOpen, onClose }) {
                 </>
               )}
             </button>
+
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-transparent text-gray-400">ou</span>
+              </div>
+            </div>
+
+            {/* Guest Mode Button */}
+            <button
+              onClick={handleGuestMode}
+              className="w-full bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-3 border border-yellow-500/30 shadow-lg hover:shadow-xl mb-4"
+            >
+              <span className="text-lg">👤</span>
+              <span>Mode Invité</span>
+            </button>
+
+            {/* Guest Mode Info */}
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+              <h3 className="text-yellow-400 font-medium text-sm mb-2">Mode Invité</h3>
+              <ul className="text-yellow-300 text-xs space-y-1">
+                <li>• Accès à 3 dépôts publics maximum</li>
+                <li>• Données sauvegardées localement</li>
+                <li>• Pas de synchronisation GitHub</li>
+                <li>• Fonctionnalités de base uniquement</li>
+              </ul>
+            </div>
 
             {/* Error Message */}
             {error && (
