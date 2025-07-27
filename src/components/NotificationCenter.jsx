@@ -61,6 +61,16 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
           read: false,
           action: 'upgrade',
           badge: 'BOOST'
+        },
+        {
+          id: 6,
+          type: 'promo',
+          title: '🔒 Sécurité renforcée',
+          message: 'Bénéficiez de fonctionnalités de sécurité avancées !',
+          time: 'Il y a 5 minutes',
+          read: false,
+          action: 'upgrade',
+          badge: 'SECURITY'
         }
       );
     } else if (user && user.plan === 'pro') {
@@ -92,6 +102,16 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
           read: false,
           action: 'upgrade',
           badge: 'ENTERPRISE'
+        },
+        {
+          id: 5,
+          type: 'promo',
+          title: '🚀 Offre spéciale Pro',
+          message: 'Économisez 15% sur votre prochain mois avec PRO15 !',
+          time: 'Il y a 1 heure',
+          read: false,
+          action: 'upgrade',
+          badge: 'PROMO'
         }
       );
     } else {
@@ -158,7 +178,8 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
       'BOOST': 'bg-gradient-to-r from-green-600 to-emerald-600 text-white',
       'NEW': 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
       'ENTERPRISE': 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white',
-      'UPDATE': 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white'
+      'UPDATE': 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white',
+      'SECURITY': 'bg-gradient-to-r from-red-600 to-pink-600 text-white'
     };
     return colors[badge] || 'bg-gray-600 text-white';
   };
@@ -214,10 +235,10 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 300 }}
             transition={{ duration: 0.3 }}
-            className="relative w-full max-w-md h-full bg-gray-800/95 backdrop-blur-xl border-l border-gray-700/50 shadow-2xl"
+            className="relative w-full max-w-md h-full bg-gray-800/95 backdrop-blur-xl border-l border-gray-700/50 shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="p-6 border-b border-gray-700/50">
+            <div className="flex-shrink-0 p-6 border-b border-gray-700/50">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white">Notifications</h2>
                 <div className="flex items-center space-x-2">
@@ -247,7 +268,7 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        transition={{ delay: index * 0.1 }}
+                        transition={{ delay: index * 0.05 }}
                         className={`p-4 rounded-xl border transition-all duration-200 ${
                           notification.read 
                             ? 'bg-gray-700/30 border-gray-600/50' 
@@ -256,35 +277,35 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
                         onClick={() => notification.action && handleNotificationAction(notification)}
                       >
                         <div className="flex items-start space-x-3">
-                          <span className="text-xl">{getNotificationIcon(notification.type)}</span>
+                          <span className="text-xl flex-shrink-0">{getNotificationIcon(notification.type)}</span>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <h3 className={`font-medium ${
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                <h3 className={`font-medium truncate ${
                                   notification.read ? 'text-gray-300' : 'text-white'
                                 }`}>
                                   {notification.title}
                                 </h3>
                                 {notification.badge && (
-                                  <span className={`px-2 py-1 text-xs font-bold rounded-full ${getBadgeColor(notification.badge)}`}>
+                                  <span className={`px-2 py-1 text-xs font-bold rounded-full flex-shrink-0 ${getBadgeColor(notification.badge)}`}>
                                     {notification.badge}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-xs text-gray-400">{notification.time}</span>
+                              <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                                <span className="text-xs text-gray-400 whitespace-nowrap">{notification.time}</span>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     deleteNotification(notification.id);
                                   }}
-                                  className="text-gray-400 hover:text-red-400 transition-colors"
+                                  className="text-gray-400 hover:text-red-400 transition-colors flex-shrink-0"
                                 >
                                   ×
                                 </button>
                               </div>
                             </div>
-                            <p className="text-sm text-gray-400 mt-1">{notification.message}</p>
+                            <p className="text-sm text-gray-400 mt-1 break-words">{notification.message}</p>
                             {notification.action === 'upgrade' && (
                               <div className="mt-3 flex items-center justify-between">
                                 <button
@@ -292,7 +313,7 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
                                     e.stopPropagation();
                                     handleNotificationAction(notification);
                                   }}
-                                  className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-xs rounded-lg font-medium transition-all"
+                                  className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-xs rounded-lg font-medium transition-all flex-shrink-0"
                                 >
                                   {notification.badge === 'ENTERPRISE' ? 'Passer à Enterprise' : 'Passer au Pro'}
                                 </button>
@@ -302,7 +323,7 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
                                       e.stopPropagation();
                                       markAsRead(notification.id);
                                     }}
-                                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex-shrink-0"
                                   >
                                     Marquer comme lu
                                   </button>
@@ -340,7 +361,7 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-gray-700/50">
+            <div className="flex-shrink-0 p-4 border-t border-gray-700/50">
               <div className="flex items-center justify-between text-sm text-gray-400">
                 <span>{notifications.length} notification{notifications.length !== 1 ? 's' : ''}</span>
                 <button className="text-blue-400 hover:text-blue-300 transition-colors">

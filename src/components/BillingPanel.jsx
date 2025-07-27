@@ -99,24 +99,33 @@ export default function BillingPanel({ user, onUpgrade }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerId: billingData.subscription.customerId,
-          returnUrl: window.location.href
+          customerId: billingData.subscription.customerId
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.url) {
-        window.open(data.url, '_blank');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.url) {
+          window.open(data.url, '_blank');
+        }
       } else {
-        throw new Error(data.error || 'Erreur lors de l\'accès au portail');
+        alert('Erreur lors de l\'accès au portail client');
       }
-    } catch (err) {
-      console.error('Erreur portail client:', err);
-      alert('Erreur lors de l\'accès au portail client. Veuillez réessayer.');
+    } catch (error) {
+      console.error('Erreur portal:', error);
+      alert('Erreur lors de l\'accès au portail client');
+    }
+  };
+
+  const handleUpgradeClick = (targetPlan) => {
+    // Déclencher l'upgrade avec le plan cible spécifique
+    if (onUpgrade && typeof onUpgrade === 'function') {
+      // Si onUpgrade accepte un paramètre pour le plan cible
+      if (onUpgrade.length > 0) {
+        onUpgrade(targetPlan);
+      } else {
+        onUpgrade();
+      }
     }
   };
 
@@ -244,7 +253,7 @@ export default function BillingPanel({ user, onUpgrade }) {
                   Passez au plan Pro pour accéder à toutes les fonctionnalités avancées
                 </p>
                 <button
-                  onClick={onUpgrade}
+                  onClick={() => handleUpgradeClick('pro')}
                   className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
                 >
                   Passer au Pro
@@ -302,7 +311,7 @@ export default function BillingPanel({ user, onUpgrade }) {
               </ul>
 
               <button
-                onClick={onUpgrade}
+                onClick={() => handleUpgradeClick('pro')}
                 className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
               >
                 Choisir Pro
@@ -339,7 +348,7 @@ export default function BillingPanel({ user, onUpgrade }) {
               </ul>
 
               <button
-                onClick={onUpgrade}
+                onClick={() => handleUpgradeClick('enterprise')}
                 className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all"
               >
                 Choisir Enterprise
