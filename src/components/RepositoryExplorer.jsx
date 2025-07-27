@@ -124,7 +124,8 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
 
       if (response.ok) {
         const data = await response.json();
-        setFileTree(data.files || []);
+        // Utiliser la structure d'arbre complète au lieu de seulement les fichiers
+        setFileTree(data.tree || []);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des fichiers:', error);
@@ -138,7 +139,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   };
 
   const getFileIcon = (filename, type) => {
-    if (type === 'dir') return '📁';
+    if (type === 'tree') return '📁';
     
     const ext = filename.split('.').pop()?.toLowerCase();
     const iconMap = {
@@ -186,7 +187,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   };
 
   const getFileColor = (filename, type) => {
-    if (type === 'dir') return 'from-blue-500 to-blue-600';
+    if (type === 'tree') return 'from-blue-500 to-blue-600';
     
     const ext = filename.split('.').pop()?.toLowerCase();
     const colorMap = {
@@ -294,14 +295,24 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
 
   const getFilesInCurrentPath = () => {
     if (!fileTree || !currentPath) {
-      return fileTree.filter(item => !item.path.includes('/'));
+      // Retourner les éléments de la racine
+      return fileTree;
     }
-    return fileTree.filter(item => {
-      const itemPath = item.path;
-      const currentPathWithSlash = currentPath + '/';
-      return itemPath.startsWith(currentPathWithSlash) && 
-             !itemPath.substring(currentPathWithSlash.length).includes('/');
-    });
+    
+    // Naviguer dans l'arbre pour trouver le dossier actuel
+    const pathParts = currentPath.split('/').filter(Boolean);
+    let currentLevel = fileTree;
+    
+    for (const part of pathParts) {
+      const found = currentLevel.find(item => item.name === part && item.type === 'tree');
+      if (found && found.children) {
+        currentLevel = found.children;
+      } else {
+        return []; // Chemin invalide
+      }
+    }
+    
+    return currentLevel || [];
   };
 
   const filteredAndSortedRepos = repos.filter(repo => {
@@ -349,7 +360,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   }).sort((a, b) => {
     // Trier: dossiers d'abord, puis fichiers, alphabétiquement
     if (a.type !== b.type) {
-      return a.type === 'dir' ? -1 : 1;
+      return a.type === 'tree' ? -1 : 1;
     }
     return a.name.localeCompare(b.name);
   });
@@ -634,7 +645,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                       transition={{ duration: 0.2, delay: index * 0.02 }}
                       whileHover={{ scale: 1.05 }}
                       onClick={() => {
-                        if (file.type === 'dir') {
+                        if (file.type === 'tree') {
                           navigateToPath(file.path);
                         } else {
                           onFileSelect(file);
@@ -654,7 +665,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                           </div>
                           <div>
                             <h4 className="text-white font-medium text-sm truncate">{file.name}</h4>
-                            {file.type !== 'dir' && (
+                            {file.type !== 'tree' && (
                               <p className="text-gray-400 text-xs mt-1">{formatFileSize(file.size)}</p>
                             )}
                             <p className="text-gray-500 text-xs mt-1">{formatDate(file.updated_at || file.created_at)}</p>
@@ -671,7 +682,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                             <p className="text-gray-400 text-sm truncate">{file.path}</p>
                           </div>
                           <div className="text-right text-sm text-gray-400">
-                            {file.type !== 'dir' && (
+                            {file.type !== 'tree' && (
                               <div>{formatFileSize(file.size)}</div>
                             )}
                             <div>{formatDate(file.updated_at || file.created_at)}</div>
