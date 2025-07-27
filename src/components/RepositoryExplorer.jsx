@@ -117,7 +117,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
         body: JSON.stringify({
           owner: repo.owner?.login || repo.owner,
           repo: repo.name,
-          ref: commit.sha,
+          ref: commit.sha, // Passer le SHA du commit
           accessToken: user.access_token
         }),
       });
@@ -268,12 +268,22 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Aujourd\'hui';
+    if (diffInDays === 1) return 'Hier';
+    if (diffInDays < 7) return `Il y a ${diffInDays} jours`;
+    if (diffInDays < 30) return `Il y a ${Math.floor(diffInDays / 7)} semaines`;
+    if (diffInDays < 365) return `Il y a ${Math.floor(diffInDays / 30)} mois`;
+    
+    return date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
   };
 
@@ -295,10 +305,28 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   };
 
   const filteredAndSortedRepos = repos.filter(repo => {
+    // Filtre par recherche
     if (searchQuery && !selectedRepo) {
-      return repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      const matchesSearch = repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
              repo.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
     }
+    
+    // Filtre par type de dépôt
+    if (filter !== 'all') {
+      switch (filter) {
+        case 'public':
+          if (repo.private) return false;
+          break;
+        case 'private':
+          if (!repo.private) return false;
+          break;
+        case 'fork':
+          if (!repo.fork) return false;
+          break;
+      }
+    }
+    
     return true;
   }).sort((a, b) => {
     switch (sortBy) {
@@ -318,6 +346,12 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
       return file.name.toLowerCase().includes(searchQuery.toLowerCase());
     }
     return true;
+  }).sort((a, b) => {
+    // Trier: dossiers d'abord, puis fichiers, alphabétiquement
+    if (a.type !== b.type) {
+      return a.type === 'dir' ? -1 : 1;
+    }
+    return a.name.localeCompare(b.name);
   });
 
   if (isLoadingRepos) {
@@ -392,7 +426,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                     ) : (
                       commits.map((commit) => (
                         <option key={commit.sha} value={commit.sha}>
-                          {commit.commit?.message?.substring(0, 50)}... ({commit.sha.substring(0, 7)}) - {formatDate(commit.commit?.author?.date)}
+                          {commit.commit?.message?.substring(0, 60)}... ({commit.sha.substring(0, 7)}) - {formatDate(commit.commit?.author?.date)}
                         </option>
                       ))
                     )}

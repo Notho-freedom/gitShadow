@@ -78,7 +78,7 @@ export async function POST(request) {
     const body = await request.json();
     
     // Support pour les deux formats : URL complète ou paramètres séparés
-    let owner, repo, accessToken;
+    let owner, repo, accessToken, ref;
     
     if (body.url) {
       // Format original avec URL complète
@@ -120,7 +120,7 @@ export async function POST(request) {
       [owner, repo] = pathParts;
     } else {
       // Nouveau format avec paramètres séparés
-      ({ owner, repo, accessToken } = body);
+      ({ owner, repo, accessToken, ref } = body);
       
       if (!owner || !repo) {
         return new Response(
@@ -186,27 +186,55 @@ export async function POST(request) {
       };
     }
 
-    // Essayer plusieurs branches possibles
-    const possibleBranches = [defaultBranch, 'main', 'master', 'develop'];
+    // Utiliser le ref spécifié ou la branche par défaut
+    const targetRef = ref || defaultBranch;
     let treeData = null;
-    let usedBranch = defaultBranch;
+    let usedRef = targetRef;
 
-    for (const branch of possibleBranches) {
-      try {
-        const treeResponse = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+    try {
+      // Essayer d'abord avec le ref spécifique (commit SHA ou branche)
+      const treeResponse = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/git/trees/${targetRef}?recursive=1`,
+        { headers }
+      );
+
+      if (treeResponse.ok) {
+        treeData = await treeResponse.json();
+        usedRef = targetRef;
+      } else {
+        // Si ça ne marche pas, essayer avec la branche par défaut
+        const fallbackResponse = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`,
           { headers }
         );
 
-        if (treeResponse.ok) {
-          treeData = await treeResponse.json();
-          usedBranch = branch;
-          break;
+        if (fallbackResponse.ok) {
+          treeData = await fallbackResponse.json();
+          usedRef = defaultBranch;
+        } else {
+          // Essayer d'autres branches possibles
+          const possibleBranches = ['main', 'master', 'develop'];
+          for (const branch of possibleBranches) {
+            try {
+              const branchResponse = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`,
+                { headers }
+              );
+
+              if (branchResponse.ok) {
+                treeData = await branchResponse.json();
+                usedRef = branch;
+                break;
+              }
+            } catch (error) {
+              console.warn(`Erreur avec la branche ${branch}:`, error);
+              continue;
+            }
+          }
         }
-      } catch (error) {
-        console.warn(`Erreur avec la branche ${branch}:`, error);
-        continue;
       }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'arborescence:', error);
     }
 
     if (!treeData) {
@@ -242,7 +270,7 @@ export async function POST(request) {
         size: item.size,
         sha: item.sha,
         url: item.url,
-        html_url: `https://github.com/${owner}/${repo}/blob/${usedBranch}/${item.path}`,
+        html_url: `https://github.com/${owner}/${repo}/blob/${usedRef}/${item.path}`,
         // Informations sur les changements (initialement inchangé)
         changeStatus: 'unchanged',
         additions: 0,
@@ -271,7 +299,7 @@ export async function POST(request) {
         forks: repoInfo.forks_count,
         language: repoInfo.language,
         updatedAt: repoInfo.updated_at,
-        defaultBranch: usedBranch
+        defaultBranch: usedRef
       }
     };
 
@@ -309,7 +337,7 @@ export async function POST(request) {
               size: isLastPart ? item.size : 0,
               sha: isLastPart ? item.sha : '',
               url: isLastPart ? item.url : '',
-              html_url: isLastPart ? item.html_url : `https://github.com/${owner}/${repo}/tree/${usedBranch}/${nodePath}`,
+              html_url: isLastPart ? item.html_url : `https://github.com/${owner}/${repo}/tree/${usedRef}/${nodePath}`,
               updated_at: new Date().toISOString(),
               created_at: new Date().toISOString(),
               isFolder: !isLastPart || item.type === 'tree'
