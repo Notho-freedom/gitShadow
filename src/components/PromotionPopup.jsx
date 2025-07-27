@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function PromotionPopup({ user, onUpgrade, onClose }) {
+export default function PromotionPopup({ user, onUpgrade, onClose, triggerType = 'auto', targetPlan = null }) {
   const [isVisible, setIsVisible] = useState(false);
   const [currentPromo, setCurrentPromo] = useState(null);
 
@@ -17,7 +17,8 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       code: 'WELCOME20',
       color: 'from-yellow-500 to-orange-500',
       icon: '🎉',
-      badge: 'PROMO'
+      badge: 'PROMO',
+      targetPlan: 'pro'
     },
     {
       id: 'pro',
@@ -28,7 +29,8 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       code: 'PRO15',
       color: 'from-blue-600 to-purple-600',
       icon: '🚀',
-      badge: 'PRO'
+      badge: 'PRO',
+      targetPlan: 'pro'
     },
     {
       id: 'enterprise',
@@ -39,7 +41,8 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       code: 'TEAM25',
       color: 'from-indigo-600 to-purple-600',
       icon: '💎',
-      badge: 'ENTERPRISE'
+      badge: 'ENTERPRISE',
+      targetPlan: 'enterprise'
     },
     {
       id: 'performance',
@@ -50,7 +53,8 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       code: 'BOOST30',
       color: 'from-green-600 to-emerald-600',
       icon: '⚡',
-      badge: 'BOOST'
+      badge: 'BOOST',
+      targetPlan: 'pro'
     },
     {
       id: 'security',
@@ -61,26 +65,70 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       code: 'SECURE18',
       color: 'from-red-600 to-pink-600',
       icon: '🔒',
-      badge: 'SECURITY'
+      badge: 'SECURITY',
+      targetPlan: 'enterprise'
+    },
+    {
+      id: 'upgrade_pro',
+      title: '🚀 Upgrade vers Pro',
+      subtitle: 'Débloquez le potentiel',
+      message: 'Passez au plan Pro et accédez à toutes les fonctionnalités avancées',
+      discount: '20%',
+      code: 'UPGRADE20',
+      color: 'from-blue-600 to-purple-600',
+      icon: '🚀',
+      badge: 'UPGRADE',
+      targetPlan: 'pro'
+    },
+    {
+      id: 'upgrade_enterprise',
+      title: '💎 Upgrade vers Enterprise',
+      subtitle: 'Pour les équipes',
+      message: 'Débloquez la collaboration avancée et les analytics détaillés',
+      discount: '25%',
+      code: 'ENTERPRISE25',
+      color: 'from-indigo-600 to-purple-600',
+      icon: '💎',
+      badge: 'ENTERPRISE',
+      targetPlan: 'enterprise'
     }
   ];
 
   useEffect(() => {
-    if (!user || user.plan !== 'free') return;
+    if (!user) return;
 
     const showPromotion = () => {
-      const randomPromo = promotions[Math.floor(Math.random() * promotions.length)];
-      setCurrentPromo(randomPromo);
-      setIsVisible(true);
+      let selectedPromo;
+      
+      if (triggerType === 'manual' && targetPlan) {
+        // Si c'est un déclenchement manuel avec un plan cible spécifique
+        const planPromos = promotions.filter(p => p.targetPlan === targetPlan);
+        selectedPromo = planPromos[Math.floor(Math.random() * planPromos.length)];
+      } else if (triggerType === 'auto') {
+        // Affichage automatique pour les utilisateurs gratuits
+        if (user.plan !== 'free') return;
+        const randomPromo = promotions.filter(p => p.targetPlan === 'pro');
+        selectedPromo = randomPromo[Math.floor(Math.random() * randomPromo.length)];
+      }
+      
+      if (selectedPromo) {
+        setCurrentPromo(selectedPromo);
+        setIsVisible(true);
+      }
     };
 
-    // Afficher une promotion après 2-5 minutes
-    const timer = setTimeout(() => {
+    if (triggerType === 'manual' && targetPlan) {
+      // Affichage immédiat pour les déclenchements manuels
       showPromotion();
-    }, 120000 + Math.random() * 180000); // Entre 2 et 5 minutes
+    } else if (triggerType === 'auto' && user.plan === 'free') {
+      // Afficher une promotion après 2-5 minutes pour les utilisateurs gratuits
+      const timer = setTimeout(() => {
+        showPromotion();
+      }, 120000 + Math.random() * 180000); // Entre 2 et 5 minutes
 
-    return () => clearTimeout(timer);
-  }, [user]);
+      return () => clearTimeout(timer);
+    }
+  }, [user, triggerType, targetPlan]);
 
   const handleUpgrade = () => {
     onUpgrade();
