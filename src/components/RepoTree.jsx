@@ -5,6 +5,18 @@ import { useState, useMemo } from 'react';
 export default function RepoTree({ repoTree = [], searchQuery = '', onSelectFile, selectedFile }) {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root']));
 
+  // Fonction pour trier les éléments : dossiers en premier, puis fichiers
+  const sortTreeItems = (items) => {
+    return items.sort((a, b) => {
+      // Dossiers en premier
+      if (a.type === 'tree' && b.type !== 'tree') return -1;
+      if (a.type !== 'tree' && b.type === 'tree') return 1;
+      
+      // Si les deux sont du même type, trier par nom
+      return a.name.localeCompare(b.name);
+    });
+  };
+
   // Organiser les fichiers en structure d'arbre
   const organizedTree = useMemo(() => {
     if (!repoTree.length) return [];
@@ -33,10 +45,13 @@ export default function RepoTree({ repoTree = [], searchQuery = '', onSelectFile
     });
 
     const convertToArray = (obj) => {
-      return Object.values(obj).map(node => ({
+      const array = Object.values(obj).map(node => ({
         ...node,
         children: Object.keys(node.children).length > 0 ? convertToArray(node.children) : []
       }));
+      
+      // Trier les éléments : dossiers en premier
+      return sortTreeItems(array);
     };
 
     return convertToArray(tree);

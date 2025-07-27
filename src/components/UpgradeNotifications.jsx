@@ -71,6 +71,38 @@ export default function UpgradeNotifications({ user, onUpgrade }) {
       delay: 240000, // 4 minutes
       icon: '💎',
       badge: 'ENTERPRISE'
+    },
+    {
+      id: 'productivity',
+      title: '🚀 Boostez votre productivité',
+      message: 'Gagnez du temps avec nos outils avancés !',
+      delay: 270000, // 4.5 minutes
+      icon: '🚀',
+      badge: 'PRO'
+    },
+    {
+      id: 'team',
+      title: '👨‍💻 Travail d\'équipe avancé',
+      message: 'Collaborez efficacement avec votre équipe !',
+      delay: 300000, // 5 minutes
+      icon: '👨‍💻',
+      badge: 'ENTERPRISE'
+    },
+    {
+      id: 'insights',
+      title: '📈 Insights détaillés',
+      message: 'Analysez vos projets en profondeur !',
+      delay: 330000, // 5.5 minutes
+      icon: '📈',
+      badge: 'PREMIUM'
+    },
+    {
+      id: 'support',
+      title: '🎯 Support prioritaire',
+      message: 'Bénéficiez d\'un support dédié !',
+      delay: 360000, // 6 minutes
+      icon: '🎯',
+      badge: 'PRO'
     }
   ];
 
@@ -81,8 +113,8 @@ export default function UpgradeNotifications({ user, onUpgrade }) {
       const now = Date.now();
       const timeSinceLastNotification = now - lastNotificationTime;
       
-      // Attendre au moins 2 minutes entre les notifications
-      if (timeSinceLastNotification < 120000) return;
+      // Attendre au moins 1 minute entre les notifications
+      if (timeSinceLastNotification < 60000) return;
 
       const randomMessage = upgradeMessages[Math.floor(Math.random() * upgradeMessages.length)];
       
@@ -101,10 +133,10 @@ export default function UpgradeNotifications({ user, onUpgrade }) {
       showRandomNotification();
     }, 30000);
 
-    // Afficher des notifications aléatoires toutes les 2-5 minutes
+    // Afficher des notifications aléatoires toutes les 1-3 minutes
     const intervalTimer = setInterval(() => {
       showRandomNotification();
-    }, 120000 + Math.random() * 180000); // Entre 2 et 5 minutes
+    }, 60000 + Math.random() * 120000); // Entre 1 et 3 minutes
 
     return () => {
       clearTimeout(initialTimer);
