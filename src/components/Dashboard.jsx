@@ -34,13 +34,16 @@ export default function Dashboard({ user, onLogout }) {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showUpgradeNotice, setShowUpgradeNotice] = useState(false);
 
-  // Vérifier si user existe
-  if (!user) {
+  // Vérifier si user existe et a les propriétés nécessaires
+  if (!user || !user.plan) {
     return (
       <div className="flex h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Chargement de votre profil...</p>
+          {!user && (
+            <p className="text-gray-500 text-sm mt-2">Redirection vers l'authentification...</p>
+          )}
         </div>
       </div>
     );
@@ -48,6 +51,7 @@ export default function Dashboard({ user, onLogout }) {
 
   // Fonction pour vérifier si une fonctionnalité nécessite un upgrade
   const requiresUpgrade = (feature) => {
+    if (!user || !user.plan) return false;
     const premiumFeatures = ['analytics', 'collaboration', 'documentation'];
     return user.plan === 'free' && premiumFeatures.includes(feature);
   };

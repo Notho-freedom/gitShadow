@@ -46,7 +46,7 @@ export default function UpgradeNotifications({ user, onUpgrade }) {
   ];
 
   useEffect(() => {
-    if (!user || user.plan !== 'free') return;
+    if (!user || !user.plan || user.plan !== 'free') return;
 
     const showRandomNotification = () => {
       const now = Date.now();

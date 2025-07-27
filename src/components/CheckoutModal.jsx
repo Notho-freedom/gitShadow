@@ -11,30 +11,30 @@ export default function CheckoutModal({ isOpen, onClose, user }) {
     {
       id: 'pro',
       name: 'Pro',
-      price: '29',
+      price: '19',
       period: 'mois',
       features: [
-        'Accès illimité à toutes les fonctionnalités',
-        'Analytics avancées',
+        'Dépôts illimités',
+        'Documentation avancée avec IA',
+        'Export PDF/Word',
         'Support prioritaire',
-        'Collaboration en équipe',
-        'Génération de documentation illimitée',
-        'API access'
+        'Jusqu\'à 5 utilisateurs',
+        'Analytics détaillées'
       ],
       popular: true
     },
     {
       id: 'enterprise',
       name: 'Enterprise',
-      price: '99',
+      price: '199',
       period: 'mois',
       features: [
         'Tout du plan Pro',
-        'Support dédié 24/7',
+        'Utilisateurs illimités',
+        'Déploiement sur site',
+        'Support 24/7',
         'SLA garanti',
-        'Intégrations personnalisées',
-        'Formation de l\'équipe',
-        'Déploiement sur site'
+        'Intégrations personnalisées'
       ],
       popular: false
     }
@@ -55,11 +55,20 @@ export default function CheckoutModal({ isOpen, onClose, user }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          plan: selectedPlan,
-          userId: user.id,
-          userEmail: user.email
+          planId: selectedPlan,
+          customerEmail: user.email,
+          successUrl: `${window.location.origin}/dashboard?success=true`,
+          cancelUrl: `${window.location.origin}/dashboard?canceled=true`,
+          metadata: {
+            userId: user.id,
+            planName: selectedPlan === 'pro' ? 'Pro' : 'Enterprise'
+          }
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
 
       const data = await response.json();
       
@@ -70,7 +79,7 @@ export default function CheckoutModal({ isOpen, onClose, user }) {
       }
     } catch (error) {
       console.error('Erreur lors du checkout:', error);
-      alert('Erreur lors du processus de paiement. Veuillez réessayer.');
+      alert(`Erreur lors du processus de paiement: ${error.message}. Veuillez réessayer.`);
     } finally {
       setLoading(false);
     }
