@@ -25,19 +25,27 @@ export default function AdvancedAnalyticsPanel({ repositoryData }) {
 
       try {
         setLoading(true);
+        setError(null);
+        
         const response = await fetch(
           `/api/analytics?owner=${repositoryData.owner}&repoName=${repositoryData.name}`
         );
         
         if (!response.ok) {
-          throw new Error('Erreur lors de la récupération des données');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erreur ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
         setAnalyticsData(data);
       } catch (err) {
         console.error('Erreur analytics:', err);
-        setError(err.message);
+        setError(err.message || 'Erreur lors de la récupération des données');
       } finally {
         setLoading(false);
       }
