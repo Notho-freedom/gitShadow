@@ -1,122 +1,124 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import CodeComplexityChart from './CodeComplexityChart';
-import CommitTimeline from './CommitTimeline';
-import DeveloperActivityHeatmap from './DeveloperActivityHeatmap';
+import React, { useState, useEffect } from 'react';
 import RepositoryHealthScore from './RepositoryHealthScore';
+import CodeComplexityChart from './CodeComplexityChart';
+import DeveloperActivityHeatmap from './DeveloperActivityHeatmap';
 import PerformanceMetrics from './PerformanceMetrics';
 import SecurityAnalysis from './SecurityAnalysis';
 import CodeQualityMetrics from './CodeQualityMetrics';
 import TeamCollaboration from './TeamCollaboration';
+import CommitTimeline from './CommitTimeline';
 
-export default function AdvancedAnalyticsPanel({ user, selectedRepo }) {
+export default function AdvancedAnalyticsPanel({ repositoryData }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('health');
 
   useEffect(() => {
-    if (selectedRepo) {
-      fetchAdvancedAnalytics();
-    }
-  }, [selectedRepo]);
+    const fetchAnalyticsData = async () => {
+      if (!repositoryData?.owner || !repositoryData?.name) {
+        setLoading(false);
+        return;
+      }
 
-  const fetchAdvancedAnalytics = async () => {
-    setLoading(true);
-    try {
-      // Simulation d'analytics avancés
-      const data = {
-        overview: {
-          healthScore: 87,
-          complexityScore: 72,
-          maintainabilityIndex: 85,
-          technicalDebt: 23,
-          codeCoverage: 78,
-          performanceScore: 91
-        },
-        commits: {
-          total: 1247,
-          thisMonth: 89,
-          thisWeek: 23,
-          averagePerDay: 3.2,
-          trend: 'increasing'
-        },
-        developers: {
-          active: 8,
-          total: 12,
-          topContributor: 'Sarah Chen',
-          newContributors: 3
-        },
-        codeQuality: {
-          cyclomaticComplexity: 4.2,
-          codeDuplication: 8.5,
-          testCoverage: 78,
-          documentationCoverage: 65
-        },
-        performance: {
-          buildTime: 2.3,
-          testTime: 1.8,
-          deploymentTime: 4.2,
-          responseTime: 120
-        },
-        security: {
-          vulnerabilities: 2,
-          criticalIssues: 0,
-          securityScore: 94,
-          lastScan: '2024-01-15'
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `/api/analytics?owner=${repositoryData.owner}&repoName=${repositoryData.name}`
+        );
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des données');
         }
-      };
+        
+        const data = await response.json();
+        setAnalyticsData(data);
+      } catch (err) {
+        console.error('Erreur analytics:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setAnalyticsData(data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des analytics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchAnalyticsData();
+  }, [repositoryData]);
+
+  const tabs = [
+    { id: 'health', label: 'Santé', icon: '🏥' },
+    { id: 'complexity', label: 'Complexité', icon: '🧮' },
+    { id: 'performance', label: 'Performance', icon: '⚡' },
+    { id: 'security', label: 'Sécurité', icon: '🔒' },
+    { id: 'quality', label: 'Qualité', icon: '✨' },
+    { id: 'team', label: 'Équipe', icon: '👥' },
+    { id: 'commits', label: 'Commits', icon: '📊' },
+    { id: 'activity', label: 'Activité', icon: '🔥' }
+  ];
 
   if (loading) {
     return (
-      <div className="p-8 text-center">
-        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-400 text-lg">Analyse approfondie en cours...</p>
-        <p className="text-gray-500 text-sm mt-2">Préparation des métriques avancées</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Analyse en cours...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 text-center">
+        <div className="text-red-400 text-2xl mb-2">⚠️</div>
+        <h3 className="text-red-400 font-semibold mb-2">Erreur d'analyse</h3>
+        <p className="text-gray-400 text-sm">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+        >
+          Réessayer
+        </button>
       </div>
     );
   }
 
   if (!analyticsData) {
     return (
-      <div className="p-8 text-center">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-          <span className="text-3xl">📊</span>
-        </div>
-        <h3 className="text-xl font-bold text-white mb-2">Analytics Avancés</h3>
-        <p className="text-gray-400">Sélectionnez un dépôt pour voir les analyses détaillées</p>
+      <div className="bg-gray-800/20 border border-gray-600/50 rounded-lg p-6 text-center">
+        <div className="text-gray-400 text-2xl mb-2">📊</div>
+        <h3 className="text-gray-300 font-semibold mb-2">Aucune donnée disponible</h3>
+        <p className="text-gray-400 text-sm">
+          Sélectionnez un repository pour commencer l'analyse
+        </p>
       </div>
     );
   }
 
-  const tabs = [
-    { id: 'overview', name: 'Vue d\'ensemble', icon: '📊' },
-    { id: 'performance', name: 'Performance', icon: '⚡' },
-    { id: 'quality', name: 'Qualité du Code', icon: '🔍' },
-    { id: 'security', name: 'Sécurité', icon: '🛡️' },
-    { id: 'team', name: 'Équipe', icon: '👥' },
-    { id: 'timeline', name: 'Timeline', icon: '📈' }
-  ];
-
   return (
-    <div className="h-full flex flex-col">
-      {/* Header avec navigation */}
-      <div className="border-b border-gray-700 bg-gray-900/50">
-        <div className="px-6 py-4">
-          <h2 className="text-2xl font-bold text-white mb-2">Analytics Avancés</h2>
-          <p className="text-gray-400 text-sm">Analyse approfondie de {selectedRepo.name}</p>
+    <div className="space-y-6">
+      {/* Header avec informations du repository */}
+      <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              {repositoryData?.name || 'Repository'}
+            </h2>
+            <p className="text-gray-400 text-sm">
+              {repositoryData?.owner || 'Owner'} • Analyse avancée en temps réel
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+              {analyticsData.health?.score || 0}
+            </div>
+            <div className="text-gray-400 text-sm">Score global</div>
+          </div>
         </div>
-        
+
         {/* Navigation par onglets */}
-        <div className="flex space-x-1 px-6 pb-4">
+        <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -124,47 +126,72 @@ export default function AdvancedAnalyticsPanel({ user, selectedRepo }) {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
               }`}
             >
               <span className="mr-2">{tab.icon}</span>
-              {tab.name}
+              {tab.label}
             </button>
           ))}
         </div>
       </div>
 
       {/* Contenu des onglets */}
-      <div className="flex-1 overflow-auto p-6">
-        {activeTab === 'overview' && (
-          <div className="space-y-6">
-            <RepositoryHealthScore data={analyticsData.overview} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CodeComplexityChart data={analyticsData.codeQuality} />
-              <DeveloperActivityHeatmap />
-            </div>
-          </div>
+      <div className="min-h-[600px]">
+        {activeTab === 'health' && (
+          <RepositoryHealthScore data={analyticsData.health} />
         )}
-
+        {activeTab === 'complexity' && (
+          <CodeComplexityChart data={analyticsData.complexity} />
+        )}
         {activeTab === 'performance' && (
           <PerformanceMetrics data={analyticsData.performance} />
         )}
-
-        {activeTab === 'quality' && (
-          <CodeQualityMetrics data={analyticsData.codeQuality} />
-        )}
-
         {activeTab === 'security' && (
           <SecurityAnalysis data={analyticsData.security} />
         )}
-
-        {activeTab === 'team' && (
-          <TeamCollaboration data={analyticsData.developers} />
+        {activeTab === 'quality' && (
+          <CodeQualityMetrics data={analyticsData.complexity} />
         )}
-
-        {activeTab === 'timeline' && (
+        {activeTab === 'team' && (
+          <TeamCollaboration data={analyticsData.team} />
+        )}
+        {activeTab === 'commits' && (
           <CommitTimeline data={analyticsData.commits} />
         )}
+        {activeTab === 'activity' && (
+          <DeveloperActivityHeatmap data={analyticsData.activity} />
+        )}
+      </div>
+
+      {/* Footer avec métriques rapides */}
+      <div className="bg-gray-800/30 rounded-lg p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div>
+            <div className="text-lg font-bold text-white">
+              {analyticsData.commits?.total || 0}
+            </div>
+            <div className="text-xs text-gray-400">Total Commits</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-white">
+              {analyticsData.team?.activeMembers || 0}
+            </div>
+            <div className="text-xs text-gray-400">Contributeurs</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-white">
+              {analyticsData.security?.vulnerabilities || 0}
+            </div>
+            <div className="text-xs text-gray-400">Vulnérabilités</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-white">
+              {analyticsData.complexity?.testCoverage?.toFixed(0) || 0}%
+            </div>
+            <div className="text-xs text-gray-400">Couverture Tests</div>
+          </div>
+        </div>
       </div>
     </div>
   );
