@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Paiement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            background-color: #dc3545;
+            color: white;
+        }
+        .success {
+            background-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test API Paiement gitShadow</h1>
+    
+    <div class="test-section">
+        <h2>Test API create-checkout-session</h2>
+        <p>Teste l'API de création de session de paiement avec différentes données.</p>
+        
+        <button onclick="testValidData()">Test avec données valides</button>
+        <button onclick="testMissingPlanId()">Test sans planId</button>
+        <button onclick="testMissingEmail()">Test sans email</button>
+        <button onclick="testMissingUrls()">Test sans URLs</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        
+        async function testAPI(data, testName) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = `Test: ${testName}\nEnvoi des données...`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/payment/create-checkout-session`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ ${testName} - SUCCÈS\n\nStatus: ${response.status}\nRéponse:\n${JSON.stringify(result, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ ${testName} - ERREUR\n\nStatus: ${response.status}\nErreur:\n${JSON.stringify(result, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ${testName} - EXCEPTION\n\nErreur:\n${error.message}`;
+            }
+        }
+        
+        function testValidData() {
+            const data = {
+                planId: 'pro',
+                customerEmail: 'test@example.com',
+                successUrl: 'http://localhost:3001/dashboard?payment=success&plan=pro',
+                cancelUrl: 'http://localhost:3001/dashboard?payment=cancelled',
+                metadata: {
+                    userId: 'test_user',
+                    userLogin: 'testuser',
+                    planId: 'pro'
+                }
+            };
+            testAPI(data, 'Données valides');
+        }
+        
+        function testMissingPlanId() {
+            const data = {
+                customerEmail: 'test@example.com',
+                successUrl: 'http://localhost:3001/dashboard?payment=success&plan=pro',
+                cancelUrl: 'http://localhost:3001/dashboard?payment=cancelled',
+                metadata: {
+                    userId: 'test_user',
+                    userLogin: 'testuser'
+                }
+            };
+            testAPI(data, 'Sans planId');
+        }
+        
+        function testMissingEmail() {
+            const data = {
+                planId: 'pro',
+                successUrl: 'http://localhost:3001/dashboard?payment=success&plan=pro',
+                cancelUrl: 'http://localhost:3001/dashboard?payment=cancelled',
+                metadata: {
+                    userId: 'test_user',
+                    userLogin: 'testuser',
+                    planId: 'pro'
+                }
+            };
+            testAPI(data, 'Sans email');
+        }
+        
+        function testMissingUrls() {
+            const data = {
+                planId: 'pro',
+                customerEmail: 'test@example.com',
+                metadata: {
+                    userId: 'test_user',
+                    userLogin: 'testuser',
+                    planId: 'pro'
+                }
+            };
+            testAPI(data, 'Sans URLs');
+        }
+    </script>
+</body>
+</html> 
