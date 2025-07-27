@@ -83,7 +83,7 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
   }
 
   const handleItemClick = (item) => {
-    if (item.premium && user.plan === 'free') {
+    if (item.premium && user && user.plan === 'free') {
       onUpgrade();
       return;
     }
@@ -149,7 +149,7 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
               activeView === item.id
                 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-lg'
                 : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-            } ${item.premium && user.plan === 'free' ? 'opacity-60' : ''}`}
+            } ${item.premium && user && user.plan === 'free' ? 'opacity-60' : ''}`}
             title={collapsed ? item.description : undefined}
           >
             <span className="text-xl">{item.icon}</span>
@@ -157,7 +157,7 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-medium truncate">{item.name}</p>
-                  {item.premium && user.plan === 'free' && (
+                  {item.premium && user && user.plan === 'free' && (
                     <span className="text-xs bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full">
                       PRO
                     </span>
@@ -185,7 +185,7 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
                  user.plan === 'pro' ? 'Pro' : 'Enterprise'}
               </span>
             </div>
-            {user.plan === 'free' && (
+            {user && user.plan === 'free' && (
               <button 
                 onClick={onUpgrade}
                 className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm rounded-lg transition-all font-medium"

@@ -25,7 +25,7 @@ export default function BillingPanel({ user, onUpgrade }) {
   const [showPortal, setShowPortal] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && user.plan) {
       loadBillingData();
     }
   }, [user]);
@@ -33,26 +33,27 @@ export default function BillingPanel({ user, onUpgrade }) {
   const loadBillingData = async () => {
     setLoading(true);
     try {
-      if (user.plan === 'free') {
+      if (!user || user.plan === 'free') {
         setBillingData(null);
       } else {
         // Simuler des données de facturation (remplacer par un vrai appel API)
         const mockData = {
           subscription: {
             id: 'sub_123456789',
+            customerId: 'cus_' + Math.random().toString(36).substr(2, 9),
             status: 'active',
             plan: user.plan,
             planName: user.plan === 'pro' ? 'Pro' : 'Enterprise',
             currentPeriodStart: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
             currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             cancelAtPeriodEnd: false,
-            amount: user.plan === 'pro' ? 2900 : 9900, // 29€ ou 99€ en centimes
+            amount: user.plan === 'pro' ? 1900 : 19900, // 19€ ou 199€ en centimes
             currency: 'eur'
           },
           invoices: [
             {
               id: 'in_123456789',
-              amount: user.plan === 'pro' ? 2900 : 9900,
+              amount: user.plan === 'pro' ? 1900 : 19900,
               currency: 'eur',
               status: 'paid',
               date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -60,7 +61,7 @@ export default function BillingPanel({ user, onUpgrade }) {
             },
             {
               id: 'in_123456788',
-              amount: user.plan === 'pro' ? 2900 : 9900,
+              amount: user.plan === 'pro' ? 1900 : 19900,
               currency: 'eur',
               status: 'paid',
               date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
@@ -88,21 +89,34 @@ export default function BillingPanel({ user, onUpgrade }) {
 
   const handlePortalAccess = async () => {
     try {
+      // Vérifier si l'utilisateur a un customerId
+      if (!billingData?.subscription?.customerId) {
+        alert('Aucun abonnement actif trouvé. Veuillez contacter le support.');
+        return;
+      }
+
       const response = await fetch('/api/payment/customer-portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerId: billingData?.subscription?.customerId,
+          customerId: billingData.subscription.customerId,
           returnUrl: window.location.href
         })
       });
 
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.url) {
         window.open(data.url, '_blank');
+      } else {
+        throw new Error(data.error || 'Erreur lors de l\'accès au portail');
       }
     } catch (err) {
       console.error('Erreur portail client:', err);
+      alert('Erreur lors de l\'accès au portail client. Veuillez réessayer.');
     }
   };
 
@@ -263,7 +277,7 @@ export default function BillingPanel({ user, onUpgrade }) {
               <div className="text-center mb-4">
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Pro</h4>
                 <div className="flex items-baseline justify-center">
-                  <span className="text-3xl font-bold text-gray-900 dark:text-white">€29</span>
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">€19</span>
                   <span className="text-gray-500 dark:text-gray-400 ml-1">/mois</span>
                 </div>
               </div>
@@ -300,7 +314,7 @@ export default function BillingPanel({ user, onUpgrade }) {
               <div className="text-center mb-4">
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Enterprise</h4>
                 <div className="flex items-baseline justify-center">
-                  <span className="text-3xl font-bold text-gray-900 dark:text-white">€99</span>
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">€199</span>
                   <span className="text-gray-500 dark:text-gray-400 ml-1">/mois</span>
                 </div>
               </div>

@@ -20,7 +20,7 @@ export default function NotificationCenter({ isOpen, onClose, user, onUpgrade })
     ];
 
     // Ajouter des notifications d'upgrade pour les utilisateurs gratuits
-    if (user?.plan === 'free') {
+    if (user && user.plan === 'free') {
       baseNotifications.push(
         {
           id: 2,
