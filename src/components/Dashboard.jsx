@@ -586,9 +586,6 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Upgrade Notifications */}
-      <UpgradeNotifications user={user} onUpgrade={handleUpgrade} />
-
       {/* Guest Mode Notice */}
       {isGuest && (
         <div className="fixed bottom-4 right-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 max-w-sm z-50">
@@ -604,6 +601,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Upgrade Notifications - au-dessus de la notification invité */}
+      <UpgradeNotifications user={user} onUpgrade={handleUpgrade} />
     </div>
   );
 }

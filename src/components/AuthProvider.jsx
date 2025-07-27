@@ -84,7 +84,7 @@ export function AuthProvider({ children }) {
       login: 'invité',
       name: 'Utilisateur Invité',
       email: null,
-      avatar_url: '/guest-avatar.png',
+      avatar_url: '/guest-avatar.svg',
       plan: 'free',
       isGuest: true,
       repos: [],
