@@ -13,35 +13,64 @@ export default function UpgradeNotifications({ user, onUpgrade }) {
       title: '📊 Analytics Premium',
       message: 'Découvrez des insights détaillés sur vos projets !',
       delay: 30000, // 30 secondes
-      icon: '📊'
+      icon: '📊',
+      badge: 'PREMIUM'
     },
     {
       id: 'collaboration',
       title: '👥 Collaboration d\'équipe',
       message: 'Collaborez efficacement avec votre équipe !',
       delay: 60000, // 1 minute
-      icon: '👥'
+      icon: '👥',
+      badge: 'PRO'
     },
     {
       id: 'documentation',
       title: '📚 Documentation automatique',
       message: 'Générez une documentation professionnelle automatiquement !',
       delay: 90000, // 1.5 minutes
-      icon: '📚'
+      icon: '📚',
+      badge: 'PRO'
     },
     {
       id: 'promo',
       title: '🎉 Offre spéciale -20% !',
       message: 'Économisez 20% sur votre premier mois avec WELCOME20 !',
       delay: 120000, // 2 minutes
-      icon: '🎉'
+      icon: '🎉',
+      badge: 'PROMO'
     },
     {
       id: 'features',
       title: '✨ Fonctionnalités avancées',
       message: 'Débloquez toutes les fonctionnalités premium !',
       delay: 150000, // 2.5 minutes
-      icon: '✨'
+      icon: '✨',
+      badge: 'PREMIUM'
+    },
+    {
+      id: 'performance',
+      title: '⚡ Performance Boost',
+      message: 'Accélérez votre workflow avec les outils avancés !',
+      delay: 180000, // 3 minutes
+      icon: '⚡',
+      badge: 'BOOST'
+    },
+    {
+      id: 'security',
+      title: '🔒 Sécurité renforcée',
+      message: 'Bénéficiez de fonctionnalités de sécurité avancées !',
+      delay: 210000, // 3.5 minutes
+      icon: '🔒',
+      badge: 'SECURITY'
+    },
+    {
+      id: 'enterprise',
+      title: '💎 Passez à Enterprise',
+      message: 'Solutions avancées pour les grandes équipes !',
+      delay: 240000, // 4 minutes
+      icon: '💎',
+      badge: 'ENTERPRISE'
     }
   ];
 
@@ -83,6 +112,18 @@ export default function UpgradeNotifications({ user, onUpgrade }) {
     };
   }, [user, lastNotificationTime]);
 
+  const getBadgeColor = (badge) => {
+    const colors = {
+      'PRO': 'bg-gradient-to-r from-blue-600 to-purple-600 text-white',
+      'PROMO': 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white',
+      'PREMIUM': 'bg-gradient-to-r from-purple-600 to-pink-600 text-white',
+      'BOOST': 'bg-gradient-to-r from-green-600 to-emerald-600 text-white',
+      'SECURITY': 'bg-gradient-to-r from-red-600 to-pink-600 text-white',
+      'ENTERPRISE': 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+    };
+    return colors[badge] || 'bg-gray-600 text-white';
+  };
+
   const removeNotification = (id) => {
     setNotifications(prev => prev.filter(notif => notif.id !== id));
   };
@@ -107,14 +148,21 @@ export default function UpgradeNotifications({ user, onUpgrade }) {
             <div className="flex items-start space-x-3">
               <div className="text-2xl">{notification.icon}</div>
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-sm mb-1">{notification.title}</h4>
+                <div className="flex items-center space-x-2 mb-1">
+                  <h4 className="font-semibold text-sm">{notification.title}</h4>
+                  {notification.badge && (
+                    <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${getBadgeColor(notification.badge)}`}>
+                      {notification.badge}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-blue-100 mb-3">{notification.message}</p>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleUpgrade(notification.id)}
                     className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs rounded-lg font-medium transition-all"
                   >
-                    Passer au Pro
+                    {notification.badge === 'ENTERPRISE' ? 'Passer à Enterprise' : 'Passer au Pro'}
                   </button>
                   <button
                     onClick={() => removeNotification(notification.id)}

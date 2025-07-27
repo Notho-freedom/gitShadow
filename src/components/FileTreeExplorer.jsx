@@ -167,15 +167,34 @@ export default function FileTreeExplorer({
     if (!treeStructure.length) return [];
 
     if (currentPath === '') {
-      // Niveau racine
-      return treeStructure;
+      // Niveau racine - trier les dossiers en premier
+      return treeStructure.sort((a, b) => {
+        const aIsFolder = a.isFolder || a.type === 'tree';
+        const bIsFolder = b.isFolder || b.type === 'tree';
+        
+        if (aIsFolder && !bIsFolder) return -1;
+        if (!aIsFolder && bIsFolder) return 1;
+        
+        // Si les deux sont du même type, trier par nom
+        return a.name.localeCompare(b.name);
+      });
     }
 
     // Trouver le dossier actuel dans l'arborescence
     const findFolder = (items, targetPath) => {
       for (const item of items) {
         if (item.path === targetPath) {
-          return item.children || [];
+          // Trier les enfants : dossiers en premier
+          return (item.children || []).sort((a, b) => {
+            const aIsFolder = a.isFolder || a.type === 'tree';
+            const bIsFolder = b.isFolder || b.type === 'tree';
+            
+            if (aIsFolder && !bIsFolder) return -1;
+            if (!aIsFolder && bIsFolder) return 1;
+            
+            // Si les deux sont du même type, trier par nom
+            return a.name.localeCompare(b.name);
+          });
         }
         if (item.children) {
           const found = findFolder(item.children, targetPath);
@@ -399,7 +418,19 @@ export default function FileTreeExplorer({
               </div>
             ) : treeStructure.length > 0 ? (
               <div className="space-y-1">
-                {treeStructure.map(item => renderTreeItem(item)).filter(Boolean)}
+                {treeStructure
+                  .sort((a, b) => {
+                    const aIsFolder = a.isFolder || a.type === 'tree';
+                    const bIsFolder = b.isFolder || b.type === 'tree';
+                    
+                    if (aIsFolder && !bIsFolder) return -1;
+                    if (!aIsFolder && bIsFolder) return 1;
+                    
+                    // Si les deux sont du même type, trier par nom
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map(item => renderTreeItem(item))
+                  .filter(Boolean)}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full">
