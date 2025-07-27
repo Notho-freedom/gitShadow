@@ -1,11 +1,15 @@
-import Stripe from 'stripe';
-
 // Configuration Stripe côté serveur
-export const stripe = process.env.STRIPE_SECRET_KEY 
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2024-12-18.acacia',
-    })
-  : null;
+export const getStripeServer = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return null;
+  }
+  
+  // Importer Stripe de manière dynamique
+  const Stripe = require('stripe');
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-12-18.acacia',
+  });
+};
 
 // Configuration Stripe côté client
 export const getStripe = () => {
@@ -23,6 +27,7 @@ export const createCheckoutSession = async ({
   cancelUrl,
   metadata = {}
 }) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
@@ -70,6 +75,7 @@ export const createCustomCheckoutSession = async ({
   cancelUrl,
   metadata = {}
 }) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
@@ -112,6 +118,7 @@ export const createCustomCheckoutSession = async ({
 
 // Récupérer les informations d'un client
 export const getCustomer = async (customerId) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
@@ -127,6 +134,7 @@ export const getCustomer = async (customerId) => {
 
 // Créer ou récupérer un client
 export const createOrRetrieveCustomer = async (email, metadata = {}) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
@@ -160,6 +168,7 @@ export const createOrRetrieveCustomer = async (email, metadata = {}) => {
 
 // Annuler un abonnement
 export const cancelSubscription = async (subscriptionId) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
@@ -177,6 +186,7 @@ export const cancelSubscription = async (subscriptionId) => {
 
 // Réactiver un abonnement
 export const reactivateSubscription = async (subscriptionId) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
@@ -194,6 +204,7 @@ export const reactivateSubscription = async (subscriptionId) => {
 
 // Récupérer l'historique des paiements
 export const getPaymentHistory = async (customerId) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
@@ -212,6 +223,7 @@ export const getPaymentHistory = async (customerId) => {
 
 // Créer un portail client
 export const createCustomerPortalSession = async (customerId, returnUrl) => {
+  const stripe = getStripeServer();
   if (!stripe) {
     return { success: false, error: 'Stripe not configured' };
   }
