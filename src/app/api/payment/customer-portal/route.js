@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createCustomerPortalSession } from '../../../../lib/stripe';
+import { createCustomerPortalSession, createOrRetrieveCustomer } from '../../../../lib/stripe';
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { customerId, returnUrl } = body;
+    const { customerId, customerEmail, returnUrl } = body;
 
-    if (!customerId) {
+    if (!customerId && !customerEmail) {
       return NextResponse.json(
-        { error: 'ID client requis' },
+        { error: 'ID client ou email requis' },
         { status: 400 }
       );
     }
@@ -20,7 +20,25 @@ export async function POST(request) {
       );
     }
 
-    const result = await createCustomerPortalSession(customerId, returnUrl);
+    let finalCustomerId = customerId;
+
+    // Si on a un email mais pas de customerId, on récupère ou crée le client
+    if (!customerId && customerEmail) {
+      const customerResult = await createOrRetrieveCustomer(customerEmail, {
+        source: 'gitshadow_portal'
+      });
+
+      if (!customerResult.success) {
+        return NextResponse.json(
+          { error: 'Impossible de récupérer ou créer le client' },
+          { status: 500 }
+        );
+      }
+
+      finalCustomerId = customerResult.customer.id;
+    }
+
+    const result = await createCustomerPortalSession(finalCustomerId, returnUrl);
 
     if (result.success) {
       return NextResponse.json({
