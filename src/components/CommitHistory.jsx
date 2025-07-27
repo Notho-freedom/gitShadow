@@ -281,24 +281,71 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
 
                     {/* Fichiers modifiés */}
                     {commit.files && commit.files.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {commit.files.slice(0, 3).map((file, index) => (
-                          <span
-                            key={index}
-                            className={`px-2 py-1 text-xs rounded ${
-                              file.status === 'added' ? 'bg-green-900/30 text-green-400' :
-                              file.status === 'modified' ? 'bg-yellow-900/30 text-yellow-400' :
-                              file.status === 'removed' ? 'bg-red-900/30 text-red-400' :
-                              'bg-gray-700/30 text-gray-400'
-                            }`}
-                          >
-                            {file.filename}
-                          </span>
-                        ))}
-                        {commit.files.length > 3 && (
-                          <span className="px-2 py-1 text-xs rounded bg-gray-700/30 text-gray-400">
-                            +{commit.files.length - 3} autres
-                          </span>
+                      <div className="mt-3">
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {commit.files.slice(0, 3).map((file, index) => (
+                            <span
+                              key={index}
+                              className={`px-2 py-1 text-xs rounded ${
+                                file.status === 'added' ? 'bg-green-900/30 text-green-400' :
+                                file.status === 'modified' ? 'bg-yellow-900/30 text-yellow-400' :
+                                file.status === 'removed' ? 'bg-red-900/30 text-red-400' :
+                                'bg-gray-700/30 text-gray-400'
+                              }`}
+                            >
+                              {file.filename}
+                            </span>
+                          ))}
+                          {commit.files.length > 3 && (
+                            <span className="px-2 py-1 text-xs rounded bg-gray-700/30 text-gray-400">
+                              +{commit.files.length - 3} autres
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Structure des dossiers */}
+                        {commit.files && commit.files.length > 0 && (
+                          <div className="mt-2 p-2 bg-gray-800/30 rounded-lg">
+                            <div className="text-xs text-gray-400 mb-2">Structure des fichiers :</div>
+                            <div className="space-y-1">
+                              {(() => {
+                                const folders = new Set();
+                                const files = new Set();
+                                
+                                commit.files.forEach(file => {
+                                  const pathParts = file.filename.split('/');
+                                  if (pathParts.length > 1) {
+                                    // Ajouter le dossier parent
+                                    folders.add(pathParts[0]);
+                                  } else {
+                                    files.add(file.filename);
+                                  }
+                                });
+                                
+                                const sortedFolders = Array.from(folders).sort();
+                                const sortedFiles = Array.from(files).sort();
+                                
+                                return (
+                                  <>
+                                    {/* Dossiers en premier */}
+                                    {sortedFolders.map(folder => (
+                                      <div key={folder} className="flex items-center text-xs text-blue-400">
+                                        <span className="mr-1">📁</span>
+                                        <span>{folder}/</span>
+                                      </div>
+                                    ))}
+                                    {/* Puis les fichiers */}
+                                    {sortedFiles.map(file => (
+                                      <div key={file} className="flex items-center text-xs text-gray-300">
+                                        <span className="mr-1">📄</span>
+                                        <span>{file}</span>
+                                      </div>
+                                    ))}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}

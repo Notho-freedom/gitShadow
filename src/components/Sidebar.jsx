@@ -9,37 +9,43 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
       id: 'repos',
       name: 'Dépôts',
       icon: '📁',
-      description: 'Parcourir vos dépôts GitHub'
+      description: 'Parcourir vos dépôts GitHub',
+      badge: null
     },
     {
       id: 'editor',
       name: 'Éditeur',
       icon: '💻',
-      description: 'Éditer le code avec coloration syntaxique'
+      description: 'Éditer le code avec coloration syntaxique',
+      badge: null
     },
     {
       id: 'documentation',
       name: 'Documentation',
       icon: '📚',
-      description: 'Générer et consulter la documentation'
+      description: 'Générer et consulter la documentation',
+      badge: 'PRO'
     },
     {
       id: 'analytics',
       name: 'Analytics',
       icon: '📊',
-      description: 'Statistiques et métriques du projet'
+      description: 'Statistiques et métriques du projet',
+      badge: 'PRO'
     },
     {
       id: 'collaboration',
       name: 'Collaboration',
       icon: '👥',
-      description: 'Gérer l\'équipe et les permissions'
+      description: 'Gérer l\'équipe et les permissions',
+      badge: 'ENTERPRISE'
     },
     {
       id: 'settings',
       name: 'Paramètres',
       icon: '⚙️',
-      description: 'Configuration et préférences'
+      description: 'Configuration et préférences',
+      badge: null
     }
   ];
 
@@ -111,12 +117,16 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
             <div className="flex-1 min-w-0">
               <p className="text-white font-medium text-sm truncate">{user.name}</p>
               <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  user.plan === 'free'
-                    ? 'bg-gray-500/20 text-gray-400'
-                    : 'bg-blue-500/20 text-blue-400'
+                <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                  user.plan === 'free' ? 'bg-gray-600 text-white' :
+                  user.plan === 'pro' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' :
+                  user.plan === 'enterprise' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' :
+                  'bg-gray-600 text-white'
                 }`}>
-                  {user.plan === 'free' ? 'Gratuit' : user.plan}
+                  {user.plan === 'free' ? 'FREE' :
+                   user.plan === 'pro' ? 'PRO' :
+                   user.plan === 'enterprise' ? 'ENTERPRISE' :
+                   user.plan.toUpperCase()}
                 </span>
               </div>
             </div>
@@ -159,7 +169,18 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
               <span className="text-xl">{item.icon}</span>
               {!collapsed && (
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{item.name}</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="font-medium text-sm">{item.name}</p>
+                    {item.badge && (
+                      <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
+                        item.badge === 'PRO' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' :
+                        item.badge === 'ENTERPRISE' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' :
+                        'bg-gray-600 text-white'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-400 mt-1">{item.description}</p>
                 </div>
               )}
