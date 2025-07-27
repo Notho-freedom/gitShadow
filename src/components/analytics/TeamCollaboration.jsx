@@ -12,7 +12,15 @@ export default function TeamCollaboration({ data }) {
 
   useEffect(() => {
     const animateData = () => {
-      const targetData = { ...data };
+      if (!data) return;
+      
+      const targetData = {
+        active: data.contributors?.total || 0,
+        total: (data.contributors?.total || 0) + (data.collaborators?.length || 0),
+        topContributor: getTopContributor(data),
+        newContributors: getNewContributors(data)
+      };
+      
       let currentData = { ...animatedData };
       const steps = 25;
       let step = 0;
@@ -42,14 +50,10 @@ export default function TeamCollaboration({ data }) {
     animateData();
   }, [data]);
 
-  const teamMembers = [
-    { name: 'Sarah Chen', role: 'Lead Developer', commits: 156, avatar: '👩‍💻', color: 'blue', status: 'active' },
-    { name: 'Alex Rodriguez', role: 'Full Stack', commits: 134, avatar: '👨‍💻', color: 'green', status: 'active' },
-    { name: 'Emma Wilson', role: 'Frontend', commits: 98, avatar: '👩‍💻', color: 'purple', status: 'active' },
-    { name: 'David Kim', role: 'Backend', commits: 87, avatar: '👨‍💻', color: 'orange', status: 'active' },
-    { name: 'Lisa Thompson', role: 'QA Engineer', commits: 76, avatar: '👩‍💻', color: 'pink', status: 'active' },
-    { name: 'Mike Johnson', role: 'DevOps', commits: 45, avatar: '👨‍💻', color: 'yellow', status: 'inactive' }
-  ];
+  // Générer les vraies données d'équipe
+  const teamMembers = generateRealTeamMembers(data);
+  const collaborationData = generateRealCollaborationData(data);
+  const activityData = generateRealActivityData(data);
 
   return (
     <div className="space-y-6">
@@ -82,7 +86,7 @@ export default function TeamCollaboration({ data }) {
           />
           <TeamMetric
             title="Taux d'Activité"
-            value={Math.round((animatedData.active / animatedData.total) * 100)}
+            value={Math.round((animatedData.active / Math.max(animatedData.total, 1)) * 100)}
             icon="📈"
             color="orange"
             unit="%"
@@ -97,8 +101,8 @@ export default function TeamCollaboration({ data }) {
               👩‍💻
             </div>
             <div>
-              <div className="text-white font-medium">{animatedData.topContributor}</div>
-              <div className="text-gray-400 text-sm">156 commits ce mois</div>
+              <div className="text-white font-medium">{animatedData.topContributor || 'Aucun contributeur'}</div>
+              <div className="text-gray-400 text-sm">Plus actif ce mois</div>
             </div>
           </div>
         </div>
@@ -107,115 +111,87 @@ export default function TeamCollaboration({ data }) {
       {/* Membres de l'équipe */}
       <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50">
         <h4 className="text-white font-semibold mb-4">Membres de l'Équipe</h4>
-        
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {teamMembers.map((member, index) => (
             <TeamMemberCard key={index} member={member} />
           ))}
         </div>
       </div>
 
-      {/* Analyse de collaboration */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CollaborationChart data={generateCollaborationData()} />
-        <ActivityTimeline data={generateActivityData()} />
-      </div>
-
       {/* Métriques de collaboration */}
-      <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50">
-        <h4 className="text-white font-semibold mb-4">Métriques de Collaboration</h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <CollaborationMetric
-            title="Code Reviews"
-            value={87}
-            description="Reviews effectuées ce mois"
-            color="green"
-          />
-          <CollaborationMetric
-            title="Pull Requests"
-            value={23}
-            description="PRs ouvertes et mergées"
-            color="blue"
-          />
-          <CollaborationMetric
-            title="Pair Programming"
-            value={12}
-            description="Sessions de pair programming"
-            color="purple"
-          />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CollaborationMetric
+          title="Code Reviews"
+          value={calculateCodeReviewRate(data)}
+          description="Taux de code reviews"
+          color="green"
+        />
+        <CollaborationMetric
+          title="Pull Requests"
+          value={calculatePullRequestRate(data)}
+          description="PRs par semaine"
+          color="blue"
+        />
+        <CollaborationMetric
+          title="Collaboration"
+          value={calculateCollaborationScore(data)}
+          description="Score de collaboration"
+          color="purple"
+        />
       </div>
 
-      {/* Insights et recommandations */}
+      {/* Graphique de collaboration */}
       <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50">
-        <h4 className="text-white font-semibold mb-4">Insights & Recommandations</h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <InsightCard
-              type="positive"
-              title="Excellente collaboration"
-              description="L'équipe travaille efficacement ensemble avec un taux d'activité élevé"
-              icon="🎉"
-            />
-            <InsightCard
-              type="info"
-              title="Nouveaux contributeurs"
-              description="3 nouveaux membres ont rejoint l'équipe ce mois"
-              icon="🆕"
-            />
-          </div>
-          
-          <div className="space-y-4">
-            <InsightCard
-              type="warning"
-              title="Code reviews"
-              description="Augmenter le nombre de code reviews pour améliorer la qualité"
-              icon="👀"
-            />
-            <InsightCard
-              type="suggestion"
-              title="Pair programming"
-              description="Encourager plus de sessions de pair programming"
-              icon="👥"
-            />
-          </div>
-        </div>
+        <h4 className="text-white font-semibold mb-4">Activité de Collaboration</h4>
+        <CollaborationChart data={collaborationData} />
       </div>
 
-      {/* Communication et outils */}
+      {/* Timeline d'activité */}
+      <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50">
+        <h4 className="text-white font-semibold mb-4">Activité Récente</h4>
+        <ActivityTimeline data={activityData} />
+      </div>
+
+      {/* Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <InsightCard
+          type="positive"
+          title="Équipe Engagée"
+          description="Taux de participation élevé dans les reviews"
+          icon="✅"
+        />
+        <InsightCard
+          type="warning"
+          title="Amélioration Possible"
+          description="Augmenter la fréquence des pair programming"
+          icon="⚠️"
+        />
+      </div>
+
+      {/* Outils de collaboration */}
       <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl p-6 border border-gray-700/50">
         <h4 className="text-white font-semibold mb-4">Outils de Collaboration</h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <ToolCard
-            name="Slack"
-            status="Actif"
-            usage="95%"
-            color="green"
-            icon="💬"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <ToolCard
             name="GitHub"
             status="Actif"
-            usage="100%"
+            usage="95"
             color="green"
             icon="🐙"
           />
           <ToolCard
-            name="Jira"
+            name="Slack"
             status="Actif"
-            usage="78%"
+            usage="78"
             color="blue"
-            icon="📋"
+            icon="💬"
           />
           <ToolCard
-            name="Figma"
+            name="Jira"
             status="Actif"
-            usage="65%"
+            usage="82"
             color="purple"
-            icon="🎨"
+            icon="📋"
           />
         </div>
       </div>
@@ -235,20 +211,14 @@ function TeamMetric({ title, value, icon, color, unit = '' }) {
   };
 
   return (
-    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+    <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-gray-400 text-sm">{title}</span>
-        <span className="text-lg">{icon}</span>
+        <span className="text-2xl">{icon}</span>
+        <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${getColorClasses(color)} flex items-center justify-center`}>
+          <span className="text-white text-sm font-bold">{value}{unit}</span>
+        </div>
       </div>
-      <div className="text-2xl font-bold text-white mb-2">
-        {value}{unit}
-      </div>
-      <div className="w-full bg-gray-700 rounded-full h-2">
-        <div
-          className={`h-2 rounded-full bg-gradient-to-r ${getColorClasses(color)} transition-all duration-500`}
-          style={{ width: `${Math.min((value / 200) * 100, 100)}%` }}
-        />
-      </div>
+      <h5 className="text-white font-medium">{title}</h5>
     </div>
   );
 }
@@ -263,27 +233,25 @@ function TeamMemberCard({ member }) {
       pink: 'from-pink-500 to-pink-600',
       yellow: 'from-yellow-500 to-yellow-600'
     };
-    return colors[member.color] || colors.blue;
+    return colors[colorName] || colors.blue;
   };
 
   return (
     <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <div className={`w-10 h-10 bg-gradient-to-r ${getColorClasses(member.color)} rounded-full flex items-center justify-center text-lg mr-3`}>
-            {member.avatar}
-          </div>
-          <div>
-            <div className="text-white font-medium">{member.name}</div>
-            <div className="text-gray-400 text-sm">{member.role}</div>
-          </div>
+      <div className="flex items-center mb-3">
+        <img
+          src={member.avatar_url || `https://github.com/identicons/${member.login}.png`}
+          alt={member.name}
+          className="w-10 h-10 rounded-full mr-3"
+        />
+        <div>
+          <h5 className="text-white font-medium">{member.name}</h5>
+          <p className="text-gray-400 text-sm">{member.role}</p>
         </div>
-        <div className="text-right">
-          <div className="text-white font-medium">{member.commits} commits</div>
-          <div className={`text-xs ${member.status === 'active' ? 'text-green-400' : 'text-gray-400'}`}>
-            {member.status === 'active' ? 'Actif' : 'Inactif'}
-          </div>
-        </div>
+      </div>
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-400">{member.commits} commits</span>
+        <div className={`w-3 h-3 rounded-full ${member.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
       </div>
     </div>
   );
@@ -291,46 +259,33 @@ function TeamMemberCard({ member }) {
 
 function CollaborationChart({ data }) {
   return (
-    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
-      <h5 className="text-white font-medium mb-4">Activité de Collaboration</h5>
-      <div className="space-y-3">
-        {data.map((item, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-3 ${item.color}`}></div>
-              <span className="text-white text-sm">{item.type}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-gray-400 text-sm">{item.value}</span>
-              <div className="w-20 bg-gray-700 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${item.color}`}
-                  style={{ width: `${item.percentage}%` }}
-                />
-              </div>
-            </div>
+    <div className="space-y-3">
+      {data.map((item, index) => (
+        <div key={index} className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+            <span className="text-white">{item.type}</span>
           </div>
-        ))}
-      </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-blue-400 font-medium">{item.value}</span>
+            <span className="text-gray-400 text-sm">({item.percentage}%)</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
 function ActivityTimeline({ data }) {
   return (
-    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
-      <h5 className="text-white font-medium mb-4">Timeline d'Activité</h5>
-      <div className="space-y-3">
-        {data.map((activity, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-3 ${activity.status === 'active' ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-              <span className="text-white text-sm">{activity.time}</span>
-            </div>
-            <span className="text-gray-400 text-sm">{activity.description}</span>
-          </div>
-        ))}
-      </div>
+    <div className="space-y-3">
+      {data.map((activity, index) => (
+        <div key={index} className="flex items-center space-x-3">
+          <div className={`w-2 h-2 rounded-full ${activity.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+          <span className="text-gray-400 text-sm">{activity.time}</span>
+          <span className="text-white">{activity.description}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -353,7 +308,7 @@ function CollaborationMetric({ title, value, description, color }) {
       <div className="w-full bg-gray-700 rounded-full h-2">
         <div
           className={`h-2 rounded-full bg-gradient-to-r ${getColorClasses(color)}`}
-          style={{ width: `${(value / 100) * 100}%` }}
+          style={{ width: `${Math.min((value / 100) * 100, 100)}%` }}
         />
       </div>
     </div>
@@ -403,7 +358,7 @@ function ToolCard({ name, status, usage, color, icon }) {
         </span>
       </div>
       <h5 className="text-white font-medium mb-2">{name}</h5>
-      <div className="text-sm text-gray-400 mb-2">Utilisation: {usage}</div>
+      <div className="text-sm text-gray-400 mb-2">Utilisation: {usage}%</div>
       <div className="w-full bg-gray-700 rounded-full h-2">
         <div
           className={`h-2 rounded-full bg-gradient-to-r ${getColorClasses(color)}`}
@@ -414,20 +369,189 @@ function ToolCard({ name, status, usage, color, icon }) {
   );
 }
 
-function generateCollaborationData() {
-  return [
-    { type: 'Code Reviews', value: 87, percentage: 87, color: 'bg-green-500' },
-    { type: 'Pull Requests', value: 23, percentage: 23, color: 'bg-blue-500' },
-    { type: 'Pair Programming', value: 12, percentage: 12, color: 'bg-purple-500' },
-    { type: 'Standups', value: 20, percentage: 100, color: 'bg-orange-500' }
-  ];
+// Fonctions pour générer les vraies données
+function generateRealTeamMembers(data) {
+  const members = [];
+  
+  // Ajouter les collaborateurs
+  if (data?.collaborators?.length > 0) {
+    data.collaborators.forEach(collaborator => {
+      members.push({
+        name: collaborator.name || collaborator.login,
+        login: collaborator.login,
+        role: getRoleLabel(collaborator.role),
+        commits: collaborator.recentActivity?.length || 0,
+        avatar_url: collaborator.avatar_url,
+        status: 'active',
+        color: getRoleColor(collaborator.role)
+      });
+    });
+  }
+  
+  // Ajouter les contributeurs
+  if (data?.contributors?.recent?.length > 0) {
+    data.contributors.recent.forEach(contributor => {
+      members.push({
+        name: contributor.login,
+        login: contributor.login,
+        role: 'Contributeur',
+        commits: contributor.contributions || 0,
+        avatar_url: contributor.avatar_url,
+        status: 'active',
+        color: 'green'
+      });
+    });
+  }
+  
+  // Trier par nombre de commits
+  return members.sort((a, b) => b.commits - a.commits).slice(0, 6);
 }
 
-function generateActivityData() {
-  return [
-    { time: '09:00', description: 'Daily Standup', status: 'active' },
-    { time: '10:30', description: 'Code Review', status: 'active' },
-    { time: '14:00', description: 'Pair Programming', status: 'active' },
-    { time: '16:00', description: 'Sprint Planning', status: 'active' }
-  ];
+function generateRealCollaborationData(data) {
+  const collaborationData = [];
+  
+  // Code Reviews (basé sur les PRs)
+  const prCount = data?.pulls?.total || 0;
+  const reviewRate = Math.min(prCount * 2, 100); // Estimation
+  collaborationData.push({
+    type: 'Code Reviews',
+    value: prCount,
+    percentage: Math.round(reviewRate),
+    color: 'bg-green-500'
+  });
+  
+  // Pull Requests
+  collaborationData.push({
+    type: 'Pull Requests',
+    value: prCount,
+    percentage: Math.round((prCount / Math.max(data?.contributors?.total || 1, 1)) * 100),
+    color: 'bg-blue-500'
+  });
+  
+  // Collaborateurs actifs
+  const activeCollaborators = data?.collaborators?.length || 0;
+  collaborationData.push({
+    type: 'Collaborateurs',
+    value: activeCollaborators,
+    percentage: Math.round((activeCollaborators / Math.max(data?.contributors?.total || 1, 1)) * 100),
+    color: 'bg-purple-500'
+  });
+  
+  // Contributeurs
+  const contributors = data?.contributors?.total || 0;
+  collaborationData.push({
+    type: 'Contributeurs',
+    value: contributors,
+    percentage: 100,
+    color: 'bg-orange-500'
+  });
+  
+  return collaborationData;
+}
+
+function generateRealActivityData(data) {
+  const activityData = [];
+  
+  // Basé sur les commits récents
+  if (data?.commits?.recent?.length > 0) {
+    const recentCommits = data.commits.recent.slice(0, 4);
+    recentCommits.forEach((commit, index) => {
+      const time = formatTimeAgo(commit.commit?.author?.date || commit.date);
+      activityData.push({
+        time: time,
+        description: `Commit: ${commit.commit?.message?.split('\n')[0] || 'Sans message'}`,
+        status: 'active'
+      });
+    });
+  }
+  
+  // Si pas assez d'activité, ajouter des activités par défaut
+  while (activityData.length < 4) {
+    activityData.push({
+      time: 'Récent',
+      description: 'Activité de collaboration',
+      status: 'active'
+    });
+  }
+  
+  return activityData;
+}
+
+// Fonctions utilitaires
+function getTopContributor(data) {
+  if (!data?.contributors?.recent?.length) {
+    return 'Aucun contributeur';
+  }
+  
+  const topContributor = data.contributors.recent.reduce((top, current) => {
+    return (current.contributions || 0) > (top.contributions || 0) ? current : top;
+  });
+  
+  return topContributor.login || 'Aucun contributeur';
+}
+
+function getNewContributors(data) {
+  if (!data?.contributors?.recent?.length) {
+    return 0;
+  }
+  
+  // Compter les contributeurs avec peu de contributions (nouveaux)
+  return data.contributors.recent.filter(contributor => 
+    (contributor.contributions || 0) <= 5
+  ).length;
+}
+
+function getRoleLabel(role) {
+  const labels = {
+    admin: 'Administrateur',
+    write: 'Développeur',
+    read: 'Lecteur'
+  };
+  return labels[role] || 'Membre';
+}
+
+function getRoleColor(role) {
+  const colors = {
+    admin: 'red',
+    write: 'blue',
+    read: 'gray'
+  };
+  return colors[role] || 'blue';
+}
+
+function calculateCodeReviewRate(data) {
+  const prCount = data?.pulls?.total || 0;
+  const contributors = data?.contributors?.total || 1;
+  return Math.round((prCount / contributors) * 10);
+}
+
+function calculatePullRequestRate(data) {
+  return data?.pulls?.total || 0;
+}
+
+function calculateCollaborationScore(data) {
+  const contributors = data?.contributors?.total || 0;
+  const collaborators = data?.collaborators?.length || 0;
+  const total = contributors + collaborators;
+  
+  if (total === 0) return 0;
+  
+  // Score basé sur la diversité de l'équipe
+  const diversityScore = Math.min((total / 10) * 100, 100);
+  return Math.round(diversityScore);
+}
+
+function formatTimeAgo(dateString) {
+  if (!dateString) return 'Récent';
+  
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffHours < 1) return 'À l\'instant';
+  if (diffHours < 24) return `Il y a ${diffHours}h`;
+  if (diffDays < 7) return `Il y a ${diffDays}j`;
+  return `Il y a ${Math.ceil(diffDays / 7)}sem`;
 } 
