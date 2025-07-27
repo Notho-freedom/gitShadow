@@ -7,6 +7,7 @@ FROM node:18-alpine AS builder
 # Définir le répertoire de travail
 WORKDIR /app
 
+
 # Copier les fichiers de dépendances
 COPY package*.json ./
 
