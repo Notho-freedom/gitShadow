@@ -6,6 +6,38 @@ import AdvancedAnalyticsPanel from './analytics/AdvancedAnalyticsPanel';
 export default function AnalyticsPanel({ user, selectedRepo }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // Extraire les informations du repository
+  const getRepositoryData = () => {
+    if (!selectedRepo) return null;
+    
+    // Si selectedRepo est une URL, extraire owner et name
+    if (typeof selectedRepo === 'string') {
+      const match = selectedRepo.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+      if (match) {
+        return {
+          owner: match[1],
+          name: match[2].replace('.git', '')
+        };
+      }
+    }
+    
+    // Si selectedRepo est un objet avec les propriétés
+    if (selectedRepo.owner && selectedRepo.name) {
+      return {
+        owner: selectedRepo.owner,
+        name: selectedRepo.name
+      };
+    }
+    
+    // Fallback - essayer d'extraire depuis le nom
+    return {
+      owner: 'unknown',
+      name: selectedRepo.name || selectedRepo
+    };
+  };
+
+  const repositoryData = getRepositoryData();
+
   if (!selectedRepo) {
     return (
       <div className="p-8 text-center">
@@ -26,7 +58,7 @@ export default function AnalyticsPanel({ user, selectedRepo }) {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white mb-1">Analytics Avancés</h2>
-              <p className="text-gray-400 text-sm">Analyse approfondie de {selectedRepo.name}</p>
+              <p className="text-gray-400 text-sm">Analyse approfondie de {selectedRepo.name || selectedRepo}</p>
             </div>
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
@@ -45,7 +77,7 @@ export default function AnalyticsPanel({ user, selectedRepo }) {
       {/* Contenu */}
       <div className="flex-1 overflow-auto">
         {showAdvanced ? (
-          <AdvancedAnalyticsPanel user={user} selectedRepo={selectedRepo} />
+          <AdvancedAnalyticsPanel repositoryData={repositoryData} />
         ) : (
           <div className="p-8 text-center">
             <div className="max-w-md mx-auto">
@@ -55,7 +87,7 @@ export default function AnalyticsPanel({ user, selectedRepo }) {
               <h3 className="text-2xl font-bold text-white mb-4">Découvrez les Analytics Ultra-Avancés</h3>
               <p className="text-gray-400 mb-6">
                 Plongez dans une analyse approfondie de votre repository avec des métriques avancées, 
-                des visualisations sophistiquées et des insights prédictifs.
+                des visualisations sophistiquées et des insights prédictifs basés sur des données réelles.
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -107,8 +139,8 @@ export default function AnalyticsPanel({ user, selectedRepo }) {
 
 function FeatureCard({ icon, title, description }) {
   return (
-    <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-200">
-      <div className="text-2xl mb-3">{icon}</div>
+    <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+      <div className="text-2xl mb-2">{icon}</div>
       <h4 className="text-white font-semibold mb-2">{title}</h4>
       <p className="text-gray-400 text-sm">{description}</p>
     </div>
