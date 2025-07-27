@@ -192,7 +192,10 @@ export default function AdvancedAnalyticsPanel({ repositoryData, user }) {
         )}
         
         {activeTab === 'issues' && (
-          <IssuesAndPulls data={analyticsData} />
+          <IssuesAndPulls 
+            issuesData={analyticsData.issues} 
+            pullsData={analyticsData.pulls} 
+          />
         )}
       </div>
     </div>
