@@ -57,3 +57,6 @@ logs
 *.bak
 *.backup
 .next/
+
+# Backup directories
+backup/
