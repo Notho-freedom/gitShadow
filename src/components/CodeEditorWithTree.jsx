@@ -13,10 +13,7 @@ export default function CodeEditorWithTree({
   loading, 
   theme,
   onBackToExplorer,
-  onFileSelect,
-  files = [],
-  selectedRepo,
-  user
+  isGuest = false
 }) {
   const [showTree, setShowTree] = useState(true);
   const [treeWidth, setTreeWidth] = useState(280);
@@ -65,19 +62,21 @@ export default function CodeEditorWithTree({
   }, [file]);
 
   const loadCommitTree = async () => {
-    if (!file || !file.path || !selectedRepo || !user?.access_token) return;
+    if (!file || !file.path) return;
     
     setLoadingTree(true);
     try {
-      const response = await fetch('/api/fetchRepo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner: selectedRepo.owner?.login || selectedRepo.owner,
-          repo: selectedRepo.name,
-          accessToken: user.access_token
-        })
-      });
+      // Extraire owner et repo du chemin du fichier ou utiliser des valeurs par défaut
+      const pathParts = file.path.split('/');
+      const repoName = pathParts[0] || 'unknown';
+      const owner = 'unknown'; // On ne peut pas déterminer l'owner depuis le fichier seul
+      
+      // Pour les invités, utiliser l'API publique
+      const url = isGuest 
+        ? `/api/fetchRepo?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repoName)}`
+        : `/api/fetchRepo?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repoName)}`;
+
+      const response = await fetch(url);
 
       if (response.ok) {
         const data = await response.json();
