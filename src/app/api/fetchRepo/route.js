@@ -1,3 +1,78 @@
+import { NextRequest } from 'next/server';
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const owner = searchParams.get('owner');
+    const repo = searchParams.get('repo');
+    const accessToken = searchParams.get('accessToken');
+
+    if (!owner || !repo) {
+      return new Response(
+        JSON.stringify({ error: 'Owner et repo requis' }), 
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Préparer les headers pour l'API GitHub
+    const headers = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'gitShadow-App'
+    };
+
+    // Ajouter le token GitHub si disponible
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    } else if (process.env.GITHUB_TOKEN) {
+      headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
+    }
+
+    // Récupérer les informations du dépôt
+    const repoInfoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers
+    });
+
+    if (!repoInfoResponse.ok) {
+      if (repoInfoResponse.status === 404) {
+        return new Response(
+          JSON.stringify({ error: 'Dépôt non trouvé. Vérifiez que le dépôt existe et est public.' }), 
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      return new Response(
+        JSON.stringify({ error: 'Erreur lors de la récupération du dépôt' }), 
+        { status: repoInfoResponse.status, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const repoInfo = await repoInfoResponse.json();
+
+    return new Response(
+      JSON.stringify({ 
+        ...repoInfo,
+        success: true 
+      }), 
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error) {
+    console.error('Erreur dans fetchRepo GET:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Erreur interne du serveur lors de la récupération du dépôt',
+        details: error.message 
+      }), 
+      { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -285,7 +360,7 @@ export async function POST(request) {
     );
 
   } catch (error) {
-    console.error('Erreur dans fetchRepo:', error);
+    console.error('Erreur dans fetchRepo POST:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Erreur interne du serveur lors de la récupération du dépôt',
