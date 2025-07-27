@@ -89,7 +89,7 @@ export default function AnalyticsPanel({ user, selectedRepo }) {
       {/* Contenu */}
       <div className="flex-1 overflow-auto">
         {showAdvanced ? (
-          <AdvancedAnalyticsPanel repositoryData={repositoryData} />
+          <AdvancedAnalyticsPanel repositoryData={repositoryData} user={user} />
         ) : (
           <div className="p-8 text-center">
             <div className="max-w-md mx-auto">

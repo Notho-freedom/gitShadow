@@ -3,65 +3,151 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function SearchOverlay({ isOpen, onClose, user, selectedRepo, onFileSelect }) {
-  const [searchQuery, setSearchQuery] = useState('');
+export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedRepo, user }) {
+  const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [fileTree, setFileTree] = useState([]);
 
+  // Charger l'arborescence des fichiers quand un dépôt est sélectionné
   useEffect(() => {
-    if (isOpen) {
-      setSearchQuery('');
-      setSearchResults([]);
-      setActiveIndex(0);
+    if (selectedRepo) {
+      fetchFileTree();
     }
-  }, [isOpen]);
+  }, [selectedRepo]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isOpen) return;
+  const fetchFileTree = async () => {
+    if (!selectedRepo) return;
+    
+    try {
+      const response = await fetch('/api/fetchCommit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          owner: selectedRepo.owner?.login || selectedRepo.owner,
+          repo: selectedRepo.name,
+          commitSha: 'HEAD', // Utiliser le dernier commit
+          accessToken: selectedRepo.accessToken || user?.access_token
+        }),
+      });
 
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setActiveIndex(prev => Math.min(prev + 1, searchResults.length - 1));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setActiveIndex(prev => Math.max(prev - 1, 0));
-      } else if (e.key === 'Enter' && searchResults[activeIndex]) {
-        e.preventDefault();
-        handleResultSelect(searchResults[activeIndex]);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.tree) {
+          setFileTree(data.tree);
+        }
       }
-    };
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'arborescence:', error);
+    }
+  };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, searchResults, activeIndex, onClose]);
-
-  const handleSearch = async (query) => {
+  const handleSearch = async () => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
     }
 
     setIsSearching(true);
-    // Simuler une recherche
-    setTimeout(() => {
-      const mockResults = [
-        { type: 'file', name: 'example.js', path: 'src/components/example.js', repo: 'my-repo' },
-        { type: 'file', name: 'utils.js', path: 'src/utils/utils.js', repo: 'my-repo' },
-        { type: 'repo', name: 'my-repo', description: 'Mon projet principal' },
-        { type: 'function', name: 'handleClick', file: 'example.js', line: 42 }
-      ].filter(item => 
-        item.name.toLowerCase().includes(query.toLowerCase()) ||
-        item.path?.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      setSearchResults(mockResults);
+    
+    try {
+      // Rechercher dans l'arborescence des fichiers
+      const results = [];
+      const queryLower = query.toLowerCase();
+
+      // Rechercher dans les fichiers
+      fileTree.forEach(item => {
+        if (item.path.toLowerCase().includes(queryLower) || 
+            item.path.split('/').pop().toLowerCase().includes(queryLower)) {
+          results.push({
+            type: 'file',
+            name: item.path.split('/').pop(),
+            path: item.path,
+            repo: selectedRepo?.name || 'unknown',
+            size: item.size,
+            changeInfo: item.changeInfo
+          });
+        }
+      });
+
+      // Rechercher dans les commits récents si on a un dépôt
+      if (selectedRepo) {
+        try {
+          const commitsResponse = await fetch('/api/fetchCommits', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              owner: selectedRepo.owner?.login || selectedRepo.owner,
+              repo: selectedRepo.name,
+              branch: 'main',
+              page: 1,
+              per_page: 20,
+              accessToken: selectedRepo.accessToken || user?.access_token
+            }),
+          });
+
+          if (commitsResponse.ok) {
+            const commitsData = await commitsResponse.json();
+            commitsData.commits.forEach(commit => {
+              if (commit.commit.message.toLowerCase().includes(queryLower) ||
+                  commit.author?.login?.toLowerCase().includes(queryLower)) {
+                results.push({
+                  type: 'commit',
+                  name: commit.commit.message.split('\n')[0],
+                  sha: commit.sha.substring(0, 7),
+                  author: commit.author?.login || commit.commit.author.name,
+                  date: commit.commit.author.date,
+                  html_url: commit.html_url
+                });
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Erreur lors de la recherche dans les commits:', error);
+        }
+      }
+
+      // Trier les résultats par pertinence
+      const sortedResults = results.sort((a, b) => {
+        // Priorité aux fichiers qui commencent par la requête
+        const aStartsWith = a.name.toLowerCase().startsWith(queryLower);
+        const bStartsWith = b.name.toLowerCase().startsWith(queryLower);
+        
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+        
+        // Puis par type (fichiers en premier)
+        if (a.type === 'file' && b.type !== 'file') return -1;
+        if (a.type !== 'file' && b.type === 'file') return 1;
+        
+        return 0;
+      });
+
+      setSearchResults(sortedResults.slice(0, 20)); // Limiter à 20 résultats
+    } catch (error) {
+      console.error('Erreur lors de la recherche:', error);
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    }, 300);
+    }
   };
+
+  // Rechercher automatiquement quand la requête change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (query.trim()) {
+        handleSearch();
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [query]);
 
   const handleResultSelect = (result) => {
     if (result.type === 'file') {
@@ -73,12 +159,55 @@ export default function SearchOverlay({ isOpen, onClose, user, selectedRepo, onF
   const getResultIcon = (type) => {
     const icons = {
       file: '📄',
+      commit: '📝',
       repo: '📁',
       function: '⚡',
       class: '🏗️',
       variable: '📦'
     };
     return icons[type] || '📄';
+  };
+
+  const getFileIcon = (filename) => {
+    const ext = filename.split('.').pop().toLowerCase();
+    const icons = {
+      js: '📜',
+      jsx: '⚛️',
+      ts: '📘',
+      tsx: '⚛️',
+      py: '🐍',
+      java: '☕',
+      cpp: '⚙️',
+      c: '⚙️',
+      h: '⚙️',
+      html: '🌐',
+      css: '🎨',
+      scss: '🎨',
+      sass: '🎨',
+      json: '📋',
+      yaml: '📋',
+      yml: '📋',
+      md: '📝',
+      txt: '📄',
+      pdf: '📕',
+      png: '🖼️',
+      jpg: '🖼️',
+      jpeg: '🖼️',
+      gif: '🖼️',
+      svg: '🖼️',
+      gitignore: '🚫',
+      dockerfile: '🐳',
+      readme: '📖'
+    };
+    return icons[ext] || '📄';
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   return (
@@ -101,120 +230,121 @@ export default function SearchOverlay({ isOpen, onClose, user, selectedRepo, onF
 
           {/* Search Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: -20 }}
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="relative w-full max-w-2xl mx-4"
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            className="relative w-full max-w-2xl mx-4 bg-gray-800 rounded-xl shadow-2xl border border-gray-700"
           >
-            <div className="bg-gray-800/95 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl overflow-hidden">
-              {/* Search Input */}
-              <div className="p-4 border-b border-gray-700/50">
-                <div className="relative">
+            {/* Search Input */}
+            <div className="p-6 border-b border-gray-700">
+              <div className="flex items-center space-x-4">
+                <div className="flex-1 relative">
                   <input
                     type="text"
-                    placeholder="Recherche globale... (fichiers, fonctions, dépôts)"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      handleSearch(e.target.value);
-                    }}
-                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                    placeholder="Rechercher des fichiers, commits, fonctions..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="w-full px-4 py-3 pl-12 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     autoFocus
                   />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    {isSearching && (
-                      <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    )}
-                    <span className="text-gray-400 text-sm">⌘K</span>
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                   </div>
                 </div>
+                <button
+                  onClick={onClose}
+                  className="p-3 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
+            </div>
 
-              {/* Search Results */}
-              <div className="max-h-96 overflow-y-auto">
-                {searchResults.length > 0 ? (
-                  <div className="py-2">
-                    {searchResults.map((result, index) => (
-                      <motion.div
-                        key={`${result.type}-${result.name}-${index}`}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        onClick={() => handleResultSelect(result)}
-                        className={`flex items-center space-x-3 px-4 py-3 cursor-pointer transition-colors ${
-                          index === activeIndex 
-                            ? 'bg-blue-500/20 text-blue-400' 
-                            : 'hover:bg-gray-700/50 text-gray-300 hover:text-white'
-                        }`}
-                      >
-                        <span className="text-xl">{getResultIcon(result.type)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium truncate">{result.name}</span>
-                            {result.type === 'file' && (
-                              <span className="text-xs text-gray-500 bg-gray-600/50 px-2 py-1 rounded">
-                                {result.path}
-                              </span>
-                            )}
-                          </div>
-                          {result.description && (
-                            <p className="text-sm text-gray-400 truncate">{result.description}</p>
-                          )}
-                          {result.type === 'function' && (
-                            <p className="text-sm text-gray-400">
-                              {result.file}:{result.line}
-                            </p>
+            {/* Search Results */}
+            <div className="max-h-96 overflow-y-auto">
+              {isSearching ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="text-gray-400 mt-2">Recherche en cours...</p>
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-8 text-center">
+                  <div className="text-4xl mb-4">🔍</div>
+                  <p className="text-gray-400">
+                    {query ? 'Aucun résultat trouvé' : 'Commencez à taper pour rechercher'}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-2">
+                  {searchResults.map((result, index) => (
+                    <motion.div
+                      key={`${result.type}-${index}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleResultSelect(result)}
+                      className="flex items-center space-x-4 p-3 hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors group"
+                    >
+                      <div className="flex-shrink-0 text-xl">
+                        {result.type === 'file' ? getFileIcon(result.name) : getResultIcon(result.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-white font-medium truncate group-hover:text-blue-400 transition-colors">
+                            {result.name}
+                          </h4>
+                          {result.type === 'file' && result.changeInfo && (
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              result.changeInfo.status === 'added' ? 'bg-green-900/30 text-green-400' :
+                              result.changeInfo.status === 'modified' ? 'bg-yellow-900/30 text-yellow-400' :
+                              result.changeInfo.status === 'removed' ? 'bg-red-900/30 text-red-400' :
+                              'bg-gray-700/30 text-gray-400'
+                            }`}>
+                              {result.changeInfo.status}
+                            </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {result.type === 'file' && 'Fichier'}
-                          {result.type === 'repo' && 'Dépôt'}
-                          {result.type === 'function' && 'Fonction'}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : searchQuery && !isSearching ? (
-                  <div className="py-8 text-center text-gray-400">
-                    <div className="w-12 h-12 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-xl">🔍</span>
-                    </div>
-                    <p>Aucun résultat trouvé pour "{searchQuery}"</p>
-                  </div>
-                ) : !searchQuery ? (
-                  <div className="py-8 text-center text-gray-400">
-                    <div className="w-12 h-12 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-xl">⚡</span>
-                    </div>
-                    <p>Commencez à taper pour rechercher...</p>
-                    <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                      <div className="text-left">
-                        <p className="font-medium mb-2">Raccourcis :</p>
-                        <p>⌘K - Recherche</p>
-                        <p>⌘S - Sauvegarder</p>
-                        <p>⌘D - Documenter</p>
+                        <p className="text-gray-400 text-sm truncate">
+                          {result.type === 'file' && result.path && (
+                            <>
+                              {result.path}
+                              {result.size && ` • ${formatFileSize(result.size)}`}
+                            </>
+                          )}
+                          {result.type === 'commit' && (
+                            <>
+                              {result.author} • {result.sha}
+                            </>
+                          )}
+                        </p>
                       </div>
-                      <div className="text-left">
-                        <p className="font-medium mb-2">Recherche :</p>
-                        <p>Fichiers</p>
-                        <p>Fonctions</p>
-                        <p>Dépôts</p>
+                      <div className="flex-shrink-0 text-gray-400 group-hover:text-white transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              {/* Footer */}
-              <div className="px-4 py-3 border-t border-gray-700/50 bg-gray-800/50">
-                <div className="flex items-center justify-between text-sm text-gray-400">
-                  <div className="flex items-center space-x-4">
-                    <span>↑↓ Navigation</span>
-                    <span>↵ Sélectionner</span>
-                    <span>Esc Fermer</span>
-                  </div>
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-700 bg-gray-800/50">
+              <div className="flex items-center justify-between text-sm text-gray-400">
+                <div className="flex items-center space-x-4">
+                  <span>⌘K pour rechercher</span>
+                  <span>•</span>
                   <span>{searchResults.length} résultat{searchResults.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span>↑↓ pour naviguer</span>
+                  <span>•</span>
+                  <span>↵ pour ouvrir</span>
                 </div>
               </div>
             </div>
