@@ -9,12 +9,14 @@ import SecurityAnalysis from './SecurityAnalysis';
 import CodeQualityMetrics from './CodeQualityMetrics';
 import TeamCollaboration from './TeamCollaboration';
 import CommitTimeline from './CommitTimeline';
+import RepositoryDetails from './RepositoryDetails';
+import IssuesAndPulls from './IssuesAndPulls';
 
 export default function AdvancedAnalyticsPanel({ repositoryData }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('health');
+  const [activeTab, setActiveTab] = useState('repository');
 
   useEffect(() => {
     const fetchAnalyticsData = async () => {
@@ -55,6 +57,7 @@ export default function AdvancedAnalyticsPanel({ repositoryData }) {
   }, [repositoryData]);
 
   const tabs = [
+    { id: 'repository', label: 'Repository', icon: '📁' },
     { id: 'health', label: 'Santé', icon: '🏥' },
     { id: 'complexity', label: 'Complexité', icon: '🧮' },
     { id: 'performance', label: 'Performance', icon: '⚡' },
@@ -62,7 +65,8 @@ export default function AdvancedAnalyticsPanel({ repositoryData }) {
     { id: 'quality', label: 'Qualité', icon: '✨' },
     { id: 'team', label: 'Équipe', icon: '👥' },
     { id: 'commits', label: 'Commits', icon: '📊' },
-    { id: 'activity', label: 'Activité', icon: '🔥' }
+    { id: 'activity', label: 'Activité', icon: '🔥' },
+    { id: 'issues', label: 'Issues & PRs', icon: '📋' }
   ];
 
   if (loading) {
@@ -146,6 +150,9 @@ export default function AdvancedAnalyticsPanel({ repositoryData }) {
 
       {/* Contenu des onglets */}
       <div className="min-h-[600px]">
+        {activeTab === 'repository' && (
+          <RepositoryDetails data={analyticsData.repository} />
+        )}
         {activeTab === 'health' && (
           <RepositoryHealthScore data={analyticsData.health} />
         )}
@@ -170,11 +177,17 @@ export default function AdvancedAnalyticsPanel({ repositoryData }) {
         {activeTab === 'activity' && (
           <DeveloperActivityHeatmap data={analyticsData.activity} />
         )}
+        {activeTab === 'issues' && (
+          <IssuesAndPulls 
+            issuesData={analyticsData.issues} 
+            pullsData={analyticsData.pulls} 
+          />
+        )}
       </div>
 
       {/* Footer avec métriques rapides */}
       <div className="bg-gray-800/30 rounded-lg p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
           <div>
             <div className="text-lg font-bold text-white">
               {analyticsData.commits?.total || 0}
@@ -198,6 +211,18 @@ export default function AdvancedAnalyticsPanel({ repositoryData }) {
               {analyticsData.complexity?.testCoverage?.toFixed(0) || 0}%
             </div>
             <div className="text-xs text-gray-400">Couverture Tests</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-white">
+              {analyticsData.issues?.total || 0}
+            </div>
+            <div className="text-xs text-gray-400">Total Issues</div>
+          </div>
+          <div>
+            <div className="text-lg font-bold text-white">
+              {analyticsData.pulls?.total || 0}
+            </div>
+            <div className="text-xs text-gray-400">Total PRs</div>
           </div>
         </div>
       </div>
