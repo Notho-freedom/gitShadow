@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from './DataProvider';
 
 export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedRepo, user, checkAndShowUpgrade }) {
+  const { fetchCommits, fetchFileTree } = useData();
+  
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -12,32 +15,19 @@ export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedR
   // Charger l'arborescence des fichiers quand un dépôt est sélectionné
   useEffect(() => {
     if (selectedRepo) {
-      fetchFileTree();
+      loadFileTree();
     }
   }, [selectedRepo]);
 
-  const fetchFileTree = async () => {
+  const loadFileTree = async () => {
     if (!selectedRepo) return;
     
     try {
-      const response = await fetch('/api/fetchCommit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          owner: selectedRepo.owner?.login || selectedRepo.owner,
-          repo: selectedRepo.name,
-          commitSha: 'HEAD', // Utiliser le dernier commit
-          accessToken: selectedRepo.accessToken || user?.access_token
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.tree) {
-          setFileTree(data.tree);
-        }
+      const owner = selectedRepo.owner?.login || selectedRepo.owner;
+      const data = await fetchFileTree(owner, selectedRepo.name, 'HEAD');
+      
+      if (data && data.tree) {
+        setFileTree(data.tree);
       }
     } catch (error) {
       console.error('Erreur lors du chargement de l\'arborescence:', error);
@@ -80,23 +70,10 @@ export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedR
       // Rechercher dans les commits récents si on a un dépôt
       if (selectedRepo) {
         try {
-          const commitsResponse = await fetch('/api/fetchCommits', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              owner: selectedRepo.owner?.login || selectedRepo.owner,
-              repo: selectedRepo.name,
-              branch: 'main',
-              page: 1,
-              per_page: 20,
-              accessToken: selectedRepo.accessToken || user?.access_token
-            }),
-          });
-
-          if (commitsResponse.ok) {
-            const commitsData = await commitsResponse.json();
+          const owner = selectedRepo.owner?.login || selectedRepo.owner;
+          const commitsData = await fetchCommits(owner, selectedRepo.name);
+          
+          if (commitsData && commitsData.commits) {
             commitsData.commits.forEach(commit => {
               if (commit.commit.message.toLowerCase().includes(queryLower) ||
                   commit.author?.login?.toLowerCase().includes(queryLower)) {

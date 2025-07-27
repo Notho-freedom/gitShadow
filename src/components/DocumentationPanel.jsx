@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useData } from './DataProvider';
 
-export default function DocumentationPanel({ fileContent, documentation, setDocumentation, selectedFile, user }) {
+export default function DocumentationPanel({ documentation, file, repository, onBackToEditor }) {
+  const { user, loading: dataLoading, error: dataError } = useData();
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [docType, setDocType] = useState('comprehensive');
   const [generationsUsed, setGenerationsUsed] = useState(0);
+  const [currentDocumentation, setCurrentDocumentation] = useState(documentation);
 
   const docTypes = {
     comprehensive: {
@@ -37,6 +41,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
   };
 
   const getGenerationLimit = () => {
+    if (!user) return 0;
     switch (user.plan) {
       case 'free': return 10;
       case 'pro': return Infinity;
@@ -51,8 +56,8 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
   };
 
   const handleGenerateDoc = async () => {
-    if (!fileContent || !selectedFile) {
-      setError('Aucun fichier sélectionné ou contenu vide');
+    if (!file) {
+      setError('Aucun fichier sélectionné');
       return;
     }
 
@@ -62,14 +67,14 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
     }
 
     const selectedDocType = docTypes[docType];
-    if (selectedDocType.premium && user.plan === 'free') {
+    if (selectedDocType.premium && user?.plan === 'free') {
       setError('Cette fonctionnalité est réservée aux plans Pro et Entreprise');
       return;
     }
 
     setLoading(true);
     setError('');
-    setDocumentation('');
+    setCurrentDocumentation('');
 
     try {
       // Appel réel à l'API de génération de documentation
@@ -79,8 +84,8 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          code: fileContent,
-          filename: selectedFile.path,
+          code: file.content,
+          filename: file.path,
           docType: docType,
           prompt: selectedDocType.prompt
         }),
@@ -92,7 +97,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
       }
 
       const data = await response.json();
-      setDocumentation(data.documentation);
+      setCurrentDocumentation(data.documentation);
       setGenerationsUsed(prev => prev + 1);
     } catch (error) {
       console.error('Erreur lors de la génération de documentation:', error);
@@ -103,19 +108,19 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
   };
 
   const copyDocumentation = () => {
-    if (documentation) {
-      navigator.clipboard.writeText(documentation);
+    if (currentDocumentation) {
+      navigator.clipboard.writeText(currentDocumentation);
     }
   };
 
   const exportDocumentation = () => {
-    if (!documentation || !selectedFile) return;
+    if (!currentDocumentation || !file) return;
     
-    const blob = new Blob([documentation], { type: 'text/markdown' });
+    const blob = new Blob([currentDocumentation], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${selectedFile.path.split('/').pop().split('.')[0]}_documentation.md`;
+    a.download = `${file.path.split('/').pop().split('.')[0]}_documentation.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -135,7 +140,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
           </div>
           
           <div className="flex items-center space-x-2">
-            {documentation && (
+            {currentDocumentation && (
               <>
                 <button
                   onClick={copyDocumentation}
@@ -155,7 +160,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
         </div>
 
         {/* Limite de génération */}
-        {user.plan === 'free' && (
+        {user?.plan === 'free' && (
           <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-blue-400 text-sm">
@@ -180,8 +185,8 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
               className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {Object.entries(docTypes).map(([key, type]) => (
-                <option key={key} value={key} disabled={type.premium && user.plan === 'free'}>
-                  {type.label} {type.premium && user.plan === 'free' ? '(Pro)' : ''}
+                <option key={key} value={key} disabled={type.premium && user?.plan === 'free'}>
+                  {type.label} {type.premium && user?.plan === 'free' ? '(Pro)' : ''}
                 </option>
               ))}
             </select>
@@ -189,7 +194,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
 
           <button
             onClick={handleGenerateDoc}
-            disabled={loading || !fileContent || !selectedFile || !canGenerate() || (docTypes[docType].premium && user.plan === 'free')}
+            disabled={loading || !file || !canGenerate() || (docTypes[docType].premium && user?.plan === 'free')}
             className="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 font-medium flex items-center justify-center space-x-2"
           >
             {loading ? (
@@ -237,11 +242,11 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
           </div>
         )}
 
-        {documentation && !loading && (
+        {currentDocumentation && !loading && (
           <div className="space-y-4">
             <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700">
               <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
-                {documentation}
+                {currentDocumentation}
               </pre>
             </div>
             
@@ -254,7 +259,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
           </div>
         )}
 
-        {!documentation && !loading && !error && (
+        {!currentDocumentation && !loading && !error && (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-700/50 flex items-center justify-center">
               <span className="text-2xl">📚</span>
@@ -266,9 +271,9 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
             <div className="text-xs text-gray-500 space-y-1">
               <p>• Documentation complète avec exemples</p>
               <p>• Résumés rapides pour une vue d'ensemble</p>
-              <p>• Documentation API pour les interfaces {user.plan === 'free' && '(Pro)'}</p>
-              <p>• Analyse technique avancée {user.plan === 'free' && '(Pro)'}</p>
-              <p>• Audit de sécurité {user.plan === 'free' && '(Pro)'}</p>
+              <p>• Documentation API pour les interfaces {user?.plan === 'free' && '(Pro)'}</p>
+              <p>• Analyse technique avancée {user?.plan === 'free' && '(Pro)'}</p>
+              <p>• Audit de sécurité {user?.plan === 'free' && '(Pro)'}</p>
             </div>
           </div>
         )}

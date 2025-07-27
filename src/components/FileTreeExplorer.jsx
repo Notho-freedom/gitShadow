@@ -2,16 +2,24 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from './DataProvider';
 import FileIcon from './FileIcon';
 
 export default function FileTreeExplorer({ 
-  owner, 
-  repo, 
+  repository, 
   onFileSelect, 
   onBackToRepos,
-  loading,
-  isGuest = false
+  loading
 }) {
+  const { 
+    user, 
+    repoData, 
+    fetchCommits, 
+    fetchFileTree,
+    loading: dataLoading,
+    error: dataError
+  } = useData();
+
   const [commits, setCommits] = useState([]);
   const [selectedCommit, setSelectedCommit] = useState(null);
   const [files, setFiles] = useState([]);
@@ -23,12 +31,12 @@ export default function FileTreeExplorer({
   const [currentPath, setCurrentPath] = useState(''); // Pour la navigation par niveaux
   const [breadcrumbs, setBreadcrumbs] = useState([]); // Pour le fil d'Ariane
 
-  // Charger les commits quand un dépôt est sélectionné
+  // Charger les commits quand un repository est sélectionné
   useEffect(() => {
-    if (owner && repo) {
+    if (repository) {
       loadCommits();
     }
-  }, [owner, repo]);
+  }, [repository]);
 
   // Charger les fichiers quand un commit est sélectionné
   useEffect(() => {
@@ -38,46 +46,18 @@ export default function FileTreeExplorer({
   }, [selectedCommit]);
 
   const loadCommits = async () => {
-    if (!owner || !repo) return;
+    if (!repository) return;
     
     setLoadingCommits(true);
     try {
-      // Déterminer l'owner (peut être une chaîne ou un objet)
-      const ownerName = typeof owner === 'string' ? owner : owner?.login || owner;
+      const owner = repository.owner?.login || repository.owner;
+      const data = await fetchCommits(owner, repository.name);
       
-      // Pour les invités, utiliser l'API publique sans token
-      const url = `/api/fetchCommits?owner=${encodeURIComponent(ownerName)}&repo=${encodeURIComponent(repo)}`;
-
-      const response = await fetch(url);
-
-      if (response.ok) {
-        const data = await response.json();
-        setCommits(data.commits || []);
+      if (data && data.commits) {
+        setCommits(data.commits);
         // Sélectionner le premier commit par défaut
-        if (data.commits && data.commits.length > 0) {
+        if (data.commits.length > 0) {
           setSelectedCommit(data.commits[0]);
-        }
-      } else {
-        console.error('Erreur HTTP lors du chargement des commits:', response.status);
-        // En cas d'erreur, essayer avec une requête POST
-        try {
-          const postResponse = await fetch('/api/fetchCommits', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              owner: ownerName,
-              repo: repo
-            })
-          });
-          if (postResponse.ok) {
-            const postData = await postResponse.json();
-            setCommits(postData.commits || []);
-            if (postData.commits && postData.commits.length > 0) {
-              setSelectedCommit(postData.commits[0]);
-            }
-          }
-        } catch (postError) {
-          console.error('Erreur lors de la tentative POST:', postError);
         }
       }
     } catch (error) {
@@ -88,42 +68,18 @@ export default function FileTreeExplorer({
   };
 
   const loadFiles = async () => {
-    if (!owner || !repo) return;
+    if (!repository || !selectedCommit) return;
     
     setLoadingFiles(true);
     try {
-      // Déterminer l'owner (peut être une chaîne ou un objet)
-      const ownerName = typeof owner === 'string' ? owner : owner?.login || owner;
+      const owner = repository.owner?.login || repository.owner;
+      const data = await fetchFileTree(owner, repository.name, selectedCommit.sha);
       
-      // Pour les invités, utiliser l'API publique sans token
-      const url = `/api/fetchRepo?owner=${encodeURIComponent(ownerName)}&repo=${encodeURIComponent(repo)}`;
-
-      const response = await fetch(url);
-
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(data.files || []);
-        setTreeStructure(data.tree || []);
-      } else {
-        console.error('Erreur HTTP lors du chargement des fichiers:', response.status);
-        // En cas d'erreur, essayer avec une requête POST
-        try {
-          const postResponse = await fetch('/api/fetchRepo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              owner: ownerName,
-              repo: repo
-            })
-          });
-          if (postResponse.ok) {
-            const postData = await postResponse.json();
-            setFiles(postData.files || []);
-            setTreeStructure(postData.tree || []);
-          }
-        } catch (postError) {
-          console.error('Erreur lors de la tentative POST:', postError);
-        }
+      if (data && data.tree) {
+        setFiles(data.tree);
+        setTreeStructure(data.tree);
+        setCurrentPath('');
+        setBreadcrumbs([]);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des fichiers:', error);
@@ -299,7 +255,7 @@ export default function FileTreeExplorer({
     });
   };
 
-  if (!owner || !repo) {
+  if (!repository) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
@@ -325,8 +281,8 @@ export default function FileTreeExplorer({
             </button>
             <div className="h-6 w-px bg-gray-600"></div>
                           <div>
-                <h2 className="text-lg font-semibold text-white">{repo}</h2>
-                <p className="text-sm text-gray-400">{`Dépôt de ${typeof owner === 'string' ? owner : owner?.login || 'Unknown'}`}</p>
+                <h2 className="text-lg font-semibold text-white">{repository.name}</h2>
+                <p className="text-sm text-gray-400">{`Dépôt de ${repository.owner?.login || repository.owner}`}</p>
               </div>
           </div>
           
@@ -386,7 +342,7 @@ export default function FileTreeExplorer({
                 onClick={() => navigateToBreadcrumb(-1)}
                 className="text-blue-400 hover:text-blue-300 transition-colors"
               >
-                📁 {repo}
+                📁 {repository.name}
               </button>
               {breadcrumbs.map((crumb, index) => (
                 <div key={crumb.path} className="flex items-center space-x-2">
