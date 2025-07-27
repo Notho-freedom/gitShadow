@@ -20,6 +20,7 @@ import CheckoutModal from './CheckoutModal';
 import UpgradeNotifications from './UpgradeNotifications';
 import PaymentSuccessModal from './PaymentSuccessModal';
 import RepositoryInput from './RepositoryInput';
+import PromotionPopup from './PromotionPopup';
 
 export default function Dashboard() {
   const { user, loading, isGuest, updateUser } = useAuth();
@@ -572,6 +573,12 @@ export default function Dashboard() {
         isOpen={showPaymentSuccess}
         onClose={() => setShowPaymentSuccess(false)}
         data={paymentSuccessData}
+      />
+
+      {/* Promotion Popup */}
+      <PromotionPopup
+        user={user}
+        onUpgrade={handleUpgrade}
       />
     </div>
   );
