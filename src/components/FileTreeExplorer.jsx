@@ -42,10 +42,11 @@ export default function FileTreeExplorer({
     
     setLoadingCommits(true);
     try {
+      // Déterminer l'owner (peut être une chaîne ou un objet)
+      const ownerName = typeof owner === 'string' ? owner : owner?.login || owner;
+      
       // Pour les invités, utiliser l'API publique sans token
-      const url = isGuest 
-        ? `/api/fetchCommits?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`
-        : `/api/fetchCommits?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`;
+      const url = `/api/fetchCommits?owner=${encodeURIComponent(ownerName)}&repo=${encodeURIComponent(repo)}`;
 
       const response = await fetch(url);
 
@@ -64,7 +65,7 @@ export default function FileTreeExplorer({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              owner: owner,
+              owner: ownerName,
               repo: repo
             })
           });
@@ -91,10 +92,11 @@ export default function FileTreeExplorer({
     
     setLoadingFiles(true);
     try {
+      // Déterminer l'owner (peut être une chaîne ou un objet)
+      const ownerName = typeof owner === 'string' ? owner : owner?.login || owner;
+      
       // Pour les invités, utiliser l'API publique sans token
-      const url = isGuest 
-        ? `/api/fetchRepo?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`
-        : `/api/fetchRepo?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`;
+      const url = `/api/fetchRepo?owner=${encodeURIComponent(ownerName)}&repo=${encodeURIComponent(repo)}`;
 
       const response = await fetch(url);
 
@@ -110,7 +112,7 @@ export default function FileTreeExplorer({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              owner: owner,
+              owner: ownerName,
               repo: repo
             })
           });
@@ -303,10 +305,10 @@ export default function FileTreeExplorer({
               ← Retour aux dépôts
             </button>
             <div className="h-6 w-px bg-gray-600"></div>
-            <div>
-              <h2 className="text-lg font-semibold text-white">{repo}</h2>
-              <p className="text-sm text-gray-400">{`Dépôt de ${owner}`}</p>
-            </div>
+                          <div>
+                <h2 className="text-lg font-semibold text-white">{repo}</h2>
+                <p className="text-sm text-gray-400">{`Dépôt de ${typeof owner === 'string' ? owner : owner?.login || 'Unknown'}`}</p>
+              </div>
           </div>
           
           <div className="flex items-center space-x-2">

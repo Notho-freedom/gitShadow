@@ -66,22 +66,10 @@ export default function CodeEditorWithTree({
     
     setLoadingTree(true);
     try {
-      // Extraire owner et repo du chemin du fichier ou utiliser des valeurs par défaut
-      const pathParts = file.path.split('/');
-      const repoName = pathParts[0] || 'unknown';
-      const owner = 'unknown'; // On ne peut pas déterminer l'owner depuis le fichier seul
-      
-      // Pour les invités, utiliser l'API publique
-      const url = isGuest 
-        ? `/api/fetchRepo?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repoName)}`
-        : `/api/fetchRepo?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repoName)}`;
-
-      const response = await fetch(url);
-
-      if (response.ok) {
-        const data = await response.json();
-        setTreeStructure(data.tree || []);
-      }
+      // Pour les invités, on ne peut pas charger l'arborescence complète
+      // car on n'a pas accès aux informations du dépôt
+      // On peut seulement afficher les fichiers déjà chargés
+      setTreeStructure([]);
     } catch (error) {
       console.error('Erreur lors du chargement de l\'arborescence du commit:', error);
     } finally {

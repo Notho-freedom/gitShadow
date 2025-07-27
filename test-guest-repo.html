@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mode Invité - Ajout Dépôts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #333;
+            color: white;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background-color: #dc3545;
+            color: white;
+        }
+        .success {
+            background-color: #28a745;
+            color: white;
+        }
+        .repo-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .repo-item {
+            background-color: #444;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+        .repo-item h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        .repo-item p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .repo-item .actions {
+            margin-top: 10px;
+        }
+        .repo-item button {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .repo-item button.delete {
+            background-color: #dc3545;
+        }
+        .repo-item button.delete:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Mode Invité - Ajout Dépôts</h1>
+    
+    <div class="test-section">
+        <h2>Simulation Mode Invité</h2>
+        <p>Ce test simule l'ajout de dépôts en mode invité comme dans l'application.</p>
+        
+        <div class="form-group">
+            <label for="repoUrl">URL du dépôt GitHub:</label>
+            <input type="text" id="repoUrl" value="https://github.com/facebook/react" placeholder="https://github.com/owner/repository">
+        </div>
+        
+        <button onclick="testAddRepo()">Tester l'ajout de dépôt</button>
+        <button onclick="testFetchRepo()">Tester fetchRepo</button>
+        <button onclick="testFetchCommits()">Tester fetchCommits</button>
+        <button onclick="clearResults()">Effacer les résultats</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Dépôts populaires pour test</h2>
+        <button onclick="testRepo('facebook', 'react')">Facebook React</button>
+        <button onclick="testRepo('microsoft', 'vscode')">Microsoft VSCode</button>
+        <button onclick="testRepo('vercel', 'next.js')">Vercel Next.js</button>
+        <button onclick="testRepo('vuejs', 'vue')">Vue.js</button>
+        <button onclick="testRepo('angular', 'angular')">Angular</button>
+        <button onclick="testRepo('nodejs', 'node')">Node.js</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Dépôts ajoutés (simulation localStorage)</h2>
+        <div id="repoList" class="repo-list">
+            <p>Aucun dépôt ajouté</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        let guestRepos = [];
+        
+        // Simuler localStorage pour les dépôts invités
+        function loadGuestRepos() {
+            const stored = localStorage.getItem('guestRepos');
+            guestRepos = stored ? JSON.parse(stored) : [];
+            displayRepos();
+        }
+        
+        function saveGuestRepos() {
+            localStorage.setItem('guestRepos', JSON.stringify(guestRepos));
+            displayRepos();
+        }
+        
+        function displayRepos() {
+            const repoList = document.getElementById('repoList');
+            if (guestRepos.length === 0) {
+                repoList.innerHTML = '<p>Aucun dépôt ajouté</p>';
+                return;
+            }
+            
+            repoList.innerHTML = guestRepos.map((repo, index) => `
+                <div class="repo-item">
+                    <h3>${repo.name}</h3>
+                    <p><strong>Owner:</strong> ${repo.owner}</p>
+                    <p><strong>Full name:</strong> ${repo.full_name}</p>
+                    <p><strong>Description:</strong> ${repo.description || 'Aucune description'}</p>
+                    <p><strong>Ajouté le:</strong> ${new Date(repo.addedAt).toLocaleString()}</p>
+                    <div class="actions">
+                        <button onclick="testFetchRepo('${repo.owner}', '${repo.name}')">Tester fetchRepo</button>
+                        <button onclick="testFetchCommits('${repo.owner}', '${repo.name}')">Tester fetchCommits</button>
+                        <button class="delete" onclick="removeRepo(${index})">Supprimer</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function removeRepo(index) {
+            guestRepos.splice(index, 1);
+            saveGuestRepos();
+        }
+        
+        async function testAPI(endpoint, data, testName) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = `Test: ${testName}\nEnvoi de la requête...`;
+            
+            try {
+                let response;
+                if (data) {
+                    // POST request
+                    response = await fetch(`${API_BASE}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    // GET request
+                    response = await fetch(`${API_BASE}${endpoint}`);
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ ${testName} - SUCCÈS\n\nStatus: ${response.status}\nRéponse:\n${JSON.stringify(result, null, 2)}`;
+                    return result;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ ${testName} - ERREUR\n\nStatus: ${response.status}\nErreur:\n${JSON.stringify(result, null, 2)}`;
+                    return null;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ${testName} - EXCEPTION\n\nErreur:\n${error.message}`;
+                return null;
+            }
+        }
+        
+        function testAddRepo() {
+            const repoUrl = document.getElementById('repoUrl').value;
+            
+            if (!repoUrl) {
+                alert('Veuillez entrer une URL de dépôt');
+                return;
+            }
+            
+            // Extraire owner et repo de l'URL GitHub
+            const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+            if (!match) {
+                alert('URL GitHub invalide');
+                return;
+            }
+            
+            const [, owner, repo] = match;
+            const cleanRepo = repo.replace('.git', '');
+            
+            // Vérifier si l'utilisateur a déjà atteint la limite (3 dépôts)
+            if (guestRepos.length >= 3) {
+                alert('Limite atteinte (3 dépôts maximum)');
+                return;
+            }
+            
+            // Vérifier si le dépôt existe déjà
+            if (guestRepos.some(r => r.full_name === `${owner}/${cleanRepo}`)) {
+                alert('Ce dépôt est déjà ajouté');
+                return;
+            }
+            
+            // Tester fetchRepo pour vérifier que le dépôt est public
+            testFetchRepo(owner, cleanRepo, (repoData) => {
+                if (repoData && !repoData.private) {
+                    // Ajouter le dépôt à la liste
+                    const newRepo = {
+                        id: `${owner}/${cleanRepo}`,
+                        name: cleanRepo,
+                        owner: owner,
+                        full_name: `${owner}/${cleanRepo}`,
+                        private: false,
+                        description: repoData.description || '',
+                        html_url: repoData.html_url,
+                        addedAt: new Date().toISOString()
+                    };
+                    
+                    guestRepos.push(newRepo);
+                    saveGuestRepos();
+                    
+                    document.getElementById('result').className = 'result success';
+                    document.getElementById('result').textContent = `✅ Dépôt ajouté avec succès!\n\n${JSON.stringify(newRepo, null, 2)}`;
+                } else {
+                    document.getElementById('result').className = 'result error';
+                    document.getElementById('result').textContent = '❌ Erreur: Dépôt privé ou non trouvé';
+                }
+            });
+        }
+        
+        function testFetchRepo(owner, repo, callback) {
+            const data = { owner, repo };
+            testAPI('/fetchRepo', data, `fetchRepo - ${owner}/${repo}`).then(callback);
+        }
+        
+        function testFetchCommits(owner, repo) {
+            const data = { owner, repo };
+            testAPI('/fetchCommits', data, `fetchCommits - ${owner}/${repo}`);
+        }
+        
+        function testRepo(owner, repo) {
+            document.getElementById('repoUrl').value = `https://github.com/${owner}/${repo}`;
+            testAddRepo();
+        }
+        
+        function clearResults() {
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        // Charger les dépôts au démarrage
+        loadGuestRepos();
+    </script>
+</body>
+</html> 

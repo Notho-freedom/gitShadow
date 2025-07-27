@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Exploration Dépôts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            background-color: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #333;
+            color: white;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background-color: #dc3545;
+            color: white;
+        }
+        .success {
+            background-color: #28a745;
+            color: white;
+        }
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .file-item {
+            background-color: #444;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #555;
+        }
+        .file-item:hover {
+            background-color: #555;
+        }
+        .file-item.folder {
+            background-color: #2c5aa0;
+        }
+        .file-item.file {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Exploration Dépôts gitShadow</h1>
+    
+    <div class="test-section">
+        <h2>Test API fetchRepo</h2>
+        <p>Teste l'API de récupération des fichiers d'un dépôt.</p>
+        
+        <div class="form-group">
+            <label for="owner">Owner:</label>
+            <input type="text" id="owner" value="facebook" placeholder="Nom d'utilisateur ou organisation">
+        </div>
+        
+        <div class="form-group">
+            <label for="repo">Repository:</label>
+            <input type="text" id="repo" value="react" placeholder="Nom du dépôt">
+        </div>
+        
+        <button onclick="testFetchRepo()">Tester fetchRepo</button>
+        <button onclick="testFetchCommits()">Tester fetchCommits</button>
+        <button onclick="testFetchFileContent()">Tester fetchFileContent</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test rapide avec dépôts populaires</h2>
+        <button onclick="testPopularRepo('facebook', 'react')">Facebook React</button>
+        <button onclick="testPopularRepo('microsoft', 'vscode')">Microsoft VSCode</button>
+        <button onclick="testPopularRepo('vercel', 'next.js')">Vercel Next.js</button>
+        <button onclick="testPopularRepo('vuejs', 'vue')">Vue.js</button>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+        
+        async function testAPI(endpoint, data, testName) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = `Test: ${testName}\nEnvoi de la requête...`;
+            
+            try {
+                let response;
+                if (data) {
+                    // POST request
+                    response = await fetch(`${API_BASE}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    // GET request
+                    response = await fetch(`${API_BASE}${endpoint}`);
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ ${testName} - SUCCÈS\n\nStatus: ${response.status}\nRéponse:\n${JSON.stringify(result, null, 2)}`;
+                    
+                    // Afficher la liste des fichiers si disponible
+                    if (result.files && result.files.length > 0) {
+                        displayFileList(result.files);
+                    }
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ ${testName} - ERREUR\n\nStatus: ${response.status}\nErreur:\n${JSON.stringify(result, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ ${testName} - EXCEPTION\n\nErreur:\n${error.message}`;
+            }
+        }
+        
+        function displayFileList(files) {
+            const resultDiv = document.getElementById('result');
+            const fileListHtml = `
+                \n\n📁 Fichiers trouvés (${files.length}):
+                <div class="file-list">
+                    ${files.slice(0, 20).map(file => `
+                        <div class="file-item ${file.type === 'tree' ? 'folder' : 'file'}" onclick="testFetchFileContent('${file.path}')">
+                            <strong>${file.name}</strong><br>
+                            <small>${file.type === 'tree' ? '📁 Dossier' : '📄 Fichier'}</small>
+                            ${file.size ? `<br><small>Taille: ${formatFileSize(file.size)}</small>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+                ${files.length > 20 ? `<p>... et ${files.length - 20} autres fichiers</p>` : ''}
+            `;
+            resultDiv.innerHTML += fileListHtml;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function testFetchRepo() {
+            const owner = document.getElementById('owner').value;
+            const repo = document.getElementById('repo').value;
+            
+            if (!owner || !repo) {
+                alert('Veuillez remplir owner et repo');
+                return;
+            }
+            
+            const data = { owner, repo };
+            testAPI('/fetchRepo', data, `fetchRepo - ${owner}/${repo}`);
+        }
+        
+        function testFetchCommits() {
+            const owner = document.getElementById('owner').value;
+            const repo = document.getElementById('repo').value;
+            
+            if (!owner || !repo) {
+                alert('Veuillez remplir owner et repo');
+                return;
+            }
+            
+            const data = { owner, repo };
+            testAPI('/fetchCommits', data, `fetchCommits - ${owner}/${repo}`);
+        }
+        
+        function testFetchFileContent(filePath = null) {
+            const owner = document.getElementById('owner').value;
+            const repo = document.getElementById('repo').value;
+            const path = filePath || 'README.md';
+            
+            if (!owner || !repo) {
+                alert('Veuillez remplir owner et repo');
+                return;
+            }
+            
+            const data = { owner, repo, path };
+            testAPI('/fetchFileContent', data, `fetchFileContent - ${owner}/${repo}/${path}`);
+        }
+        
+        function testPopularRepo(owner, repo) {
+            document.getElementById('owner').value = owner;
+            document.getElementById('repo').value = repo;
+            testFetchRepo();
+        }
+    </script>
+</body>
+</html> 
