@@ -402,18 +402,25 @@ function generateRealCommitHistory(commits) {
   return commits.slice(0, 10).map(commit => {
     if (!commit) return null;
     
-    const type = getCommitType(commit.message);
-    const time = formatTimeAgo(commit.date);
+    // Gérer la structure GitHub des commits
+    const author = commit.author?.login || commit.commit?.author?.name || 'Auteur inconnu';
+    const message = commit.commit?.message || commit.message || 'Commit sans message';
+    const date = commit.commit?.author?.date || commit.date;
+    const avatar_url = commit.author?.avatar_url;
+    const sha = commit.sha || 'unknown';
+    
+    const type = getCommitType(message);
+    const time = formatTimeAgo(date);
     
     return {
       type,
-      message: commit.message ? commit.message.split('\n')[0] : 'Commit sans message',
-      author: commit.author || 'Auteur inconnu',
+      message: message ? message.split('\n')[0] : 'Commit sans message',
+      author,
       time,
       files: commit.files?.length || 0,
-      hash: commit.sha ? commit.sha.substring(0, 7) : 'unknown',
+      hash: sha ? sha.substring(0, 7) : 'unknown',
       branch: 'main', // On pourrait récupérer la branche si disponible
-      avatar_url: commit.avatar_url
+      avatar_url
     };
   }).filter(Boolean); // Filtrer les valeurs null
 }
@@ -427,9 +434,12 @@ function generateRealCommitTypes(commits) {
   const total = commits.length;
 
   commits.forEach(commit => {
-    if (commit && commit.message) {
-      const type = getCommitType(commit.message);
-      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    if (commit) {
+      const message = commit.commit?.message || commit.message;
+      if (message) {
+        const type = getCommitType(message);
+        typeCounts[type] = (typeCounts[type] || 0) + 1;
+      }
     }
   });
 
@@ -472,10 +482,13 @@ function generateRealWeeklyActivity(commits) {
 
   // Compter les commits par jour
   commits.forEach(commit => {
-    if (commit && commit.date) {
-      const date = new Date(commit.date).toISOString().split('T')[0];
-      if (activity[date] !== undefined) {
-        activity[date]++;
+    if (commit) {
+      const date = commit.commit?.author?.date || commit.date;
+      if (date) {
+        const dateStr = new Date(date).toISOString().split('T')[0];
+        if (activity[dateStr] !== undefined) {
+          activity[dateStr]++;
+        }
       }
     }
   });
@@ -555,7 +568,11 @@ function calculateThisMonth(commits) {
   const now = new Date();
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   
-  return commits.filter(commit => commit && commit.date && new Date(commit.date) >= thisMonth).length;
+  return commits.filter(commit => {
+    if (!commit) return false;
+    const date = commit.commit?.author?.date || commit.date;
+    return date && new Date(date) >= thisMonth;
+  }).length;
 }
 
 function calculateThisWeek(commits) {
@@ -566,7 +583,11 @@ function calculateThisWeek(commits) {
   const now = new Date();
   const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   
-  return commits.filter(commit => commit && commit.date && new Date(commit.date) >= thisWeek).length;
+  return commits.filter(commit => {
+    if (!commit) return false;
+    const date = commit.commit?.author?.date || commit.date;
+    return date && new Date(date) >= thisWeek;
+  }).length;
 }
 
 function calculateAveragePerDay(commits) {
@@ -576,7 +597,11 @@ function calculateAveragePerDay(commits) {
   
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const recentCommits = commits.filter(commit => commit && commit.date && new Date(commit.date) >= thirtyDaysAgo);
+  const recentCommits = commits.filter(commit => {
+    if (!commit) return false;
+    const date = commit.commit?.author?.date || commit.date;
+    return date && new Date(date) >= thirtyDaysAgo;
+  });
   
   return recentCommits.length / 30;
 }
@@ -593,16 +618,28 @@ function calculateAverageCommitTime(commits) {
     return 0;
   }
   
-  const validCommits = commits.filter(commit => commit && commit.date);
+  const validCommits = commits.filter(commit => {
+    if (!commit) return false;
+    const date = commit.commit?.author?.date || commit.date;
+    return date;
+  });
+  
   if (validCommits.length < 2) {
     return 0;
   }
   
-  const sortedCommits = validCommits.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const sortedCommits = validCommits.sort((a, b) => {
+    const dateA = new Date(a.commit?.author?.date || a.date);
+    const dateB = new Date(b.commit?.author?.date || b.date);
+    return dateB - dateA;
+  });
+  
   const timeDiffs = [];
   
   for (let i = 0; i < sortedCommits.length - 1; i++) {
-    const diff = new Date(sortedCommits[i].date) - new Date(sortedCommits[i + 1].date);
+    const dateA = new Date(sortedCommits[i].commit?.author?.date || sortedCommits[i].date);
+    const dateB = new Date(sortedCommits[i + 1].commit?.author?.date || sortedCommits[i + 1].date);
+    const diff = dateA - dateB;
     timeDiffs.push(diff / (1000 * 60 * 60)); // Convertir en heures
   }
   
