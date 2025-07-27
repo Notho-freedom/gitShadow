@@ -3,49 +3,56 @@
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 
-export default function Sidebar({ activeView, onViewChange, user, selectedRepo, collapsed, onToggleCollapse }) {
-          const menuItems = [
-          {
-            id: 'repos',
-            name: 'Dépôts',
-            icon: '📁',
-            description: 'Parcourir vos dépôts GitHub'
-          },
+export default function Sidebar({ activeView, onViewChange, user, selectedRepo, collapsed, onToggleCollapse, onUpgrade }) {
+  const menuItems = [
+    {
+      id: 'repos',
+      name: 'Dépôts',
+      icon: '📁',
+      description: 'Parcourir vos dépôts GitHub',
+      premium: false
+    },
     {
       id: 'editor',
       name: 'Éditeur',
       icon: '💻',
-      description: 'Éditer le code avec coloration syntaxique'
+      description: 'Éditer le code avec coloration syntaxique',
+      premium: false
     },
     {
       id: 'documentation',
       name: 'Documentation',
       icon: '📚',
-      description: 'Générer et consulter la documentation'
+      description: 'Générer et consulter la documentation',
+      premium: true
     },
     {
       id: 'analytics',
       name: 'Analytics',
       icon: '📊',
-      description: 'Statistiques et métriques du projet'
+      description: 'Statistiques et métriques du projet',
+      premium: true
     },
     {
       id: 'collaboration',
       name: 'Collaboration',
       icon: '👥',
-      description: 'Gérer l\'équipe et les permissions'
+      description: 'Gérer l\'équipe et les permissions',
+      premium: true
     },
     {
       id: 'billing',
       name: 'Facturation',
       icon: '💳',
-      description: 'Gérer votre abonnement'
+      description: 'Gérer votre abonnement',
+      premium: false
     },
     {
       id: 'settings',
       name: 'Paramètres',
       icon: '⚙️',
-      description: 'Configuration et préférences'
+      description: 'Configuration et préférences',
+      premium: false
     }
   ];
 
@@ -74,6 +81,14 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
       </div>
     );
   }
+
+  const handleItemClick = (item) => {
+    if (item.premium && user.plan === 'free') {
+      onUpgrade();
+      return;
+    }
+    onViewChange(item.id);
+  };
 
   return (
     <motion.div
@@ -129,18 +144,25 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
             key={item.id}
             whileHover={{ scale: 1.02, x: 5 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => onViewChange(item.id)}
+            onClick={() => handleItemClick(item)}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
               activeView === item.id
                 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-lg'
                 : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-            }`}
+            } ${item.premium && user.plan === 'free' ? 'opacity-60' : ''}`}
             title={collapsed ? item.description : undefined}
           >
             <span className="text-xl">{item.icon}</span>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{item.name}</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-medium truncate">{item.name}</p>
+                  {item.premium && user.plan === 'free' && (
+                    <span className="text-xs bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full">
+                      PRO
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-400 truncate">{item.description}</p>
               </div>
             )}
@@ -164,8 +186,11 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
               </span>
             </div>
             {user.plan === 'free' && (
-              <button className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
-                Passer au Pro
+              <button 
+                onClick={onUpgrade}
+                className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm rounded-lg transition-all font-medium"
+              >
+                🚀 Passer au Pro
               </button>
             )}
           </div>

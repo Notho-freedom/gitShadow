@@ -15,21 +15,24 @@ import BillingPanel from './BillingPanel';
 import QuickActions from './QuickActions';
 import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
+import CheckoutModal from './CheckoutModal';
+import UpgradeNotifications from './UpgradeNotifications';
 
 export default function Dashboard({ user, onLogout }) {
-  const [activeView, setActiveView] = useState('explorer');
+  const [activeView, setActiveView] = useState('repos');
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
-  const [currentView, setCurrentView] = useState('repos'); // 'repos', 'explorer', 'editor'
   const [repoFiles, setRepoFiles] = useState([]);
   const [documentation, setDocumentation] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [theme, setTheme] = useState('dark');
-  const [layout, setLayout] = useState('default'); // default, code-focus, documentation-focus
+  const [layout, setLayout] = useState('default');
   const [loading, setLoading] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showUpgradeNotice, setShowUpgradeNotice] = useState(false);
 
   // Vérifier si user existe
   if (!user) {
@@ -43,12 +46,33 @@ export default function Dashboard({ user, onLogout }) {
     );
   }
 
+  // Fonction pour vérifier si une fonctionnalité nécessite un upgrade
+  const requiresUpgrade = (feature) => {
+    const premiumFeatures = ['analytics', 'collaboration', 'documentation'];
+    return user.plan === 'free' && premiumFeatures.includes(feature);
+  };
+
+  // Fonction pour gérer le changement de vue avec vérification d'upgrade
+  const handleViewChange = (view) => {
+    if (requiresUpgrade(view)) {
+      setShowUpgradeNotice(true);
+      return;
+    }
+    setActiveView(view);
+  };
+
+  // Fonction pour gérer l'upgrade
+  const handleUpgrade = () => {
+    setShowCheckoutModal(true);
+    setShowUpgradeNotice(false);
+  };
+
   const handleRepoSelect = useCallback((repo) => {
     setSelectedRepo(repo);
     setSelectedFile(null);
     setFileContent('');
     setDocumentation('');
-    setCurrentView('explorer');
+    setActiveView('explorer');
   }, []);
 
   const handleBackToRepos = useCallback(() => {
@@ -56,13 +80,13 @@ export default function Dashboard({ user, onLogout }) {
     setSelectedFile(null);
     setFileContent('');
     setRepoFiles([]);
-    setCurrentView('repos');
+    setActiveView('repos');
   }, []);
 
   const handleBackToExplorer = useCallback(() => {
     setSelectedFile(null);
     setFileContent('');
-    setCurrentView('explorer');
+    setActiveView('explorer');
   }, []);
 
   const handleFileSelect = useCallback(async (file) => {
@@ -86,7 +110,7 @@ export default function Dashboard({ user, onLogout }) {
         const data = await response.json();
         if (data.success) {
           setFileContent(data.content);
-          setCurrentView('editor');
+          setActiveView('editor');
         } else {
           throw new Error(data.error || 'Erreur lors du chargement du fichier');
         }
@@ -103,6 +127,11 @@ export default function Dashboard({ user, onLogout }) {
 
   const handleGenerateDocumentation = useCallback(async () => {
     if (!selectedFile || !fileContent) return;
+
+    if (requiresUpgrade('documentation')) {
+      setShowUpgradeNotice(true);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -121,7 +150,7 @@ export default function Dashboard({ user, onLogout }) {
       if (response.ok) {
         const data = await response.json();
         setDocumentation(data.documentation);
-        setCurrentView('documentation');
+        setActiveView('documentation');
       }
     } catch (error) {
       console.error('Erreur lors de la génération de documentation:', error);
@@ -131,7 +160,7 @@ export default function Dashboard({ user, onLogout }) {
   }, [selectedFile, fileContent, selectedRepo, user]);
 
   const renderMainContent = () => {
-    switch (currentView) {
+    switch (activeView) {
       case 'repos':
         return (
           <RepositoryExplorer
@@ -173,7 +202,7 @@ export default function Dashboard({ user, onLogout }) {
             file={selectedFile}
             content={fileContent}
             documentation={documentation}
-            onBackToEditor={() => setCurrentView('editor')}
+            onBackToEditor={() => setActiveView('editor')}
             theme={theme}
           />
         );
@@ -181,23 +210,24 @@ export default function Dashboard({ user, onLogout }) {
         return <AnalyticsPanel user={user} selectedRepo={selectedRepo} />;
       case 'collaboration':
         return <CollaborationPanel user={user} selectedRepo={selectedRepo} />;
-                     case 'settings':
-                 return (
-                   <SettingsPanel
-                     user={user}
-                     theme={theme}
-                     setTheme={setTheme}
-                     layout={layout}
-                     setLayout={setLayout}
-                     onLogout={onLogout}
-                   />
-                 );
-               case 'billing':
-                 return (
-                   <BillingPanel
-                     user={user}
-                   />
-                 );
+      case 'settings':
+        return (
+          <SettingsPanel
+            user={user}
+            theme={theme}
+            setTheme={setTheme}
+            layout={layout}
+            setLayout={setLayout}
+            onLogout={onLogout}
+          />
+        );
+      case 'billing':
+        return (
+          <BillingPanel
+            user={user}
+            onUpgrade={handleUpgrade}
+          />
+        );
       default:
         return null;
     }
@@ -208,11 +238,12 @@ export default function Dashboard({ user, onLogout }) {
       {/* Sidebar */}
       <Sidebar
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={handleViewChange}
         user={user}
         selectedRepo={selectedRepo}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onUpgrade={handleUpgrade}
       />
 
       {/* Main Content Area */}
@@ -222,7 +253,7 @@ export default function Dashboard({ user, onLogout }) {
           user={user}
           selectedRepo={selectedRepo}
           selectedFile={selectedFile}
-          activeView={currentView}
+          activeView={activeView}
           onSearchOpen={() => setIsSearchOpen(true)}
           onNotificationOpen={() => setIsNotificationOpen(true)}
           onLogout={onLogout}
@@ -235,7 +266,7 @@ export default function Dashboard({ user, onLogout }) {
         <main className="flex-1 overflow-hidden relative">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentView}
+              key={activeView}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -249,7 +280,7 @@ export default function Dashboard({ user, onLogout }) {
 
         {/* Quick Actions Floating Panel */}
         <QuickActions
-          activeView={currentView}
+          activeView={activeView}
           selectedFile={selectedFile}
           onGenerateDoc={handleGenerateDocumentation}
           loading={loading}
@@ -270,7 +301,67 @@ export default function Dashboard({ user, onLogout }) {
         isOpen={isNotificationOpen}
         onClose={() => setIsNotificationOpen(false)}
         user={user}
+        onUpgrade={handleUpgrade}
       />
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        user={user}
+      />
+
+      {/* Upgrade Notifications Pop-up */}
+      <UpgradeNotifications
+        user={user}
+        onUpgrade={handleUpgrade}
+      />
+
+      {/* Upgrade Notice */}
+      {showUpgradeNotice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-2xl p-8 max-w-md mx-4 border border-gray-700">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🚀</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Fonctionnalité Premium</h3>
+              <p className="text-gray-300 mb-6">
+                Cette fonctionnalité est disponible uniquement pour les utilisateurs Pro et Enterprise. 
+                Débloquez tout le potentiel de gitShadow !
+              </p>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center text-sm text-gray-300">
+                  <span className="text-green-400 mr-2">✓</span>
+                  Accès illimité à toutes les fonctionnalités
+                </div>
+                <div className="flex items-center text-sm text-gray-300">
+                  <span className="text-green-400 mr-2">✓</span>
+                  Support prioritaire
+                </div>
+                <div className="flex items-center text-sm text-gray-300">
+                  <span className="text-green-400 mr-2">✓</span>
+                  Analytics avancées
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowUpgradeNotice(false)}
+                  className="flex-1 px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                >
+                  Plus tard
+                </button>
+                <button
+                  onClick={handleUpgrade}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all"
+                >
+                  Passer au Pro
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -3,40 +3,86 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function NotificationCenter({ isOpen, onClose, user }) {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'info',
-      title: 'Bienvenue sur gitShadow !',
-      message: 'Votre compte a été configuré avec succès.',
-      time: 'Il y a 2 heures',
-      read: false
-    },
-    {
-      id: 2,
-      type: 'success',
-      title: 'Documentation générée',
-      message: 'La documentation pour "Dashboard.jsx" a été créée.',
-      time: 'Il y a 1 heure',
-      read: false
-    },
-    {
-      id: 3,
-      type: 'warning',
-      title: 'Mise à jour disponible',
-      message: 'Une nouvelle version de gitShadow est disponible.',
-      time: 'Il y a 3 heures',
-      read: true
+export default function NotificationCenter({ isOpen, onClose, user, onUpgrade }) {
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    // Générer des notifications dynamiques basées sur l'utilisateur
+    const baseNotifications = [
+      {
+        id: 1,
+        type: 'info',
+        title: 'Bienvenue sur gitShadow !',
+        message: 'Votre compte a été configuré avec succès.',
+        time: 'Il y a 2 heures',
+        read: false
+      }
+    ];
+
+    // Ajouter des notifications d'upgrade pour les utilisateurs gratuits
+    if (user?.plan === 'free') {
+      baseNotifications.push(
+        {
+          id: 2,
+          type: 'upgrade',
+          title: '🚀 Débloquez votre potentiel !',
+          message: 'Passez au plan Pro pour accéder à toutes les fonctionnalités avancées.',
+          time: 'Il y a 1 heure',
+          read: false,
+          action: 'upgrade'
+        },
+        {
+          id: 3,
+          type: 'promo',
+          title: '🎉 Offre spéciale -20% !',
+          message: 'Économisez 20% sur votre premier mois avec le code WELCOME20.',
+          time: 'Il y a 30 minutes',
+          read: false,
+          action: 'upgrade'
+        },
+        {
+          id: 4,
+          type: 'feature',
+          title: '📊 Analytics Premium',
+          message: 'Découvrez des insights détaillés sur vos projets avec les analytics avancées.',
+          time: 'Il y a 15 minutes',
+          read: false,
+          action: 'upgrade'
+        }
+      );
+    } else {
+      baseNotifications.push(
+        {
+          id: 2,
+          type: 'success',
+          title: 'Documentation générée',
+          message: 'La documentation pour "Dashboard.jsx" a été créée.',
+          time: 'Il y a 1 heure',
+          read: false
+        },
+        {
+          id: 3,
+          type: 'warning',
+          title: 'Mise à jour disponible',
+          message: 'Une nouvelle version de gitShadow est disponible.',
+          time: 'Il y a 3 heures',
+          read: true
+        }
+      );
     }
-  ]);
+
+    setNotifications(baseNotifications);
+  }, [user]);
 
   const getNotificationIcon = (type) => {
     const icons = {
       info: 'ℹ️',
       success: '✅',
       warning: '⚠️',
-      error: '❌'
+      error: '❌',
+      upgrade: '🚀',
+      promo: '🎉',
+      feature: '✨'
     };
     return icons[type] || 'ℹ️';
   };
@@ -46,7 +92,10 @@ export default function NotificationCenter({ isOpen, onClose, user }) {
       info: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       success: 'bg-green-500/20 text-green-400 border-green-500/30',
       warning: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      error: 'bg-red-500/20 text-red-400 border-red-500/30'
+      error: 'bg-red-500/20 text-red-400 border-red-500/30',
+      upgrade: 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 border-blue-500/30',
+      promo: 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 border-yellow-500/30',
+      feature: 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30'
     };
     return colors[type] || 'bg-blue-500/20 text-blue-400 border-blue-500/30';
   };
@@ -67,6 +116,13 @@ export default function NotificationCenter({ isOpen, onClose, user }) {
 
   const deleteNotification = (id) => {
     setNotifications(prev => prev.filter(notif => notif.id !== id));
+  };
+
+  const handleNotificationAction = (notification) => {
+    if (notification.action === 'upgrade' && onUpgrade) {
+      onUpgrade();
+      markAsRead(notification.id);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -133,7 +189,8 @@ export default function NotificationCenter({ isOpen, onClose, user }) {
                           notification.read 
                             ? 'bg-gray-700/30 border-gray-600/50' 
                             : 'bg-blue-500/10 border-blue-500/30'
-                        }`}
+                        } ${notification.action ? 'cursor-pointer hover:scale-105' : ''}`}
+                        onClick={() => notification.action && handleNotificationAction(notification)}
                       >
                         <div className="flex items-start space-x-3">
                           <span className="text-xl">{getNotificationIcon(notification.type)}</span>
@@ -147,7 +204,10 @@ export default function NotificationCenter({ isOpen, onClose, user }) {
                               <div className="flex items-center space-x-2">
                                 <span className="text-xs text-gray-400">{notification.time}</span>
                                 <button
-                                  onClick={() => deleteNotification(notification.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(notification.id);
+                                  }}
                                   className="text-gray-400 hover:text-red-400 transition-colors"
                                 >
                                   ×
@@ -155,9 +215,36 @@ export default function NotificationCenter({ isOpen, onClose, user }) {
                               </div>
                             </div>
                             <p className="text-sm text-gray-400 mt-1">{notification.message}</p>
-                            {!notification.read && (
+                            {notification.action === 'upgrade' && (
+                              <div className="mt-3 flex items-center justify-between">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleNotificationAction(notification);
+                                  }}
+                                  className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-xs rounded-lg font-medium transition-all"
+                                >
+                                  Passer au Pro
+                                </button>
+                                {!notification.read && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markAsRead(notification.id);
+                                    }}
+                                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                                  >
+                                    Marquer comme lu
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            {!notification.read && !notification.action && (
                               <button
-                                onClick={() => markAsRead(notification.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
                                 className="text-xs text-blue-400 hover:text-blue-300 mt-2 transition-colors"
                               >
                                 Marquer comme lu
