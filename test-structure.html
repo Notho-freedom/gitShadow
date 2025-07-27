@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Structure API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            background: #3a3a3a;
+            border-radius: 4px;
+        }
+        .folder {
+            color: #4a9eff;
+            font-weight: bold;
+        }
+        .file {
+            color: #e0e0e0;
+        }
+        .icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .path {
+            color: #888;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #3a8eef;
+        }
+        .loading {
+            color: #4a9eff;
+        }
+        .error {
+            color: #ff4a4a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test de la Structure API</h1>
+        
+        <div class="test-section">
+            <h2>Test avec un dépôt public</h2>
+            <p>Ce test vérifie que l'API retourne bien les dossiers et les fichiers dans la structure d'arbre.</p>
+            
+            <button onclick="testPublicRepo()">Tester avec un dépôt public</button>
+            <button onclick="clearResults()">Effacer les résultats</button>
+            
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testPublicRepo() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">Chargement...</div>';
+            
+            try {
+                const response = await fetch('/api/fetchRepo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        owner: 'facebook',
+                        repo: 'react',
+                        ref: 'main'
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    throw new Error(data.error || 'Erreur inconnue');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Erreur: ${error.message}</div>`;
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = '<h3>Résultats:</h3>';
+            
+            // Afficher les statistiques
+            if (data.stats) {
+                html += `
+                    <div style="background: #4a4a4a; padding: 15px; border-radius: 4px; margin: 10px 0;">
+                        <h4>Statistiques:</h4>
+                        <p>Fichiers: ${data.stats.totalFiles}</p>
+                        <p>Dossiers: ${data.stats.totalFolders}</p>
+                    </div>
+                `;
+            }
+            
+            // Afficher la structure d'arbre
+            if (data.tree && data.tree.length > 0) {
+                html += '<h4>Structure d\'arbre (premiers éléments):</h4>';
+                html += '<div style="max-height: 400px; overflow-y: auto;">';
+                
+                // Afficher seulement les 20 premiers éléments pour éviter l'encombrement
+                const itemsToShow = data.tree.slice(0, 20);
+                
+                itemsToShow.forEach(item => {
+                    const icon = item.type === 'tree' ? '📁' : '📄';
+                    const className = item.type === 'tree' ? 'folder' : 'file';
+                    
+                    html += `
+                        <div class="file-item">
+                            <span class="icon">${icon}</span>
+                            <span class="${className}">${item.name}</span>
+                            <span class="path">${item.path}</span>
+                            ${item.type === 'blob' ? `<span style="color: #888; margin-left: 10px;">${item.size} bytes</span>` : ''}
+                        </div>
+                    `;
+                });
+                
+                if (data.tree.length > 20) {
+                    html += `<div style="color: #888; padding: 10px; text-align: center;">... et ${data.tree.length - 20} autres éléments</div>`;
+                }
+                
+                html += '</div>';
+            }
+            
+            // Afficher les fichiers plats (pour comparaison)
+            if (data.files && data.files.length > 0) {
+                html += '<h4>Fichiers plats (pour comparaison):</h4>';
+                html += '<div style="max-height: 200px; overflow-y: auto;">';
+                
+                const filesToShow = data.files.slice(0, 10);
+                
+                filesToShow.forEach(file => {
+                    html += `
+                        <div class="file-item">
+                            <span class="icon">📄</span>
+                            <span class="file">${file.name}</span>
+                            <span class="path">${file.path}</span>
+                            <span style="color: #888; margin-left: 10px;">${file.size} bytes</span>
+                        </div>
+                    `;
+                });
+                
+                if (data.files.length > 10) {
+                    html += `<div style="color: #888; padding: 10px; text-align: center;">... et ${data.files.length - 10} autres fichiers</div>`;
+                }
+                
+                html += '</div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
