@@ -35,6 +35,7 @@ export default function BillingPanel({ user }) {
       const mockData = {
         subscription: {
           id: 'sub_123456789',
+          customerId: 'cus_123456789', // Ajout du customerId
           status: 'active',
           plan: 'pro',
           planName: 'Pro',
@@ -81,15 +82,26 @@ export default function BillingPanel({ user }) {
   };
 
   const handlePortalAccess = async () => {
+    if (!billingData?.subscription?.customerId) {
+      console.error('CustomerId manquant dans les données de facturation');
+      return;
+    }
+
     try {
       const response = await fetch('/api/payment/customer-portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerId: billingData?.subscription?.customerId,
+          customerId: billingData.subscription.customerId,
           returnUrl: window.location.href
         })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erreur API:', errorData);
+        return;
+      }
 
       const data = await response.json();
       if (data.url) {
@@ -201,10 +213,15 @@ export default function BillingPanel({ user }) {
         </div>
         <button
           onClick={handlePortalAccess}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          disabled={!billingData?.subscription?.customerId}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+            billingData?.subscription?.customerId
+              ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+          }`}
         >
           <Settings className="w-4 h-4" />
-          <span>Portail client</span>
+          <span>{billingData?.subscription?.customerId ? 'Portail client' : 'Portail indisponible'}</span>
         </button>
       </div>
 
