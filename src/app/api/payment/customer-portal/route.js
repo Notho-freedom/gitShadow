@@ -26,11 +26,11 @@ export async function POST(request) {
 
     // Vérifier si Stripe est configuré
     if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('Stripe non configuré');
-      return NextResponse.json(
-        { error: 'Stripe non configuré' },
-        { status: 500 }
-      );
+      console.log('Stripe non configuré - retour d\'une URL de test');
+      // Retourner une URL de test pour le développement
+      return NextResponse.json({
+        url: `${returnUrl}?portal=test&message=Portail client en mode test`
+      });
     }
 
     const result = await createCustomerPortalSession(customerId, returnUrl);

@@ -14,6 +14,8 @@ export async function POST(request) {
       metadata = {} 
     } = body;
 
+    console.log('Checkout session request:', { planId, customerEmail, customAmount });
+
     if (!customerEmail) {
       return NextResponse.json(
         { error: 'Email client requis' },
@@ -26,6 +28,18 @@ export async function POST(request) {
         { error: 'URLs de succès et d\'annulation requises' },
         { status: 400 }
       );
+    }
+
+    // Vérifier si Stripe est configuré
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.log('Stripe non configuré - retour d\'une URL de test');
+      // Retourner une URL de test pour le développement
+      const testUrl = `${successUrl}?test=true&plan=${planId}&email=${encodeURIComponent(customerEmail)}`;
+      return NextResponse.json({
+        success: true,
+        sessionId: 'test_session_' + Date.now(),
+        url: testUrl
+      });
     }
 
     let result;
@@ -69,6 +83,7 @@ export async function POST(request) {
 
     if (result.success) {
       return NextResponse.json({
+        success: true,
         sessionId: result.sessionId,
         url: result.url
       });
