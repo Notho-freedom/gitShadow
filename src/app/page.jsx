@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
@@ -11,6 +11,16 @@ import GuestExplorer from '../components/GuestExplorer';
 export default function HomePage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showGuestExplorer, setShowGuestExplorer] = useState(false);
+
+  // Vérifier si on doit afficher l'explorateur invité
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('guest') === 'true') {
+        setShowGuestExplorer(true);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">

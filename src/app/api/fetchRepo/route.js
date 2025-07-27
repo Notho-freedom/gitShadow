@@ -78,7 +78,7 @@ export async function POST(request) {
     const body = await request.json();
     
     // Support pour les deux formats : URL complète ou paramètres séparés
-    let owner, repo, accessToken, ref;
+    let owner, repo, accessToken, ref, commit;
     
     if (body.url) {
       // Format original avec URL complète
@@ -120,7 +120,7 @@ export async function POST(request) {
       [owner, repo] = pathParts;
     } else {
       // Nouveau format avec paramètres séparés
-      ({ owner, repo, accessToken, ref } = body);
+      ({ owner, repo, accessToken, ref, commit } = body);
       
       if (!owner || !repo) {
         return new Response(
@@ -184,8 +184,8 @@ export async function POST(request) {
       };
     }
 
-    // Utiliser le ref spécifié ou la branche par défaut
-    const targetRef = ref || defaultBranch;
+    // Utiliser le commit spécifié, puis le ref spécifié, puis la branche par défaut
+    const targetRef = commit || ref || defaultBranch;
     let treeData = null;
     let usedRef = targetRef;
 

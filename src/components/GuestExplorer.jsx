@@ -44,14 +44,19 @@ export default function GuestExplorer() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           owner, 
-          repo,
-          url: selectedRepo 
+          repo
         })
       });
       
       if (commitsResponse.ok) {
         const commitsData = await commitsResponse.json();
-        setCommits(commitsData.commits || []);
+        const commitsList = commitsData.commits || [];
+        setCommits(commitsList);
+        
+        // Sélectionner automatiquement le premier commit
+        if (commitsList.length > 0) {
+          setSelectedCommit(commitsList[0]);
+        }
       }
     } catch (err) {
       console.error('Erreur lors de la récupération des commits:', err);
@@ -108,10 +113,30 @@ export default function GuestExplorer() {
     }
   };
 
-  const handleCommitSelect = (commit) => {
+  const handleCommitSelect = async (commit) => {
     setSelectedCommit(commit);
-    // Ici on pourrait charger les fichiers d'un commit spécifique
-    // Pour l'instant, on garde la vue actuelle
+    setLoading(true);
+    
+    try {
+      // Charger les fichiers du commit sélectionné
+      const response = await fetch('/api/fetchRepo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          url: selectedRepo,
+          commit: commit.sha 
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRepoFiles(data.tree || []);
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des fichiers du commit:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFileLanguage = (filename) => {
@@ -191,12 +216,15 @@ export default function GuestExplorer() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => window.location.href = '/auth'}
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
-            >
-              Se connecter
-            </button>
+            {/* Bouton retour ajouté ici pour plus de visibilité */}
+            {currentView !== 'input' && (
+              <button
+                onClick={handleBackToInput}
+                className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all duration-200"
+              >
+                Analyser un autre dépôt
+              </button>
+            )}
           </div>
         </div>
       </div>

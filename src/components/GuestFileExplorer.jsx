@@ -28,11 +28,11 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
   };
 
   const isFolder = (file) => {
-    return file.type === 'tree' || file.type === 'dir';
+    return file.type === 'tree' || file.type === 'dir' || file.mode === '040000';
   };
 
   const isFile = (file) => {
-    return file.type === 'blob' || file.type === 'file';
+    return file.type === 'blob' || file.type === 'file' || file.mode === '100644' || file.mode === '100755';
   };
 
   const getFileExtension = (filename) => {
@@ -61,6 +61,19 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
     return acc;
   }, {});
 
+  // Trier les fichiers : dossiers d'abord, puis fichiers
+  Object.keys(groupedFiles).forEach(folderPath => {
+    groupedFiles[folderPath].sort((a, b) => {
+      const aIsFolder = isFolder(a);
+      const bIsFolder = isFolder(b);
+      
+      if (aIsFolder && !bIsFolder) return -1;
+      if (!aIsFolder && bIsFolder) return 1;
+      
+      return a.name.localeCompare(b.name);
+    });
+  });
+
   const renderFile = (file) => (
     <motion.div
       key={file.path}
@@ -87,8 +100,8 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
   const renderFolder = (folderPath, folderFiles) => {
     const folderName = folderPath.split('/').pop() || 'Root';
     const isExpanded = expandedFolders.has(folderPath);
-    const hasFiles = folderFiles.some(file => isFile(file));
-    const hasSubfolders = folderFiles.some(file => isFolder(file));
+    const folderCount = folderFiles.filter(file => isFolder(file)).length;
+    const fileCount = folderFiles.filter(file => isFile(file)).length;
 
     return (
       <div key={folderPath} className="mb-2">
@@ -106,7 +119,7 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
           </svg>
           <span className="text-sm text-white font-medium">{folderName}</span>
           <span className="text-xs text-gray-400">
-            ({folderFiles.length} {folderFiles.length === 1 ? 'élément' : 'éléments'})
+            ({folderCount} dossier{folderCount > 1 ? 's' : ''}, {fileCount} fichier{fileCount > 1 ? 's' : ''})
           </span>
         </div>
         

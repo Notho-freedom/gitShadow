@@ -262,7 +262,8 @@ export default function Navbar() {
               isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            <div className="py-4 space-y-2 border-t border-white/10">
+            <div className="bg-black/80 backdrop-blur-xl border-t border-white/10">
+              <div className="py-4 space-y-2">
               {navItems.map((item) => (
                 <div key={item.name}>
                   {item.href === '/' ? (
@@ -341,6 +342,7 @@ export default function Navbar() {
             </div>
           </div>
         </div>
+      </div>
       </nav>
 
       {/* Auth Modal */}
