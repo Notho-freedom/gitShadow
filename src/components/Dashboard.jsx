@@ -99,6 +99,41 @@ export default function Dashboard() {
       return;
     }
     setActiveView(view);
+    
+    // Navigation basée sur la vue sélectionnée
+    switch (view) {
+      case 'repos':
+        setCurrentView('repos');
+        break;
+      case 'editor':
+        if (selectedFile) {
+          setCurrentView('editor');
+        } else {
+          // Si aucun fichier n'est sélectionné, rester dans la vue actuelle
+          return;
+        }
+        break;
+      case 'documentation':
+        if (documentation) {
+          setCurrentView('documentation');
+        } else {
+          // Si aucune documentation n'est générée, rester dans la vue actuelle
+          return;
+        }
+        break;
+      case 'analytics':
+        setCurrentView('analytics');
+        break;
+      case 'collaboration':
+        setCurrentView('collaboration');
+        break;
+      case 'settings':
+        setCurrentView('settings');
+        break;
+      default:
+        // Pour les autres vues, garder la vue actuelle
+        break;
+    }
   };
 
   const handleUpgrade = () => {
@@ -163,7 +198,7 @@ export default function Dashboard() {
     setSelectedFile(null);
     setFileContent('');
     setDocumentation('');
-    setCurrentView('explorer');
+    // Ne pas changer currentView, rester dans RepositoryExplorer
   }, []);
 
   const handleBackToRepos = useCallback(() => {
@@ -172,6 +207,7 @@ export default function Dashboard() {
     setFileContent('');
     setRepoFiles([]);
     setCurrentView('repos');
+    setActiveView('repos');
   }, []);
 
   const handleBackToExplorer = useCallback(() => {
