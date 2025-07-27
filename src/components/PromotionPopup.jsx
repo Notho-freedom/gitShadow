@@ -15,9 +15,11 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       message: 'Économisez 20% sur votre premier mois avec le code WELCOME20',
       discount: '20%',
       code: 'WELCOME20',
-      color: 'from-yellow-500 to-orange-500',
+      color: 'from-yellow-500/20 to-orange-500/20 border-yellow-500/30',
+      badgeColor: 'from-yellow-500 to-orange-500',
       icon: '🎉',
-      badge: 'PROMO'
+      badge: 'PROMO',
+      type: 'promo'
     },
     {
       id: 'pro',
@@ -26,9 +28,11 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       message: 'Débloquez toutes les fonctionnalités avancées et boostez votre productivité',
       discount: '15%',
       code: 'PRO15',
-      color: 'from-blue-600 to-purple-600',
+      color: 'from-blue-500/20 to-purple-500/20 border-blue-500/30',
+      badgeColor: 'from-blue-600 to-purple-600',
       icon: '🚀',
-      badge: 'PRO'
+      badge: 'PRO',
+      type: 'upgrade'
     },
     {
       id: 'enterprise',
@@ -37,9 +41,11 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       message: 'Collaboration avancée, analytics détaillés et support prioritaire',
       discount: '25%',
       code: 'TEAM25',
-      color: 'from-indigo-600 to-purple-600',
+      color: 'from-indigo-500/20 to-purple-500/20 border-indigo-500/30',
+      badgeColor: 'from-indigo-600 to-purple-600',
       icon: '💎',
-      badge: 'ENTERPRISE'
+      badge: 'ENTERPRISE',
+      type: 'feature'
     },
     {
       id: 'performance',
@@ -48,9 +54,11 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       message: 'Accélérez votre développement avec nos outils avancés',
       discount: '30%',
       code: 'BOOST30',
-      color: 'from-green-600 to-emerald-600',
+      color: 'from-green-500/20 to-emerald-500/20 border-green-500/30',
+      badgeColor: 'from-green-600 to-emerald-600',
       icon: '⚡',
-      badge: 'BOOST'
+      badge: 'BOOST',
+      type: 'feature'
     },
     {
       id: 'security',
@@ -59,9 +67,11 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
       message: 'Bénéficiez de fonctionnalités de sécurité de niveau entreprise',
       discount: '18%',
       code: 'SECURE18',
-      color: 'from-red-600 to-pink-600',
+      color: 'from-red-500/20 to-pink-500/20 border-red-500/30',
+      badgeColor: 'from-red-600 to-pink-600',
       icon: '🔒',
-      badge: 'SECURITY'
+      badge: 'SECURITY',
+      type: 'feature'
     }
   ];
 
@@ -117,7 +127,7 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 50 }}
           transition={{ duration: 0.3 }}
-          className="relative bg-gray-800 rounded-2xl p-8 max-w-md w-full shadow-2xl border border-gray-700/50"
+          className="relative bg-gray-800/95 backdrop-blur-xl rounded-2xl p-8 max-w-md w-full shadow-2xl border border-gray-700/50"
         >
           {/* Close button */}
           <button
@@ -130,9 +140,9 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
           {/* Content */}
           <div className="text-center">
             {/* Icon and Badge */}
-            <div className="relative inline-block mb-4">
-              <div className="text-6xl mb-2">{currentPromo.icon}</div>
-              <span className={`absolute -top-2 -right-2 px-2 py-1 text-xs font-bold rounded-full bg-gradient-to-r ${currentPromo.color} text-white`}>
+            <div className="relative inline-block mb-6">
+              <div className="text-6xl mb-3">{currentPromo.icon}</div>
+              <span className={`absolute -top-2 -right-2 px-3 py-1 text-xs font-bold rounded-full bg-gradient-to-r ${currentPromo.badgeColor} text-white shadow-lg`}>
                 {currentPromo.badge}
               </span>
             </div>
@@ -142,38 +152,40 @@ export default function PromotionPopup({ user, onUpgrade, onClose }) {
             <p className="text-gray-400 mb-4">{currentPromo.subtitle}</p>
 
             {/* Message */}
-            <p className="text-gray-300 mb-6">{currentPromo.message}</p>
+            <p className="text-gray-300 mb-6 leading-relaxed">{currentPromo.message}</p>
 
-            {/* Discount */}
-            <div className={`bg-gradient-to-r ${currentPromo.color} rounded-xl p-4 mb-6`}>
-              <div className="text-3xl font-bold text-white mb-1">{currentPromo.discount}</div>
-              <div className="text-white/80 text-sm">de réduction</div>
+            {/* Discount Card */}
+            <div className={`bg-gradient-to-r ${currentPromo.color} rounded-xl p-6 mb-6 border`}>
+              <div className="text-4xl font-bold text-white mb-2">{currentPromo.discount}</div>
+              <div className="text-white/90 text-sm font-medium">de réduction</div>
             </div>
 
             {/* Code */}
-            <div className="bg-gray-700/50 rounded-lg p-3 mb-6">
-              <div className="text-xs text-gray-400 mb-1">Code promo :</div>
-              <div className="text-lg font-mono font-bold text-white">{currentPromo.code}</div>
+            <div className="bg-gray-700/50 rounded-xl p-4 mb-6 border border-gray-600/50">
+              <div className="text-xs text-gray-400 mb-2 font-medium">Code promo :</div>
+              <div className="text-lg font-mono font-bold text-white bg-gray-800/50 rounded-lg p-2">
+                {currentPromo.code}
+              </div>
             </div>
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleUpgrade}
-                className={`flex-1 bg-gradient-to-r ${currentPromo.color} hover:opacity-90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200`}
+                className={`flex-1 bg-gradient-to-r ${currentPromo.badgeColor} hover:opacity-90 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
               >
                 Utiliser l'offre
               </button>
               <button
                 onClick={handleClose}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                className="flex-1 bg-gray-700/50 hover:bg-gray-600/50 text-white font-medium py-3 px-6 rounded-xl transition-colors border border-gray-600/50"
               >
                 Plus tard
               </button>
             </div>
 
             {/* Footer */}
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="text-xs text-gray-500 mt-6">
               Offre limitée • Valable pour les nouveaux abonnements
             </p>
           </div>
