@@ -76,7 +76,6 @@ export default function RepositoryExplorer({ onRepoSelect, onFilesUpdate, loadin
         }
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des commits:', error);
       setError(error.message);
     } finally {
       setIsLoadingCommits(false);
@@ -98,7 +97,6 @@ export default function RepositoryExplorer({ onRepoSelect, onFilesUpdate, loadin
         setFileTree(data.tree);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de l\'arborescence:', error);
       setError(error.message);
     } finally {
       setIsLoadingFiles(false);

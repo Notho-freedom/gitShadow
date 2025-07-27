@@ -62,7 +62,6 @@ export const DataProvider = ({ children }) => {
       setUserStats(data);
     } catch (err) {
       setError(err.message);
-      console.error('Erreur fetchUserStats:', err);
     } finally {
       setLoading(false);
     }
@@ -70,17 +69,13 @@ export const DataProvider = ({ children }) => {
 
   // Fonction pour récupérer les repositories de l'utilisateur
   const fetchUserRepositories = useCallback(async () => {
-    console.log('fetchUserRepositories appelé avec authUser:', authUser);
-    
     // Si l'utilisateur est un invité, utiliser ses repositories locaux
     if (authUser?.isGuest) {
-      console.log('Utilisateur invité détecté, utilisation des repositories locaux');
       setUserRepositories(authUser.repos || []);
       return;
     }
     
     if (!authUser?.access_token) {
-      console.log('Pas d\'access_token disponible');
       return;
     }
 
@@ -88,28 +83,21 @@ export const DataProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      console.log('Appel API /api/repositories avec token:', authUser.access_token.substring(0, 10) + '...');
-      
       const response = await fetch('/api/repositories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken: authUser.access_token })
       });
 
-      console.log('Réponse API repositories:', response.status, response.ok);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Erreur API repositories:', errorData);
         throw new Error('Erreur lors de la récupération des repositories');
       }
       
       const data = await response.json();
-      console.log('Données repositories reçues:', data);
       setUserRepositories(data.repositories || []);
     } catch (err) {
       setError(err.message);
-      console.error('Erreur fetchUserRepositories:', err);
     } finally {
       setLoading(false);
     }
@@ -135,7 +123,6 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.error('Erreur fetchCommits:', err);
       return null;
     }
   }, [authUser?.access_token]);
@@ -160,7 +147,6 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.error('Erreur fetchCollaborators:', err);
       return null;
     }
   }, [authUser?.access_token]);
@@ -185,7 +171,6 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.error('Erreur fetchRepoActivity:', err);
       return null;
     }
   }, [authUser?.access_token]);
@@ -210,7 +195,6 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.error('Erreur fetchRepoAnalytics:', err);
       return null;
     }
   }, [authUser?.access_token]);
@@ -236,7 +220,6 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.error('Erreur fetchFileTree:', err);
       return null;
     }
   }, [authUser?.access_token]);
@@ -263,7 +246,6 @@ export const DataProvider = ({ children }) => {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.error('Erreur fetchFileContent:', err);
       return null;
     }
   }, [authUser?.access_token]);
@@ -307,7 +289,6 @@ export const DataProvider = ({ children }) => {
 
     } catch (err) {
       setError(err.message);
-      console.error('Erreur loadRepositoryData:', err);
     } finally {
       setLoading(false);
     }
@@ -371,13 +352,9 @@ export const DataProvider = ({ children }) => {
 
   // Effet pour charger les repositories au démarrage si l'utilisateur est déjà connecté
   useEffect(() => {
-    console.log('Effet repositories - authUser:', authUser, 'loading:', loading, 'userRepositories.length:', userRepositories.length);
-    
     if (authUser && !loading && userRepositories.length === 0 && !authUser.isGuest) {
-      console.log('Chargement automatique des repositories');
       fetchUserRepositories();
     } else if (authUser?.isGuest) {
-      console.log('Utilisateur invité, utilisation des repositories locaux');
       setUserRepositories(authUser.repos || []);
     }
   }, [authUser, loading, userRepositories.length, fetchUserRepositories]);

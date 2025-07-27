@@ -13,7 +13,7 @@ export default function QuickActions({ activeView, selectedFile, onGenerateDoc, 
         if (checkAndShowUpgrade && checkAndShowUpgrade('search')) {
           return;
         }
-        console.log('Search');
+        // Action de recherche
       },
       requiresUpgrade: 'search'
     },
@@ -40,7 +40,7 @@ export default function QuickActions({ activeView, selectedFile, onGenerateDoc, 
         if (checkAndShowUpgrade && checkAndShowUpgrade('format')) {
           return;
         }
-        console.log('Format');
+        // Action de formatage
       },
       disabled: !selectedFile,
       requiresUpgrade: 'format'
@@ -62,7 +62,7 @@ export default function QuickActions({ activeView, selectedFile, onGenerateDoc, 
         if (checkAndShowUpgrade && checkAndShowUpgrade('share')) {
           return;
         }
-        console.log('Share');
+        // Action de partage
       },
       disabled: !selectedFile,
       requiresUpgrade: 'share'

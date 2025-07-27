@@ -9,8 +9,6 @@ export async function GET(request) {
     const ref = searchParams.get('ref') || 'main';
     const accessToken = searchParams.get('accessToken');
 
-    console.log('fetchFileContent GET API called with:', { owner, repo, path, ref, hasAccessToken: !!accessToken });
-
     if (!owner || !repo || !path) {
       return NextResponse.json(
         { error: 'Paramètres owner, repo et path requis' },
@@ -33,14 +31,10 @@ export async function GET(request) {
       headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
     }
 
-    console.log('Fetching file content from:', apiUrl);
-
     // Récupérer le contenu du fichier
     const response = await fetch(apiUrl, { headers });
     
     if (!response.ok) {
-      console.error('GitHub API error:', response.status, response.statusText);
-      
       if (response.status === 404) {
         return NextResponse.json(
           { error: 'Fichier non trouvé' },
@@ -63,8 +57,6 @@ export async function GET(request) {
 
     // Récupérer le contenu du fichier
     const content = await response.text();
-    
-    console.log(`File content retrieved successfully, size: ${content.length} characters`);
 
     return NextResponse.json({
       content,

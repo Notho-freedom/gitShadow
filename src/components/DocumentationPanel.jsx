@@ -100,7 +100,6 @@ export default function DocumentationPanel({ documentation, file, repository, on
       setCurrentDocumentation(data.documentation);
       setGenerationsUsed(prev => prev + 1);
     } catch (error) {
-      console.error('Erreur lors de la génération de documentation:', error);
       setError(error.message);
     } finally {
       setLoading(false);

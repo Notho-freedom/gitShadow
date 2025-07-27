@@ -102,21 +102,27 @@ export default function CodeEditor({ file, content, onGenerateDoc, loading, them
     // Save with Ctrl+S
     if (e.ctrlKey && e.key === 's') {
       e.preventDefault();
-      // TODO: Implement save functionality
-      console.log('Saving file...');
+      // Implémentation de la sauvegarde
+      if (onSave) {
+        onSave(code);
+      }
     }
 
     // Find with Ctrl+F
     if (e.ctrlKey && e.key === 'f') {
       e.preventDefault();
-      // TODO: Implement find functionality
-      console.log('Find...');
+      // Implémentation de la recherche
+      if (onFind) {
+        onFind();
+      }
     }
   };
 
   const formatCode = () => {
-    // TODO: Implement code formatting
-    console.log('Formatting code...');
+    // Implémentation du formatage de code
+    if (onFormat) {
+      onFormat(code);
+    }
   };
 
   const copyCode = () => {

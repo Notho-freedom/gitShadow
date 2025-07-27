@@ -49,10 +49,10 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
           setBranch(data.defaultBranch);
         }
       } else {
-        console.error('Erreur lors du chargement des branches');
+        // Gérer l'erreur silencieusement
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des branches:', error);
+      // Gérer l'erreur silencieusement
     }
   };
 
@@ -96,7 +96,7 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
       setHasMore(data.hasMore);
       setPage(pageNum);
     } catch (error) {
-      console.error('Erreur lors du chargement des commits:', error);
+      // Gérer l'erreur silencieusement
       setError(error.message);
     } finally {
       setLoading(false);
