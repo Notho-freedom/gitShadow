@@ -4,10 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../components/AuthProvider';
 import Dashboard from '../../components/Dashboard';
-import GuestDashboard from '../../components/GuestDashboard';
 
 export default function DashboardPage() {
-  const { user, loading, isGuest } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,10 +31,6 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Afficher le dashboard approprié selon le type d'utilisateur
-  if (isGuest) {
-    return <GuestDashboard />;
-  }
-
-  return <Dashboard user={user} />;
+  // Utiliser le Dashboard principal pour tous les types d'utilisateurs
+  return <Dashboard />;
 } 

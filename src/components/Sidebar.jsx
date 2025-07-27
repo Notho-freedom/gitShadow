@@ -3,56 +3,79 @@
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 
-export default function Sidebar({ activeView, onViewChange, user, selectedRepo, collapsed, onToggleCollapse, onUpgrade }) {
+export default function Sidebar({ activeView, onViewChange, user, collapsed, onToggleCollapse, onUpgrade, isGuest }) {
   const menuItems = [
     {
       id: 'repos',
       name: 'Dépôts',
       icon: '📁',
       description: 'Parcourir vos dépôts GitHub',
-      premium: false
+      premium: false,
+      guestAllowed: true
     },
     {
-      id: 'editor',
-      name: 'Éditeur',
+      id: 'files',
+      name: 'Fichiers',
+      icon: '📄',
+      description: 'Explorer la structure des fichiers',
+      premium: false,
+      guestAllowed: true
+    },
+    {
+      id: 'code',
+      name: 'Code',
       icon: '💻',
       description: 'Éditer le code avec coloration syntaxique',
-      premium: false
+      premium: false,
+      guestAllowed: true
+    },
+    {
+      id: 'commits',
+      name: 'Historique',
+      icon: '📝',
+      description: 'Voir l\'historique des commits',
+      premium: false,
+      guestAllowed: true
     },
     {
       id: 'documentation',
       name: 'Documentation',
       icon: '📚',
       description: 'Générer et consulter la documentation',
-      premium: true
+      premium: true,
+      guestAllowed: false
     },
     {
       id: 'analytics',
       name: 'Analytics',
       icon: '📊',
       description: 'Statistiques et métriques du projet',
-      premium: true
+      premium: true,
+      guestAllowed: false
     },
     {
       id: 'collaboration',
       name: 'Collaboration',
       icon: '👥',
       description: 'Gérer l\'équipe et les permissions',
-      premium: true
+      premium: true,
+      guestAllowed: false
     },
     {
       id: 'billing',
       name: 'Facturation',
       icon: '💳',
       description: 'Gérer votre abonnement',
-      premium: false
+      premium: false,
+      guestAllowed: false
     },
     {
       id: 'settings',
       name: 'Paramètres',
       icon: '⚙️',
       description: 'Configuration et préférences',
-      premium: false
+      premium: false,
+      guestAllowed: true
     }
   ];
 
@@ -83,10 +106,18 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
   }
 
   const handleItemClick = (item) => {
+    // Pour les invités, vérifier si la fonctionnalité est autorisée
+    if (isGuest && !item.guestAllowed) {
+      onUpgrade();
+      return;
+    }
+    
+    // Pour les utilisateurs connectés, vérifier les fonctionnalités premium
     if (item.premium && user && user.plan === 'free') {
       onUpgrade();
       return;
     }
+    
     onViewChange(item.id);
   };
 
@@ -114,7 +145,7 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
@@ -124,76 +155,107 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
       {!collapsed && (
         <div className="p-4 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
-            <img 
-              src={user.avatar_url} 
+            <img
+              src={user.avatar_url}
               alt={user.name}
               className="w-10 h-10 rounded-full border-2 border-gray-600"
             />
             <div className="flex-1 min-w-0">
-              <p className="text-white font-medium truncate">{user.name}</p>
-              <p className="text-gray-400 text-sm truncate">@{user.login}</p>
+              <p className="text-white font-medium text-sm truncate">{user.name}</p>
+              <div className="flex items-center space-x-2">
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  isGuest 
+                    ? 'bg-yellow-500/20 text-yellow-400' 
+                    : user.plan === 'free'
+                    ? 'bg-gray-500/20 text-gray-400'
+                    : 'bg-blue-500/20 text-blue-400'
+                }`}>
+                  {isGuest ? 'Invité' : user.plan === 'free' ? 'Gratuit' : user.plan}
+                </span>
+                {isGuest && (
+                  <span className="text-yellow-400 text-xs">
+                    {user.repos?.length || 0}/3
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {menuItems.map((item) => (
-          <motion.button
-            key={item.id}
-            whileHover={{ scale: 1.02, x: 5 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleItemClick(item)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
-              activeView === item.id
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-lg'
-                : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-            } ${item.premium && user && user.plan === 'free' ? 'opacity-60' : ''}`}
-            title={collapsed ? item.description : undefined}
-          >
-            <span className="text-xl">{item.icon}</span>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium truncate">{item.name}</p>
-                  {item.premium && user && user.plan === 'free' && (
-                    <span className="text-xs bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full">
-                      PRO
-                    </span>
-                  )}
+      {/* Navigation Menu */}
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {menuItems.map((item) => {
+          const isActive = activeView === item.id;
+          const isLocked = (isGuest && !item.guestAllowed) || (item.premium && user.plan === 'free');
+          
+          return (
+            <motion.button
+              key={item.id}
+              onClick={() => handleItemClick(item)}
+              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 text-left ${
+                isActive
+                  ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400'
+                  : isLocked
+                  ? 'opacity-60 hover:opacity-80 text-gray-400 hover:text-gray-300'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+              }`}
+              whileHover={{ scale: isLocked ? 1 : 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <span className="text-xl">{item.icon}</span>
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-sm">{item.name}</span>
+                    {item.premium && (
+                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs rounded-full">
+                        PRO
+                      </span>
+                    )}
+                    {isGuest && !item.guestAllowed && (
+                      <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">
+                        🔒
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 truncate">{item.description}</p>
                 </div>
-                <p className="text-xs text-gray-400 truncate">{item.description}</p>
-              </div>
-            )}
-          </motion.button>
-        ))}
+              )}
+            </motion.button>
+          );
+        })}
       </nav>
 
       {/* Footer */}
       {!collapsed && (
         <div className="p-4 border-t border-gray-700/50">
-          <div className="bg-gray-700/30 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-300">Plan actuel</span>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                user.plan === 'pro' ? 'bg-blue-500/20 text-blue-400' :
-                user.plan === 'enterprise' ? 'bg-purple-500/20 text-purple-400' :
-                'bg-gray-500/20 text-gray-400'
-              }`}>
-                {user.plan === 'free' ? 'Gratuit' : 
-                 user.plan === 'pro' ? 'Pro' : 'Enterprise'}
-              </span>
-            </div>
-            {user && user.plan === 'free' && (
-              <button 
+          {isGuest ? (
+            <div className="space-y-3">
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                <p className="text-yellow-300 text-xs text-center">
+                  Mode invité - {user.repos?.length || 0}/3 dépôts
+                </p>
+              </div>
+              <button
                 onClick={onUpgrade}
-                className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm rounded-lg transition-all font-medium"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 px-4 rounded-lg font-medium transition-all duration-200 text-sm"
               >
-                🚀 Passer au Pro
+                Se connecter
               </button>
-            )}
-          </div>
+            </div>
+          ) : user.plan === 'free' ? (
+            <button
+              onClick={onUpgrade}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 px-4 rounded-lg font-medium transition-all duration-200 text-sm"
+            >
+              Passer au Pro
+            </button>
+          ) : (
+            <div className="text-center">
+              <p className="text-gray-400 text-xs">Plan {user.plan} actif</p>
+            </div>
+          )}
         </div>
       )}
     </motion.div>
