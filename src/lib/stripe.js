@@ -1,9 +1,11 @@
 import Stripe from 'stripe';
 
 // Configuration Stripe côté serveur
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
-});
+export const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia',
+    })
+  : null;
 
 // Configuration Stripe côté client
 export const getStripe = () => {
@@ -21,6 +23,10 @@ export const createCheckoutSession = async ({
   cancelUrl,
   metadata = {}
 }) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -64,6 +70,10 @@ export const createCustomCheckoutSession = async ({
   cancelUrl,
   metadata = {}
 }) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -102,6 +112,10 @@ export const createCustomCheckoutSession = async ({
 
 // Récupérer les informations d'un client
 export const getCustomer = async (customerId) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     const customer = await stripe.customers.retrieve(customerId);
     return { success: true, customer };
@@ -113,6 +127,10 @@ export const getCustomer = async (customerId) => {
 
 // Créer ou récupérer un client
 export const createOrRetrieveCustomer = async (email, metadata = {}) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     // Chercher un client existant
     const existingCustomers = await stripe.customers.list({
@@ -142,6 +160,10 @@ export const createOrRetrieveCustomer = async (email, metadata = {}) => {
 
 // Annuler un abonnement
 export const cancelSubscription = async (subscriptionId) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
@@ -155,6 +177,10 @@ export const cancelSubscription = async (subscriptionId) => {
 
 // Réactiver un abonnement
 export const reactivateSubscription = async (subscriptionId) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,
@@ -168,6 +194,10 @@ export const reactivateSubscription = async (subscriptionId) => {
 
 // Récupérer l'historique des paiements
 export const getPaymentHistory = async (customerId) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     const payments = await stripe.paymentIntents.list({
       customer: customerId,
@@ -182,6 +212,10 @@ export const getPaymentHistory = async (customerId) => {
 
 // Créer un portail client
 export const createCustomerPortalSession = async (customerId, returnUrl) => {
+  if (!stripe) {
+    return { success: false, error: 'Stripe not configured' };
+  }
+  
   try {
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,

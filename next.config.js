@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
-  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -12,13 +18,22 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'raw.githubusercontent.com',
-        port: '',
-        pathname: '/**',
-      },
     ],
+  },
+  // Configuration pour les pages dynamiques
+  async rewrites() {
+    return [
+      {
+        source: '/pricing',
+        destination: '/pricing',
+        has: [
+          {
+            type: 'header',
+            key: 'x-vercel-deployment-url',
+          },
+        ],
+      },
+    ];
   },
 };
 
