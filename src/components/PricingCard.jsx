@@ -15,13 +15,25 @@ const icons = {
 export default function PricingCard({ plan, isAnnual = false, onSelect, isSelected = false }) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const price = isAnnual ? (plan?.price || 0) * 10 : plan?.price || 0;
-  const originalPrice = isAnnual ? (plan?.price || 0) * 12 : plan?.price || 0;
+  // Fallback si plan est null ou undefined
+  if (!plan || typeof plan !== 'object') {
+    return (
+      <div className="relative p-6 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const price = isAnnual ? (plan.price || 0) * 10 : plan.price || 0;
+  const originalPrice = isAnnual ? (plan.price || 0) * 12 : plan.price || 0;
 
   return (
     <motion.div
       className={`relative p-6 rounded-2xl border-2 transition-all duration-300 ${
-        plan?.popular
+        plan.popular
           ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20'
           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
       } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
@@ -31,7 +43,7 @@ export default function PricingCard({ plan, isAnnual = false, onSelect, isSelect
       transition={{ duration: 0.3 }}
     >
       {/* Badge populaire */}
-      {plan?.popular && (
+      {plan.popular && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
             Le plus populaire
@@ -43,20 +55,20 @@ export default function PricingCard({ plan, isAnnual = false, onSelect, isSelect
       <div className="text-center mb-6">
         <div className="flex items-center justify-center mb-4">
           <div className={`p-3 rounded-full ${
-            plan?.popular 
+            plan.popular 
               ? 'bg-blue-500 text-white' 
               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
           }`}>
-            {icons[plan?.id || 'free']}
+            {icons[plan.id]}
           </div>
         </div>
         
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {plan?.name || 'Plan'}
+          {plan.name}
         </h3>
         
         <p className="text-gray-600 dark:text-gray-400 mb-4">
-          {plan?.description || 'Description du plan'}
+          {plan.description}
         </p>
 
         {/* Prix */}
@@ -85,7 +97,7 @@ export default function PricingCard({ plan, isAnnual = false, onSelect, isSelect
 
       {/* Fonctionnalités */}
       <div className="space-y-3 mb-8">
-        {plan?.features?.map((feature, index) => (
+        {plan.features.map((feature, index) => (
           <motion.div
             key={index}
             className="flex items-start"
@@ -102,7 +114,7 @@ export default function PricingCard({ plan, isAnnual = false, onSelect, isSelect
       </div>
 
       {/* Limitations */}
-      {plan?.limitations?.length > 0 && (
+      {plan.limitations.length > 0 && (
         <div className="space-y-2 mb-8">
           <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Limitations
@@ -121,9 +133,9 @@ export default function PricingCard({ plan, isAnnual = false, onSelect, isSelect
       {/* Bouton d'action */}
       <motion.button
         className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 ${
-          plan?.popular
+          plan.popular
             ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
-            : plan?.price === 0
+            : plan.price === 0
             ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
         }`}
@@ -131,11 +143,11 @@ export default function PricingCard({ plan, isAnnual = false, onSelect, isSelect
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        {plan?.price === 0 ? 'Commencer gratuitement' : 'Choisir ce plan'}
+        {plan.price === 0 ? 'Commencer gratuitement' : 'Choisir ce plan'}
       </motion.button>
 
       {/* Plan Enterprise personnalisé */}
-      {plan?.custom && (
+      {plan.custom && (
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
           Contactez-nous pour un devis personnalisé
         </p>

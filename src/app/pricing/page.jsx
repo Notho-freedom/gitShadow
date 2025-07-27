@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Logo from '../../components/Logo';
@@ -9,7 +10,10 @@ import PricingCard from '../../components/PricingCard';
 import CheckoutModal from '../../components/CheckoutModal';
 import { pricingPlans, annualPlans } from '../../lib/pricing';
 
-export default function PricingPage() {
+// Désactiver le pré-rendering pour cette page
+export const dynamic = 'force-dynamic';
+
+function PricingPageContent() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -129,7 +133,7 @@ export default function PricingPage() {
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {plans && plans.length > 0 ? plans.map((plan, index) => (
+          {plans && plans.length > 0 ? plans.filter(Boolean).map((plan, index) => (
               <motion.div
                 key={plan.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -281,5 +285,20 @@ export default function PricingPage() {
         isAnnual={isAnnual}
       />
     </div>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Chargement des plans...</p>
+        </div>
+      </div>
+    }>
+      <PricingPageContent />
+    </Suspense>
   );
 } 
