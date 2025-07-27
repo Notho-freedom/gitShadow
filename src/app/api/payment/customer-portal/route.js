@@ -26,10 +26,11 @@ export async function POST(request) {
 
     // Vérifier si Stripe est configuré
     if (!process.env.STRIPE_SECRET_KEY) {
-      console.log('Stripe non configuré - retour d\'une URL de test');
+      console.log('Stripe non configuré - mode développement activé');
       // Retourner une URL de test pour le développement
       return NextResponse.json({
-        url: `${returnUrl}?portal=test&message=Portail client en mode test`
+        url: `${returnUrl}?portal=test&message=Portail client en mode test&customerId=${customerId}`,
+        isTest: true
       });
     }
 
@@ -38,7 +39,8 @@ export async function POST(request) {
     if (result.success) {
       console.log('Portail client créé avec succès');
       return NextResponse.json({
-        url: result.url
+        url: result.url,
+        isTest: false
       });
     } else {
       console.error('Erreur lors de la création du portail:', result.error);
