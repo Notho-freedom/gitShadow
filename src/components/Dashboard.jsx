@@ -31,7 +31,8 @@ export default function Dashboard() {
     loading: dataLoading, 
     error: dataError,
     hasSelectedRepo,
-    hasRepoData
+    hasRepoData,
+    fetchFileContent
   } = useData();
   
   const [activeView, setActiveView] = useState('explorer');
@@ -211,28 +212,14 @@ export default function Dashboard() {
     setLoadingState(true);
 
     try {
-      const response = await fetch('/api/fetchFileContent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner: selectedRepo.owner?.login || selectedRepo.owner,
-          repo: selectedRepo.name,
-          path: file.path,
-          branch: selectedRepo.default_branch || 'main',
-          accessToken: user.access_token
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setFileContent(data.content);
-          setCurrentView('editor');
-        } else {
-          throw new Error(data.error || 'Erreur lors du chargement du fichier');
-        }
+      const owner = selectedRepo.owner?.login || selectedRepo.owner;
+      const data = await fetchFileContent(owner, selectedRepo.name, file.path, selectedRepo.default_branch || 'main');
+      
+      if (data && data.success) {
+        setFileContent(data.content);
+        setCurrentView('editor');
       } else {
-        throw new Error(`Erreur HTTP: ${response.status}`);
+        throw new Error(data?.error || 'Erreur lors du chargement du fichier');
       }
     } catch (error) {
       console.error('Erreur lors du chargement du fichier:', error);
@@ -240,7 +227,7 @@ export default function Dashboard() {
     } finally {
       setLoadingState(false);
     }
-  }, [selectedRepo, user.access_token]);
+  }, [selectedRepo, fetchFileContent]);
 
   // Fonction pour récupérer les fichiers du RepositoryExplorer
   const handleRepoFilesUpdate = useCallback((files) => {

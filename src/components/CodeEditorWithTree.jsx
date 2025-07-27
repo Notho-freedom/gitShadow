@@ -4,20 +4,24 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useData } from './DataProvider';
 import FileIcon from './FileIcon';
 
 export default function CodeEditorWithTree({ 
   file, 
   content, 
-  onGenerateDoc, 
-  loading, 
-  theme,
+  repository,
+  onGenerateDocumentation, 
   onBackToExplorer,
-  onFileSelect,
-  files,
-  selectedRepo,
-  user
+  loading
 }) {
+  const { 
+    user, 
+    repoData, 
+    loading: dataLoading,
+    error: dataError
+  } = useData();
+
   const [showTree, setShowTree] = useState(true);
   const [treeWidth, setTreeWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
@@ -57,14 +61,15 @@ export default function CodeEditorWithTree({
     setExpandedFolders(newExpanded);
   };
 
-  // Charger la structure arborescente du commit quand les fichiers sont disponibles
+  // Charger la structure arborescente du commit quand les données sont disponibles
   useEffect(() => {
-    if (files && files.length > 0) {
+    if (repoData?.fileTree && repoData.fileTree.length > 0) {
       buildTreeStructure();
     }
-  }, [files]);
+  }, [repoData?.fileTree]);
 
   const buildTreeStructure = () => {
+    const files = repoData?.fileTree || [];
     if (!files || files.length === 0) return;
     
     setLoadingTree(true);
@@ -105,19 +110,24 @@ export default function CodeEditorWithTree({
         }
         
         // Ajouter le fichier
+        const fileName = pathParts[pathParts.length - 1];
         const fileItem = {
-          ...file,
-          name: pathParts[pathParts.length - 1],
+          path: file.path,
+          name: fileName,
+          type: file.type,
+          size: file.size,
+          sha: file.sha,
           isFolder: false
         };
         
-        if (currentPath) {
-          const parent = folderMap.get(currentPath);
+        if (pathParts.length === 1) {
+          tree.push(fileItem);
+        } else {
+          const parentPath = pathParts.slice(0, -1).join('/');
+          const parent = folderMap.get(parentPath);
           if (parent) {
             parent.children.push(fileItem);
           }
-        } else {
-          tree.push(fileItem);
         }
       });
       
@@ -378,7 +388,7 @@ export default function CodeEditorWithTree({
                 💾 Télécharger
               </button>
               <button
-                onClick={onGenerateDoc}
+                onClick={onGenerateDocumentation}
                 disabled={loading}
                 className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
               >

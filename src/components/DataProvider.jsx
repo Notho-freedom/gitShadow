@@ -217,6 +217,33 @@ export const DataProvider = ({ children }) => {
     }
   }, [user?.access_token]);
 
+  // Fonction pour récupérer le contenu d'un fichier
+  const fetchFileContent = useCallback(async (owner, repo, path, branch = 'main') => {
+    if (!user?.access_token || !owner || !repo || !path) return null;
+
+    try {
+      const response = await fetch('/api/fetchFileContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner,
+          repo,
+          path,
+          branch,
+          accessToken: user.access_token
+        })
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la récupération du contenu du fichier');
+      
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Erreur fetchFileContent:', err);
+      return null;
+    }
+  }, [user?.access_token]);
+
   // Fonction pour charger toutes les données d'un repository
   const loadRepositoryData = useCallback(async (owner, repo) => {
     if (!user?.access_token || !owner || !repo) return;
@@ -342,6 +369,7 @@ export const DataProvider = ({ children }) => {
     fetchRepoActivity,
     fetchRepoAnalytics,
     fetchFileTree,
+    fetchFileContent,
     loadRepositoryData,
 
     // États dérivés
