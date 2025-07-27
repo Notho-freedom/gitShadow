@@ -2,30 +2,48 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function QuickActions({ activeView, selectedFile, onGenerateDoc, loading }) {
+export default function QuickActions({ activeView, selectedFile, onGenerateDoc, loading, checkAndShowUpgrade }) {
   const actions = [
     {
       id: 'search',
       label: 'Recherche',
       icon: '🔍',
       shortcut: 'Ctrl+K',
-      action: () => console.log('Search')
+      action: () => {
+        if (checkAndShowUpgrade && checkAndShowUpgrade('search')) {
+          return;
+        }
+        console.log('Search');
+      },
+      requiresUpgrade: 'search'
     },
     {
       id: 'generate-doc',
       label: 'Documenter',
       icon: '📝',
       shortcut: 'Ctrl+D',
-      action: onGenerateDoc,
-      disabled: !selectedFile || loading
+      action: () => {
+        if (checkAndShowUpgrade && checkAndShowUpgrade('documentation')) {
+          return;
+        }
+        onGenerateDoc();
+      },
+      disabled: !selectedFile || loading,
+      requiresUpgrade: 'documentation'
     },
     {
       id: 'format',
       label: 'Formater',
       icon: '✨',
       shortcut: 'Ctrl+Shift+F',
-      action: () => console.log('Format'),
-      disabled: !selectedFile
+      action: () => {
+        if (checkAndShowUpgrade && checkAndShowUpgrade('format')) {
+          return;
+        }
+        console.log('Format');
+      },
+      disabled: !selectedFile,
+      requiresUpgrade: 'format'
     },
     {
       id: 'save',
@@ -40,8 +58,14 @@ export default function QuickActions({ activeView, selectedFile, onGenerateDoc, 
       label: 'Partager',
       icon: '📤',
       shortcut: 'Ctrl+Shift+S',
-      action: () => console.log('Share'),
-      disabled: !selectedFile
+      action: () => {
+        if (checkAndShowUpgrade && checkAndShowUpgrade('share')) {
+          return;
+        }
+        console.log('Share');
+      },
+      disabled: !selectedFile,
+      requiresUpgrade: 'share'
     }
   ];
 

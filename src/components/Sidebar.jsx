@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 
-export default function Sidebar({ activeView, onViewChange, user, selectedRepo, collapsed, onToggleCollapse }) {
+export default function Sidebar({ activeView, onViewChange, user, selectedRepo, collapsed, onToggleCollapse, checkAndShowUpgrade }) {
   const menuItems = [
     {
       id: 'repos',
@@ -41,6 +41,13 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
       badge: 'ENTERPRISE'
     },
     {
+      id: 'search',
+      name: 'Recherche',
+      icon: '🔍',
+      description: 'Recherche avancée dans le code',
+      badge: 'PRO'
+    },
+    {
       id: 'settings',
       name: 'Paramètres',
       icon: '⚙️',
@@ -48,6 +55,16 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
       badge: null
     }
   ];
+
+  // Fonction pour gérer le clic sur un élément du menu
+  const handleMenuClick = (itemId) => {
+    // Vérifier si un upgrade est nécessaire
+    if (checkAndShowUpgrade && checkAndShowUpgrade(itemId)) {
+      return; // Arrêter ici si un upgrade est nécessaire
+    }
+    // Sinon, changer la vue normalement
+    onViewChange(itemId);
+  };
 
   // Vérifier si user existe
   if (!user) {
@@ -157,7 +174,7 @@ export default function Sidebar({ activeView, onViewChange, user, selectedRepo, 
           return (
             <motion.button
               key={item.id}
-              onClick={() => onViewChange(item.id)}
+              onClick={() => handleMenuClick(item.id)}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 text-left ${
                 isActive
                   ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400'
