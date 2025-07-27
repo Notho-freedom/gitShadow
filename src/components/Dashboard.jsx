@@ -43,8 +43,6 @@ export default function Dashboard() {
   const [paymentSuccessData, setPaymentSuccessData] = useState(null);
   const [guestRepoInput, setGuestRepoInput] = useState('');
   const [guestRepoError, setGuestRepoError] = useState('');
-  const [showPromotionPopup, setShowPromotionPopup] = useState(false);
-  const [promotionTargetPlan, setPromotionTargetPlan] = useState(null);
 
   // Vérifier les paramètres de succès de paiement
   useEffect(() => {
@@ -98,34 +96,50 @@ export default function Dashboard() {
   // Fonction pour gérer le changement de vue avec vérification d'upgrade
   const handleViewChange = (view) => {
     if (requiresUpgrade(view)) {
-      // Déterminer le plan cible selon la fonctionnalité
-      let targetPlan = 'pro';
-      if (view === 'analytics' || view === 'collaboration') {
-        targetPlan = user.plan === 'free' ? 'pro' : 'enterprise';
-      }
-      
-      setPromotionTargetPlan(targetPlan);
-      setShowPromotionPopup(true);
+      setShowUpgradeNotice(true);
       return;
     }
-    
     setActiveView(view);
-    setCurrentView(view);
-  };
-
-  const handleUpgrade = (targetPlan = null) => {
-    if (targetPlan) {
-      setPromotionTargetPlan(targetPlan);
-      setShowPromotionPopup(true);
-    } else {
-      setShowCheckoutModal(true);
+    
+    // Navigation basée sur la vue sélectionnée
+    switch (view) {
+      case 'repos':
+        setCurrentView('repos');
+        break;
+      case 'editor':
+        if (selectedFile) {
+          setCurrentView('editor');
+        } else {
+          // Si aucun fichier n'est sélectionné, rester dans la vue actuelle
+          return;
+        }
+        break;
+      case 'documentation':
+        if (documentation) {
+          setCurrentView('documentation');
+        } else {
+          // Si aucune documentation n'est générée, rester dans la vue actuelle
+          return;
+        }
+        break;
+      case 'analytics':
+        setCurrentView('analytics');
+        break;
+      case 'collaboration':
+        setCurrentView('collaboration');
+        break;
+      case 'settings':
+        setCurrentView('settings');
+        break;
+      default:
+        // Pour les autres vues, garder la vue actuelle
+        break;
     }
-    setShowUpgradeNotice(false);
   };
 
-  const handlePromotionClose = () => {
-    setShowPromotionPopup(false);
-    setPromotionTargetPlan(null);
+  const handleUpgrade = () => {
+    setShowCheckoutModal(true);
+    setShowUpgradeNotice(false);
   };
 
   const handleGuestRepoAdd = async () => {
@@ -565,9 +579,6 @@ export default function Dashboard() {
       <PromotionPopup
         user={user}
         onUpgrade={handleUpgrade}
-        onClose={handlePromotionClose}
-        triggerType={showPromotionPopup ? 'manual' : 'auto'}
-        targetPlan={promotionTargetPlan}
       />
     </div>
   );

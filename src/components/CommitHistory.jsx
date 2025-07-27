@@ -306,140 +306,39 @@ export default function CommitHistory({ repo, onCommitSelect, selectedCommit, on
                         {/* Structure des dossiers */}
                         {commit.files && commit.files.length > 0 && (
                           <div className="mt-2 p-2 bg-gray-800/30 rounded-lg">
-                            <div className="text-xs text-gray-400 mb-2">Structure complète du projet :</div>
+                            <div className="text-xs text-gray-400 mb-2">Structure des fichiers :</div>
                             <div className="space-y-1">
                               {(() => {
-                                const folderStructure = {};
-                                const rootFiles = [];
+                                const folders = new Set();
+                                const files = new Set();
                                 
-                                // Analyser tous les fichiers pour construire l'arborescence
                                 commit.files.forEach(file => {
                                   const pathParts = file.filename.split('/');
-                                  
-                                  if (pathParts.length === 1) {
-                                    // Fichier à la racine
-                                    rootFiles.push({
-                                      name: file.filename,
-                                      status: file.status,
-                                      type: 'file'
-                                    });
+                                  if (pathParts.length > 1) {
+                                    // Ajouter le dossier parent
+                                    folders.add(pathParts[0]);
                                   } else {
-                                    // Fichier dans un dossier
-                                    let currentPath = '';
-                                    for (let i = 0; i < pathParts.length - 1; i++) {
-                                      const folderName = pathParts[i];
-                                      const fullPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-                                      
-                                      if (!folderStructure[fullPath]) {
-                                        folderStructure[fullPath] = {
-                                          name: folderName,
-                                          path: fullPath,
-                                          type: 'folder',
-                                          children: []
-                                        };
-                                      }
-                                      
-                                      if (i === pathParts.length - 2) {
-                                        // Dernier niveau - ajouter le fichier
-                                        folderStructure[fullPath].children.push({
-                                          name: pathParts[pathParts.length - 1],
-                                          status: file.status,
-                                          type: 'file'
-                                        });
-                                      }
-                                      
-                                      currentPath = fullPath;
-                                    }
+                                    files.add(file.filename);
                                   }
                                 });
                                 
-                                // Fonction pour trier : dossiers en premier, puis fichiers
-                                const sortItems = (items) => {
-                                  return items.sort((a, b) => {
-                                    if (a.type === 'folder' && b.type !== 'folder') return -1;
-                                    if (a.type !== 'folder' && b.type === 'folder') return 1;
-                                    return a.name.localeCompare(b.name);
-                                  });
-                                };
-                                
-                                // Trier les fichiers racine
-                                const sortedRootFiles = sortItems(rootFiles);
-                                
-                                // Trier les dossiers et leurs contenus
-                                const sortedFolders = Object.values(folderStructure).sort((a, b) => 
-                                  a.name.localeCompare(b.name)
-                                );
-                                
-                                sortedFolders.forEach(folder => {
-                                  folder.children = sortItems(folder.children);
-                                });
+                                const sortedFolders = Array.from(folders).sort();
+                                const sortedFiles = Array.from(files).sort();
                                 
                                 return (
                                   <>
-                                    {/* Dossiers racine */}
+                                    {/* Dossiers en premier */}
                                     {sortedFolders.map(folder => (
-                                      <div key={folder.path} className="space-y-1">
-                                        <div className="flex items-center text-xs text-blue-400">
-                                          <span className="mr-1">📁</span>
-                                          <span>{folder.name}/</span>
-                                          <span className="ml-2 text-gray-500">
-                                            ({folder.children.length} élément{folder.children.length > 1 ? 's' : ''})
-                                          </span>
-                                        </div>
-                                        {/* Contenu du dossier */}
-                                        <div className="ml-4 space-y-1">
-                                          {folder.children.map((item, index) => (
-                                            <div key={`${folder.path}-${index}`} className="flex items-center text-xs">
-                                              <span className="mr-1">
-                                                {item.type === 'folder' ? '📁' : '📄'}
-                                              </span>
-                                              <span className={`${
-                                                item.status === 'added' ? 'text-green-400' :
-                                                item.status === 'modified' ? 'text-yellow-400' :
-                                                item.status === 'removed' ? 'text-red-400' :
-                                                'text-gray-300'
-                                              }`}>
-                                                {item.name}
-                                                {item.type === 'folder' ? '/' : ''}
-                                              </span>
-                                              {item.status && (
-                                                <span className={`ml-2 px-1 py-0.5 text-xs rounded ${
-                                                  item.status === 'added' ? 'bg-green-900/30 text-green-400' :
-                                                  item.status === 'modified' ? 'bg-yellow-900/30 text-yellow-400' :
-                                                  item.status === 'removed' ? 'bg-red-900/30 text-red-400' :
-                                                  'bg-gray-700/30 text-gray-400'
-                                                }`}>
-                                                  {item.status}
-                                                </span>
-                                              )}
-                                            </div>
-                                          ))}
-                                        </div>
+                                      <div key={folder} className="flex items-center text-xs text-blue-400">
+                                        <span className="mr-1">📁</span>
+                                        <span>{folder}/</span>
                                       </div>
                                     ))}
-                                    
-                                    {/* Fichiers racine */}
-                                    {sortedRootFiles.map((file, index) => (
-                                      <div key={`root-${index}`} className="flex items-center text-xs text-gray-300">
+                                    {/* Puis les fichiers */}
+                                    {sortedFiles.map(file => (
+                                      <div key={file} className="flex items-center text-xs text-gray-300">
                                         <span className="mr-1">📄</span>
-                                        <span className={`${
-                                          file.status === 'added' ? 'text-green-400' :
-                                          file.status === 'modified' ? 'text-yellow-400' :
-                                          file.status === 'removed' ? 'text-red-400' :
-                                          'text-gray-300'
-                                        }`}>
-                                          {file.name}
-                                        </span>
-                                        {file.status && (
-                                          <span className={`ml-2 px-1 py-0.5 text-xs rounded ${
-                                            file.status === 'added' ? 'bg-green-900/30 text-green-400' :
-                                            file.status === 'modified' ? 'bg-yellow-900/30 text-yellow-400' :
-                                            file.status === 'removed' ? 'bg-red-900/30 text-red-400' :
-                                            'bg-gray-700/30 text-gray-400'
-                                          }`}>
-                                            {file.status}
-                                          </span>
-                                        )}
+                                        <span>{file}</span>
                                       </div>
                                     ))}
                                   </>
