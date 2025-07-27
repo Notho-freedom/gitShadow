@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useAuth } from './AuthProvider';
 
 // Créer le contexte
 const DataContext = createContext();
@@ -16,10 +17,10 @@ export const useData = () => {
 
 // Provider principal
 export const DataProvider = ({ children }) => {
+  const { user: authUser } = useAuth();
+  
   // États globaux
-  const [user, setUser] = useState(null);
   const [selectedRepo, setSelectedRepo] = useState(null);
-  const [repositories, setRepositories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -43,7 +44,7 @@ export const DataProvider = ({ children }) => {
 
   // Fonction pour récupérer les statistiques utilisateur
   const fetchUserStats = useCallback(async () => {
-    if (!user?.access_token) return;
+    if (!authUser?.access_token) return;
 
     try {
       setLoading(true);
@@ -52,7 +53,7 @@ export const DataProvider = ({ children }) => {
       const response = await fetch('/api/userStats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: user.access_token })
+        body: JSON.stringify({ accessToken: authUser.access_token })
       });
 
       if (!response.ok) throw new Error('Erreur lors de la récupération des stats utilisateur');
@@ -65,25 +66,46 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token]);
 
   // Fonction pour récupérer les repositories de l'utilisateur
   const fetchUserRepositories = useCallback(async () => {
-    if (!user?.access_token) return;
+    console.log('fetchUserRepositories appelé avec authUser:', authUser);
+    
+    // Si l'utilisateur est un invité, utiliser ses repositories locaux
+    if (authUser?.isGuest) {
+      console.log('Utilisateur invité détecté, utilisation des repositories locaux');
+      setUserRepositories(authUser.repos || []);
+      return;
+    }
+    
+    if (!authUser?.access_token) {
+      console.log('Pas d\'access_token disponible');
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
       
+      console.log('Appel API /api/repositories avec token:', authUser.access_token.substring(0, 10) + '...');
+      
       const response = await fetch('/api/repositories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: user.access_token })
+        body: JSON.stringify({ accessToken: authUser.access_token })
       });
 
-      if (!response.ok) throw new Error('Erreur lors de la récupération des repositories');
+      console.log('Réponse API repositories:', response.status, response.ok);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erreur API repositories:', errorData);
+        throw new Error('Erreur lors de la récupération des repositories');
+      }
       
       const data = await response.json();
+      console.log('Données repositories reçues:', data);
       setUserRepositories(data.repositories || []);
     } catch (err) {
       setError(err.message);
@@ -91,11 +113,11 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token, authUser?.isGuest, authUser?.repos]);
 
   // Fonction pour récupérer les commits d'un repository
   const fetchCommits = useCallback(async (owner, repo) => {
-    if (!user?.access_token || !owner || !repo) return null;
+    if (!authUser?.access_token || !owner || !repo) return null;
 
     try {
       const response = await fetch('/api/fetchCommits', {
@@ -104,7 +126,7 @@ export const DataProvider = ({ children }) => {
         body: JSON.stringify({
           owner,
           repo,
-          accessToken: user.access_token
+          accessToken: authUser.access_token
         })
       });
 
@@ -116,11 +138,11 @@ export const DataProvider = ({ children }) => {
       console.error('Erreur fetchCommits:', err);
       return null;
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token]);
 
   // Fonction pour récupérer les collaborateurs
   const fetchCollaborators = useCallback(async (owner, repo) => {
-    if (!user?.access_token || !owner || !repo) return null;
+    if (!authUser?.access_token || !owner || !repo) return null;
 
     try {
       const response = await fetch('/api/fetchCollaborators', {
@@ -129,7 +151,7 @@ export const DataProvider = ({ children }) => {
         body: JSON.stringify({
           owner,
           repo,
-          accessToken: user.access_token
+          accessToken: authUser.access_token
         })
       });
 
@@ -141,11 +163,11 @@ export const DataProvider = ({ children }) => {
       console.error('Erreur fetchCollaborators:', err);
       return null;
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token]);
 
   // Fonction pour récupérer l'activité du repository
   const fetchRepoActivity = useCallback(async (owner, repo) => {
-    if (!user?.access_token || !owner || !repo) return null;
+    if (!authUser?.access_token || !owner || !repo) return null;
 
     try {
       const response = await fetch('/api/fetchRepoActivity', {
@@ -154,7 +176,7 @@ export const DataProvider = ({ children }) => {
         body: JSON.stringify({
           owner,
           repo,
-          accessToken: user.access_token
+          accessToken: authUser.access_token
         })
       });
 
@@ -166,11 +188,11 @@ export const DataProvider = ({ children }) => {
       console.error('Erreur fetchRepoActivity:', err);
       return null;
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token]);
 
   // Fonction pour récupérer les analytics du repository
   const fetchRepoAnalytics = useCallback(async (owner, repo) => {
-    if (!user?.access_token || !owner || !repo) return null;
+    if (!authUser?.access_token || !owner || !repo) return null;
 
     try {
       const response = await fetch('/api/fetchRepoAnalytics', {
@@ -179,7 +201,7 @@ export const DataProvider = ({ children }) => {
         body: JSON.stringify({
           owner,
           repo,
-          accessToken: user.access_token
+          accessToken: authUser.access_token
         })
       });
 
@@ -191,11 +213,11 @@ export const DataProvider = ({ children }) => {
       console.error('Erreur fetchRepoAnalytics:', err);
       return null;
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token]);
 
   // Fonction pour récupérer l'arborescence des fichiers
   const fetchFileTree = useCallback(async (owner, repo, branch = 'HEAD') => {
-    if (!user?.access_token || !owner || !repo) return null;
+    if (!authUser?.access_token || !owner || !repo) return null;
 
     try {
       const response = await fetch('/api/fetchCommit', {
@@ -205,7 +227,7 @@ export const DataProvider = ({ children }) => {
           owner,
           repo,
           sha: branch,
-          accessToken: user.access_token
+          accessToken: authUser.access_token
         })
       });
 
@@ -217,11 +239,11 @@ export const DataProvider = ({ children }) => {
       console.error('Erreur fetchFileTree:', err);
       return null;
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token]);
 
   // Fonction pour récupérer le contenu d'un fichier
   const fetchFileContent = useCallback(async (owner, repo, path, branch = 'main') => {
-    if (!user?.access_token || !owner || !repo || !path) return null;
+    if (!authUser?.access_token || !owner || !repo || !path) return null;
 
     try {
       const response = await fetch('/api/fetchFileContent', {
@@ -232,7 +254,7 @@ export const DataProvider = ({ children }) => {
           repo,
           path,
           branch,
-          accessToken: user.access_token
+          accessToken: authUser.access_token
         })
       });
 
@@ -244,11 +266,11 @@ export const DataProvider = ({ children }) => {
       console.error('Erreur fetchFileContent:', err);
       return null;
     }
-  }, [user?.access_token]);
+  }, [authUser?.access_token]);
 
   // Fonction pour charger toutes les données d'un repository
   const loadRepositoryData = useCallback(async (owner, repo) => {
-    if (!user?.access_token || !owner || !repo) return;
+    if (!authUser?.access_token || !owner || !repo) return;
 
     setLoading(true);
     setError(null);
@@ -289,7 +311,7 @@ export const DataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user?.access_token, fetchCommits, fetchCollaborators, fetchRepoActivity, fetchRepoAnalytics, fetchFileTree]);
+  }, [authUser?.access_token, fetchCommits, fetchCollaborators, fetchRepoActivity, fetchRepoAnalytics, fetchFileTree]);
 
   // Fonction pour sélectionner un repository
   const selectRepository = useCallback(async (repo) => {
@@ -305,10 +327,10 @@ export const DataProvider = ({ children }) => {
     if (selectedRepo) {
       await loadRepositoryData(selectedRepo.owner.login || selectedRepo.owner, selectedRepo.name);
     }
-    if (user?.access_token) {
+    if (authUser?.access_token) {
       await Promise.all([fetchUserStats(), fetchUserRepositories()]);
     }
-  }, [selectedRepo, user?.access_token, loadRepositoryData, fetchUserStats, fetchUserRepositories]);
+  }, [selectedRepo, authUser?.access_token, loadRepositoryData, fetchUserStats, fetchUserRepositories]);
 
   // Fonction pour nettoyer les données
   const clearData = useCallback(() => {
@@ -330,27 +352,40 @@ export const DataProvider = ({ children }) => {
 
   // Fonction pour mettre à jour l'utilisateur
   const updateUser = useCallback((newUser) => {
-    setUser(newUser);
-    if (newUser) {
-      fetchUserStats();
-      fetchUserRepositories();
-    } else {
-      clearData();
-    }
-  }, [fetchUserStats, fetchUserRepositories, clearData]);
+    // This function is now managed by AuthProvider, so it should not be called here directly.
+    // The AuthProvider will handle setting the user and fetching stats/repos.
+  }, []);
 
   // Effet pour charger les données utilisateur quand l'utilisateur change
   useEffect(() => {
-    if (user?.access_token) {
+    if (authUser?.access_token) {
       fetchUserStats();
       fetchUserRepositories();
+    } else {
+      // Nettoyer les données si l'utilisateur se déconnecte
+      setUserStats(null);
+      setUserRepositories([]);
+      clearData();
     }
-  }, [user?.access_token, fetchUserStats, fetchUserRepositories]);
+  }, [authUser?.access_token, fetchUserStats, fetchUserRepositories, clearData]);
+
+  // Effet pour charger les repositories au démarrage si l'utilisateur est déjà connecté
+  useEffect(() => {
+    console.log('Effet repositories - authUser:', authUser, 'loading:', loading, 'userRepositories.length:', userRepositories.length);
+    
+    if (authUser && !loading && userRepositories.length === 0 && !authUser.isGuest) {
+      console.log('Chargement automatique des repositories');
+      fetchUserRepositories();
+    } else if (authUser?.isGuest) {
+      console.log('Utilisateur invité, utilisation des repositories locaux');
+      setUserRepositories(authUser.repos || []);
+    }
+  }, [authUser, loading, userRepositories.length, fetchUserRepositories]);
 
   // Valeur du contexte
   const contextValue = {
     // États
-    user,
+    user: authUser, // Use authUser from AuthProvider
     selectedRepo,
     repositories: userRepositories,
     repoData,
@@ -359,7 +394,7 @@ export const DataProvider = ({ children }) => {
     error,
 
     // Actions
-    setUser: updateUser,
+    setUser: updateUser, // This action is now managed by AuthProvider
     selectRepository,
     refreshData,
     clearData,
@@ -375,7 +410,7 @@ export const DataProvider = ({ children }) => {
     loadRepositoryData,
 
     // États dérivés
-    hasUser: !!user,
+    hasUser: !!authUser,
     hasSelectedRepo: !!selectedRepo,
     hasRepoData: Object.values(repoData).some(data => data !== null)
   };
