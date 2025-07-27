@@ -120,7 +120,7 @@ export default function CodeComplexityChart({ data }) {
           <h4 className="text-white font-semibold mb-3">Analyse Détaillée</h4>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Fonctions complexes (>5):</span>
+              <span className="text-gray-400">Fonctions complexes (&gt;5):</span>
               <span className="text-white font-medium">
                 {Math.round(animatedData.cyclomaticComplexity * 2.5)} fonctions
               </span>
