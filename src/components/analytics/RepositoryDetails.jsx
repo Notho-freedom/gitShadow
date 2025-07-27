@@ -113,6 +113,9 @@ export default function RepositoryDetails({ data }) {
     ? Object.keys(languages).sort((a, b) => languages[b] - languages[a])[0]
     : repoStats.language;
 
+  // Calculer le total des bytes pour les langages
+  const totalBytes = Object.values(languages).reduce((a, b) => a + (b || 0), 0);
+
   return (
     <div className="space-y-6">
       {/* Header avec informations principales */}
@@ -131,9 +134,9 @@ export default function RepositoryDetails({ data }) {
               <div className="flex items-center space-x-2">
                 <div className={`w-3 h-3 rounded-full ${getLanguageColor(mainLanguage)}`}></div>
                 <span className="text-white font-medium">{mainLanguage}</span>
-                {languages[mainLanguage] && (
+                {languages[mainLanguage] && totalBytes > 0 && (
                   <span className="text-gray-400 text-sm">
-                    ({Math.round((languages[mainLanguage] / Object.values(languages).reduce((a, b) => a + b, 0)) * 100)}%)
+                    ({Math.round((languages[mainLanguage] / totalBytes) * 100)}%)
                   </span>
                 )}
               </div>
@@ -240,16 +243,16 @@ export default function RepositoryDetails({ data }) {
       </div>
 
       {/* Langages utilisés */}
-      {Object.keys(languages).length > 0 && (
+      {Object.keys(languages).length > 0 && totalBytes > 0 && (
         <div className="bg-gray-800/30 rounded-lg p-4">
           <h4 className="text-white font-semibold mb-3">Langages Utilisés</h4>
           <div className="space-y-2">
             {Object.entries(languages)
-              .sort(([,a], [,b]) => b - a)
+              .filter(([, bytes]) => bytes && bytes > 0) // Filtrer les langages avec des bytes valides
+              .sort(([,a], [,b]) => (b || 0) - (a || 0))
               .slice(0, 5)
               .map(([language, bytes]) => {
-                const totalBytes = Object.values(languages).reduce((a, b) => a + b, 0);
-                const percentage = Math.round((bytes / totalBytes) * 100);
+                const percentage = totalBytes > 0 ? Math.round((bytes / totalBytes) * 100) : 0;
                 return (
                   <div key={language} className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
