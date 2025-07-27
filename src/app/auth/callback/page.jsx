@@ -22,20 +22,20 @@ function AuthCallbackContent() {
           throw new Error(`Erreur GitHub: ${errorParam}`);
         }
 
-        // Vérifier l'état pour la sécurité
-        const storedState = localStorage.getItem('github_oauth_state');
-        
         if (!code) {
           throw new Error('Code d\'autorisation manquant');
         }
 
-        // Vérification d'état plus souple pour éviter les erreurs
-        if (state && storedState && state !== storedState) {
-          console.warn('État OAuth ne correspond pas, mais on continue...');
+        // Décoder le state pour récupérer l'URL de retour
+        let returnUrl = '/dashboard';
+        if (state) {
+          try {
+            const stateData = JSON.parse(atob(state));
+            returnUrl = stateData.returnUrl || '/dashboard';
+          } catch (stateError) {
+            console.warn('Erreur lors du décodage du state:', stateError);
+          }
         }
-
-        // Nettoyer l'état stocké
-        localStorage.removeItem('github_oauth_state');
 
         setStatus('exchanging');
 
@@ -60,9 +60,9 @@ function AuthCallbackContent() {
 
         setStatus('success');
 
-        // Rediriger vers le dashboard après un court délai
+        // Rediriger vers l'URL d'origine après un court délai
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(returnUrl);
         }, 1500);
 
       } catch (err) {

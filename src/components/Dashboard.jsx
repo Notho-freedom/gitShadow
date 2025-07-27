@@ -17,6 +17,7 @@ import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 import CheckoutModal from './CheckoutModal';
 import UpgradeNotifications from './UpgradeNotifications';
+import PaymentSuccessModal from './PaymentSuccessModal';
 
 export default function Dashboard({ user, onLogout }) {
   const [activeView, setActiveView] = useState('repos');
@@ -33,6 +34,27 @@ export default function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showUpgradeNotice, setShowUpgradeNotice] = useState(false);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [paymentSuccessData, setPaymentSuccessData] = useState(null);
+
+  // Vérifier les paramètres de succès de paiement
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const test = urlParams.get('test');
+    const plan = urlParams.get('plan');
+    const portal = urlParams.get('portal');
+    
+    if (test === 'true' && plan) {
+      setPaymentSuccessData({ plan, isTest: true });
+      setShowPaymentSuccess(true);
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (portal === 'test') {
+      alert('Portail client en mode test - Fonctionnalité simulée');
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Vérifier si user existe et a les propriétés nécessaires
   if (!user || !user.plan) {
@@ -319,6 +341,14 @@ export default function Dashboard({ user, onLogout }) {
       <UpgradeNotifications
         user={user}
         onUpgrade={handleUpgrade}
+      />
+
+      {/* Payment Success Modal */}
+      <PaymentSuccessModal
+        isOpen={showPaymentSuccess}
+        onClose={() => setShowPaymentSuccess(false)}
+        plan={paymentSuccessData?.plan}
+        isTest={paymentSuccessData?.isTest}
       />
 
       {/* Upgrade Notice */}

@@ -43,7 +43,8 @@ export default function CheckoutModal({ isOpen, onClose, user }) {
   const handleCheckout = async () => {
     if (!user) {
       // Rediriger vers l'authentification si l'utilisateur n'est pas connecté
-      window.location.href = '/auth';
+      const currentUrl = window.location.href;
+      window.location.href = `/auth?returnUrl=${encodeURIComponent(currentUrl)}`;
       return;
     }
 
