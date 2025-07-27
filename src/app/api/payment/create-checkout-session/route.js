@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createCheckoutSession, createCustomCheckoutSession } from '@/lib/stripe';
-import { getPlanById } from '@/lib/pricing';
+import { createCheckoutSession, createCustomCheckoutSession } from '../../../../lib/stripe';
+import { getPlanById } from '../../../../lib/pricing';
 
 export async function POST(request) {
   try {

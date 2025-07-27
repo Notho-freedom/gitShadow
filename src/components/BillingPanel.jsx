@@ -14,7 +14,7 @@ import {
   User,
   Shield
 } from 'lucide-react';
-import { formatPrice } from '@/lib/pricing';
+import { formatPrice } from '../lib/pricing';
 
 export default function BillingPanel({ user }) {
   const [billingData, setBillingData] = useState(null);

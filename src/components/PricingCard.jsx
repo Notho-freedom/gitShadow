@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Star, Zap, Users, Shield, Globe } from 'lucide-react';
-import { formatPrice } from '@/lib/pricing';
+import { formatPrice } from '../lib/pricing';
 
 const icons = {
   free: <Zap className="w-5 h-5" />,

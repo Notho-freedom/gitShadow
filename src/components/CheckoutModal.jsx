@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CreditCard, Lock, Shield, CheckCircle } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
-import { formatPrice } from '@/lib/pricing';
+import { formatPrice } from '../lib/pricing';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
