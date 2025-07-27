@@ -23,10 +23,11 @@ import RepositoryInput from './RepositoryInput';
 
 export default function Dashboard() {
   const { user, loading, isGuest, updateUser } = useAuth();
-  const [activeView, setActiveView] = useState('repos');
+  const [activeView, setActiveView] = useState('explorer');
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
+  const [currentView, setCurrentView] = useState('repos'); // 'repos', 'explorer', 'editor', 'documentation'
   const [repoFiles, setRepoFiles] = useState([]);
   const [documentation, setDocumentation] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -100,67 +101,58 @@ export default function Dashboard() {
     setActiveView(view);
   };
 
-  // Fonction pour gérer l'upgrade
   const handleUpgrade = () => {
     setShowCheckoutModal(true);
     setShowUpgradeNotice(false);
   };
 
-  // Fonction pour ajouter un dépôt en mode invité
   const handleGuestRepoAdd = async () => {
+    if (!guestRepoInput.trim()) return;
+
     setLoadingState(true);
     setGuestRepoError('');
 
     try {
-      // Extraire owner et repo de l'URL GitHub
+      // Extraire owner et repo de l'URL
       const match = guestRepoInput.match(/github\.com\/([^\/]+)\/([^\/]+)/);
       if (!match) {
-        throw new Error('URL GitHub invalide');
+        setGuestRepoError('Format d\'URL invalide. Utilisez: https://github.com/owner/repository');
+        return;
       }
 
       const [, owner, repo] = match;
-      const cleanRepo = repo.replace('.git', '');
+      const repoName = repo.replace('.git', '');
 
-      // Vérifier si l'utilisateur a déjà atteint la limite
-      const currentRepos = user.repos || [];
-      if (currentRepos.length >= user.maxRepos) {
-        throw new Error(`Limite atteinte (${user.maxRepos} dépôts maximum)`);
-      }
-
-      // Vérifier si le dépôt est public
-      const response = await fetch(`/api/fetchRepo?owner=${owner}&repo=${cleanRepo}`);
+      // Vérifier si le dépôt existe et est public
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}`);
       if (!response.ok) {
-        throw new Error('Dépôt non trouvé ou privé (seuls les dépôts publics sont autorisés)');
+        setGuestRepoError('Dépôt non trouvé ou privé. Seuls les dépôts publics sont autorisés.');
+        return;
       }
 
       const repoData = await response.json();
-      
       if (repoData.private) {
-        throw new Error('Seuls les dépôts publics sont autorisés en mode invité');
+        setGuestRepoError('Ce dépôt est privé. Seuls les dépôts publics sont autorisés.');
+        return;
       }
 
       // Ajouter le dépôt à la liste
       const newRepo = {
-        id: `${owner}/${cleanRepo}`,
-        name: cleanRepo,
-        owner: owner,
-        full_name: `${owner}/${cleanRepo}`,
-        private: false,
-        description: repoData.description || '',
-        html_url: repoData.html_url,
+        id: repoData.id,
+        name: repoData.name,
+        full_name: repoData.full_name,
+        description: repoData.description,
+        owner: repoData.owner,
+        default_branch: repoData.default_branch,
         addedAt: new Date().toISOString()
       };
 
-      const updatedRepos = [...currentRepos, newRepo];
-      const updatedUser = { ...user, repos: updatedRepos };
-      
-      updateUser(updatedUser);
-      setSelectedRepo(newRepo);
+      const updatedRepos = [...(user.repos || []), newRepo];
+      updateUser({ ...user, repos: updatedRepos });
       setGuestRepoInput('');
-      setActiveView('files');
-
-    } catch (err) {
-      setGuestRepoError(err.message);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du dépôt:', error);
+      setGuestRepoError('Erreur lors de l\'ajout du dépôt. Vérifiez l\'URL et réessayez.');
     } finally {
       setLoadingState(false);
     }
@@ -171,6 +163,21 @@ export default function Dashboard() {
     setSelectedFile(null);
     setFileContent('');
     setDocumentation('');
+    setCurrentView('explorer');
+  }, []);
+
+  const handleBackToRepos = useCallback(() => {
+    setSelectedRepo(null);
+    setSelectedFile(null);
+    setFileContent('');
+    setRepoFiles([]);
+    setCurrentView('repos');
+  }, []);
+
+  const handleBackToExplorer = useCallback(() => {
+    setSelectedFile(null);
+    setFileContent('');
+    setCurrentView('explorer');
   }, []);
 
   const handleFileSelect = useCallback(async (file) => {
@@ -178,16 +185,31 @@ export default function Dashboard() {
     setLoadingState(true);
 
     try {
-      const response = await fetch(`/api/fetchFileContent?owner=${selectedRepo.owner}&repo=${selectedRepo.name}&path=${file.path}&ref=${selectedRepo.default_branch || 'main'}`);
-      
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération du contenu du fichier');
-      }
+      const response = await fetch('/api/fetchFileContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: selectedRepo.owner?.login || selectedRepo.owner,
+          repo: selectedRepo.name,
+          path: file.path,
+          branch: selectedRepo.default_branch || 'main',
+          accessToken: user.access_token
+        }),
+      });
 
-      const data = await response.json();
-      setFileContent(data.content || '');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setFileContent(data.content);
+          setCurrentView('editor');
+        } else {
+          throw new Error(data.error || 'Erreur lors du chargement du fichier');
+        }
+      } else {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
     } catch (error) {
-      console.error('Erreur lors de la récupération du fichier:', error);
+      console.error('Erreur lors du chargement du fichier:', error);
       setFileContent(`// Erreur: ${error.message}`);
     } finally {
       setLoadingState(false);
@@ -195,62 +217,36 @@ export default function Dashboard() {
   }, [selectedRepo, user.access_token]);
 
   const handleGenerateDocumentation = useCallback(async () => {
-    if (!selectedFile || !fileContent || !selectedRepo) {
-      alert('Veuillez sélectionner un fichier pour générer la documentation');
-      return;
-    }
-
-    if (requiresUpgrade('documentation')) {
-      setShowUpgradeNotice(true);
-      return;
-    }
+    if (!selectedFile || !fileContent) return;
 
     setLoadingState(true);
     try {
       const response = await fetch('/api/generateDoc', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileContent,
-          fileName: selectedFile.name,
-          repoName: selectedRepo.name,
-          userPlan: user.plan
+          content: fileContent,
+          filename: selectedFile.name,
+          filepath: selectedFile.path,
+          repo: selectedRepo.name,
+          user: user.login
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la génération de documentation');
+      if (response.ok) {
+        const data = await response.json();
+        setDocumentation(data.documentation);
+        setCurrentView('documentation');
       }
-
-      const data = await response.json();
-      setDocumentation(data.documentation || 'Documentation générée avec succès !');
     } catch (error) {
       console.error('Erreur lors de la génération de documentation:', error);
-      setDocumentation('Erreur lors de la génération de documentation');
     } finally {
       setLoadingState(false);
     }
   }, [selectedFile, fileContent, selectedRepo, user]);
 
-  const handleBackToRepos = () => {
-    setSelectedRepo(null);
-    setSelectedFile(null);
-    setFileContent('');
-    setDocumentation('');
-    setActiveView('repos');
-  };
-
-  const handleBackToExplorer = () => {
-    setSelectedFile(null);
-    setFileContent('');
-    setDocumentation('');
-    setActiveView('files');
-  };
-
   const renderMainContent = () => {
-    switch (activeView) {
+    switch (currentView) {
       case 'repos':
         if (isGuest) {
           return (
@@ -353,13 +349,14 @@ export default function Dashboard() {
         return (
           <RepositoryExplorer
             user={user}
+            selectedRepo={selectedRepo}
             onRepoSelect={handleRepoSelect}
             onFileSelect={handleFileSelect}
             loading={loadingState}
           />
         );
 
-      case 'files':
+      case 'explorer':
         if (!selectedRepo) {
           return (
             <div className="text-center py-12">
@@ -374,16 +371,15 @@ export default function Dashboard() {
 
         return (
           <FileTreeExplorer
-            owner={selectedRepo.owner}
-            repo={selectedRepo.name}
+            user={user}
+            selectedRepo={selectedRepo}
             onFileSelect={handleFileSelect}
             onBackToRepos={handleBackToRepos}
             loading={loadingState}
-            isGuest={isGuest}
           />
         );
 
-      case 'code':
+      case 'editor':
         if (!selectedFile) {
           return (
             <div className="text-center py-12">
@@ -404,80 +400,28 @@ export default function Dashboard() {
             loading={loadingState}
             theme={theme}
             onBackToExplorer={handleBackToExplorer}
-            isGuest={isGuest}
+            onFileSelect={handleFileSelect}
+            files={repoFiles}
+            selectedRepo={selectedRepo}
+            user={user}
           />
         );
 
       case 'documentation':
-        if (requiresUpgrade('documentation')) {
-          return (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">🔒</div>
-              <h3 className="text-xl font-semibold text-white mb-2">Fonctionnalité verrouillée</h3>
-              <p className="text-gray-400 mb-6">
-                La génération de documentation est disponible pour les utilisateurs connectés
-              </p>
-              <button
-                onClick={handleUpgrade}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Se connecter pour débloquer
-              </button>
-            </div>
-          );
-        }
-
         return (
           <DocumentationPanel
+            file={selectedFile}
+            content={fileContent}
             documentation={documentation}
-            selectedFile={selectedFile}
-            onGenerateDoc={handleGenerateDocumentation}
-            loading={loadingState}
+            onBackToEditor={() => setCurrentView('editor')}
+            theme={theme}
           />
         );
 
       case 'analytics':
-        if (requiresUpgrade('analytics')) {
-          return (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📊</div>
-              <h3 className="text-xl font-semibold text-white mb-2">Analytics Premium</h3>
-              <p className="text-gray-400 mb-6">
-                Les analytics avancées sont disponibles avec un plan payant
-              </p>
-              <button
-                onClick={handleUpgrade}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Passer au Pro
-              </button>
-            </div>
-          );
-        }
-
-        return <AnalyticsPanel user={user} />;
-
+        return <AnalyticsPanel user={user} selectedRepo={selectedRepo} />;
       case 'collaboration':
-        if (requiresUpgrade('collaboration')) {
-          return (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">👥</div>
-              <h3 className="text-xl font-semibold text-white mb-2">Collaboration en équipe</h3>
-              <p className="text-gray-400 mb-6">
-                La collaboration en équipe est disponible avec un plan payant
-              </p>
-              <button
-                onClick={handleUpgrade}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-              >
-                Passer au Pro
-              </button>
-            </div>
-          );
-        }
-
-        return <CollaborationPanel user={user} />;
-
+        return <CollaborationPanel user={user} selectedRepo={selectedRepo} />;
       case 'settings':
         return (
           <SettingsPanel
@@ -486,125 +430,107 @@ export default function Dashboard() {
             setTheme={setTheme}
             layout={layout}
             setLayout={setLayout}
-            onLogout={() => {}} // onLogout is now handled by AuthProvider
           />
         );
-
       case 'billing':
         return (
           <BillingPanel
             user={user}
-            onUpgrade={handleUpgrade}
+            onUpgrade={() => setShowCheckoutModal(true)}
           />
         );
-
       default:
-        return (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">🚀</div>
-            <h3 className="text-xl font-semibold text-white mb-2">Bienvenue sur gitShadow</h3>
-            <p className="text-gray-400">
-              Sélectionnez une option dans le menu pour commencer
-            </p>
-          </div>
-        );
+        return null;
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 overflow-hidden">
+    <div className="h-screen bg-gray-900 flex overflow-hidden">
       {/* Sidebar */}
       <Sidebar
         activeView={activeView}
         onViewChange={handleViewChange}
+        user={user}
+        selectedRepo={selectedRepo}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        user={user}
-        isGuest={isGuest}
-        onUpgrade={handleUpgrade}
       />
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Navigation */}
         <TopNavbar
           user={user}
-          isGuest={isGuest}
+          selectedRepo={selectedRepo}
+          selectedFile={selectedFile}
+          activeView={currentView}
           onSearchOpen={() => setIsSearchOpen(true)}
           onNotificationOpen={() => setIsNotificationOpen(true)}
-          onLogout={() => {}} // onLogout is now handled by AuthProvider
           theme={theme}
           layout={layout}
+          onLayoutChange={setLayout}
         />
 
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {renderMainContent()}
-          </div>
-        </div>
+        {/* Main Content */}
+        <main className="flex-1 overflow-hidden relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentView}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+              {renderMainContent()}
+            </motion.div>
+          </AnimatePresence>
+        </main>
 
-        {/* Quick Actions */}
+        {/* Quick Actions Floating Panel */}
         <QuickActions
-          selectedRepo={selectedRepo}
+          activeView={currentView}
           selectedFile={selectedFile}
           onGenerateDoc={handleGenerateDocumentation}
           loading={loadingState}
         />
       </div>
 
-      {/* Modals and Overlays */}
-      <AnimatePresence>
-        {isSearchOpen && (
-          <SearchOverlay
-            onClose={() => setIsSearchOpen(false)}
-            user={user}
-          />
-        )}
+      {/* Search Overlay */}
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        user={user}
+        selectedRepo={selectedRepo}
+        onFileSelect={handleFileSelect}
+      />
 
-        {isNotificationOpen && (
-          <NotificationCenter
-            onClose={() => setIsNotificationOpen(false)}
-            onUpgrade={handleUpgrade}
-            user={user}
-          />
-        )}
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        user={user}
+      />
 
-        {showCheckoutModal && (
-          <CheckoutModal
-            isOpen={showCheckoutModal}
-            onClose={() => setShowCheckoutModal(false)}
-            selectedPlan="pro"
-          />
-        )}
+      {/* Modals */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        user={user}
+      />
 
-        {showPaymentSuccess && (
-          <PaymentSuccessModal
-            isOpen={showPaymentSuccess}
-            onClose={() => setShowPaymentSuccess(false)}
-            data={paymentSuccessData}
-          />
-        )}
-      </AnimatePresence>
+      <UpgradeNotifications
+        isOpen={showUpgradeNotice}
+        onClose={() => setShowUpgradeNotice(false)}
+        onUpgrade={handleUpgrade}
+        user={user}
+      />
 
-      {/* Guest Mode Notice */}
-      {isGuest && (
-        <div className="fixed bottom-4 right-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 max-w-sm z-50">
-          <div className="flex items-start space-x-3">
-            <span className="text-yellow-400 text-lg">⚠️</span>
-            <div>
-              <h4 className="text-yellow-400 font-medium text-sm">Mode Invité</h4>
-              <p className="text-yellow-300 text-xs mt-1">
-                Vos données sont sauvegardées localement. 
-                Connectez-vous pour synchroniser avec GitHub.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Upgrade Notifications - au-dessus de la notification invité */}
-      <UpgradeNotifications user={user} onUpgrade={handleUpgrade} />
+      <PaymentSuccessModal
+        isOpen={showPaymentSuccess}
+        onClose={() => setShowPaymentSuccess(false)}
+        data={paymentSuccessData}
+      />
     </div>
   );
 }

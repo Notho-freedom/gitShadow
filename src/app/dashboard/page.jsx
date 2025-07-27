@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../components/AuthProvider';
 import Dashboard from '../../components/Dashboard';
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, updateUser } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -15,6 +15,11 @@ export default function DashboardPage() {
       router.push('/');
     }
   }, [user, loading, router]);
+
+  const handleLogout = () => {
+    // La déconnexion est gérée par AuthProvider
+    router.push('/');
+  };
 
   if (loading) {
     return (
@@ -31,6 +36,11 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Utiliser le Dashboard principal pour tous les types d'utilisateurs
+  // S'assurer que l'utilisateur a un plan défini
+  if (!user.plan) {
+    const updatedUser = { ...user, plan: 'free' };
+    updateUser(updatedUser);
+  }
+
   return <Dashboard />;
 } 
