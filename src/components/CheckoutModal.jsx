@@ -19,10 +19,15 @@ export default function CheckoutModal({
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const price = isAnnual ? plan.price * 10 : plan.price;
-  const originalPrice = isAnnual ? plan.price * 12 : plan.price;
+  const price = isAnnual ? (plan?.price || 0) * 10 : (plan?.price || 0);
+  const originalPrice = isAnnual ? (plan?.price || 0) * 12 : (plan?.price || 0);
 
   const handleCheckout = async () => {
+    if (!plan || !plan.id) {
+      setError('Plan invalide');
+      return;
+    }
+    
     if (!user?.email) {
       setError('Vous devez être connecté pour effectuer un paiement');
       return;

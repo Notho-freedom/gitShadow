@@ -95,10 +95,10 @@ export const pricingPlans = [
 
 export const annualPlans = pricingPlans.map(plan => ({
   ...plan,
-  price: Math.round(plan.price * 10), // 2 mois gratuits
+  price: plan.price ? Math.round(plan.price * 10) : 0, // 2 mois gratuits
   interval: 'year',
   stripePriceId: plan.stripePriceId ? plan.stripePriceId.replace('monthly', 'yearly') : null,
-  savings: plan.price > 0 ? 'Économisez 20%' : null
+  savings: plan.price && plan.price > 0 ? 'Économisez 20%' : null
 }));
 
 export const getPlanById = (id) => {

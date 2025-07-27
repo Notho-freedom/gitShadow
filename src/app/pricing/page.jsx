@@ -1,39 +1,58 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+
+// Désactiver le pré-rendu statique
+export const dynamic = 'force-dynamic';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Logo from '../../components/Logo';
 import Navbar from '../../components/Navbar';
 import PricingCard from '../../components/PricingCard';
 import CheckoutModal from '../../components/CheckoutModal';
-import { pricingPlans, annualPlans } from '../../lib/pricing';
+// Import des plans déplacé dans useEffect pour éviter le pré-rendu
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [user, setUser] = useState(null);
+  const [plans, setPlans] = useState([]);
 
-  // Récupérer les données utilisateur depuis localStorage
+  // Charger les plans et les données utilisateur
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch (error) {
-          console.error('Erreur lors du parsing des données utilisateur:', error);
+    const loadData = async () => {
+      try {
+        // Import dynamique des plans
+        const { pricingPlans, annualPlans } = await import('../../lib/pricing');
+        const currentPlans = isAnnual ? (annualPlans || []) : (pricingPlans || []);
+        setPlans(currentPlans);
+      } catch (error) {
+        console.error('Erreur lors du chargement des plans:', error);
+        setPlans([]);
+      }
+
+      // Récupérer les données utilisateur depuis localStorage
+      if (typeof window !== 'undefined') {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch (error) {
+            console.error('Erreur lors du parsing des données utilisateur:', error);
+          }
         }
       }
-    }
-  }, []);
+    };
 
-  const plans = isAnnual ? annualPlans : pricingPlans;
+    loadData();
+  }, [isAnnual]);
 
   const handlePlanSelect = (plan) => {
+    if (!plan) return;
+    
     setSelectedPlan(plan);
-    if (plan.price === 0) {
+    if (!plan.price || plan.price === 0) {
       // Plan gratuit - rediriger vers le dashboard
       window.location.href = '/dashboard';
     } else if (plan.custom) {
@@ -129,21 +148,27 @@ export default function PricingPage() {
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {plans.map((plan, index) => (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <PricingCard
-                  plan={plan}
-                  isAnnual={isAnnual}
-                  onSelect={handlePlanSelect}
-                  isSelected={selectedPlan?.id === plan.id}
-                />
-              </motion.div>
-            ))}
+            {plans && plans.length > 0 ? plans.map((plan, index) => (
+              plan && plan.id ? (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                >
+                  <PricingCard
+                    plan={plan}
+                    isAnnual={isAnnual}
+                    onSelect={handlePlanSelect}
+                    isSelected={selectedPlan?.id === plan.id}
+                  />
+                </motion.div>
+              ) : null
+            )) : (
+              <div className="col-span-full text-center text-gray-400">
+                Chargement des plans...
+              </div>
+            )}
           </div>
         </div>
       </section>

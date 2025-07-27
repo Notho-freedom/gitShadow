@@ -15,8 +15,8 @@ const icons = {
 export default function PricingCard({ plan, isAnnual = false, onSelect, isSelected = false }) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const price = isAnnual ? plan.price * 10 : plan.price;
-  const originalPrice = isAnnual ? plan.price * 12 : plan.price;
+  const price = isAnnual ? (plan.price || 0) * 10 : (plan.price || 0);
+  const originalPrice = isAnnual ? (plan.price || 0) * 12 : (plan.price || 0);
 
   return (
     <motion.div
@@ -70,7 +70,7 @@ export default function PricingCard({ plan, isAnnual = false, onSelect, isSelect
             </span>
           </div>
           
-          {isAnnual && plan.price > 0 && (
+          {isAnnual && plan.price && plan.price > 0 && (
             <div className="flex items-center justify-center mt-2">
               <span className="text-sm text-gray-500 line-through">
                 {formatPrice(originalPrice)}/an

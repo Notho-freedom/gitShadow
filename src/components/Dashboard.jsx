@@ -17,11 +17,10 @@ import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
 
 export default function Dashboard({ user, onLogout }) {
-  const [activeView, setActiveView] = useState('explorer');
+  const [activeView, setActiveView] = useState('repos');
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
-  const [currentView, setCurrentView] = useState('repos'); // 'repos', 'explorer', 'editor'
   const [repoFiles, setRepoFiles] = useState([]);
   const [documentation, setDocumentation] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -48,7 +47,7 @@ export default function Dashboard({ user, onLogout }) {
     setSelectedFile(null);
     setFileContent('');
     setDocumentation('');
-    setCurrentView('explorer');
+    setActiveView('explorer');
   }, []);
 
   const handleBackToRepos = useCallback(() => {
@@ -56,14 +55,22 @@ export default function Dashboard({ user, onLogout }) {
     setSelectedFile(null);
     setFileContent('');
     setRepoFiles([]);
-    setCurrentView('repos');
+    setActiveView('repos');
   }, []);
 
   const handleBackToExplorer = useCallback(() => {
     setSelectedFile(null);
     setFileContent('');
-    setCurrentView('explorer');
+    setActiveView('explorer');
   }, []);
+
+  const handleViewChange = useCallback((view) => {
+    setActiveView(view);
+    // Si on change vers une vue qui nécessite un dépôt sélectionné mais qu'aucun n'est sélectionné
+    if (['explorer', 'editor', 'documentation', 'analytics', 'collaboration'].includes(view) && !selectedRepo) {
+      setActiveView('repos');
+    }
+  }, [selectedRepo]);
 
   const handleFileSelect = useCallback(async (file) => {
     setSelectedFile(file);
@@ -86,7 +93,7 @@ export default function Dashboard({ user, onLogout }) {
         const data = await response.json();
         if (data.success) {
           setFileContent(data.content);
-          setCurrentView('editor');
+          setActiveView('editor');
         } else {
           throw new Error(data.error || 'Erreur lors du chargement du fichier');
         }
@@ -121,7 +128,7 @@ export default function Dashboard({ user, onLogout }) {
       if (response.ok) {
         const data = await response.json();
         setDocumentation(data.documentation);
-        setCurrentView('documentation');
+        setActiveView('documentation');
       }
     } catch (error) {
       console.error('Erreur lors de la génération de documentation:', error);
@@ -131,7 +138,7 @@ export default function Dashboard({ user, onLogout }) {
   }, [selectedFile, fileContent, selectedRepo, user]);
 
   const renderMainContent = () => {
-    switch (currentView) {
+    switch (activeView) {
       case 'repos':
         return (
           <RepositoryExplorer
@@ -173,7 +180,7 @@ export default function Dashboard({ user, onLogout }) {
             file={selectedFile}
             content={fileContent}
             documentation={documentation}
-            onBackToEditor={() => setCurrentView('editor')}
+            onBackToEditor={() => setActiveView('editor')}
             theme={theme}
           />
         );
@@ -208,7 +215,7 @@ export default function Dashboard({ user, onLogout }) {
       {/* Sidebar */}
       <Sidebar
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={handleViewChange}
         user={user}
         selectedRepo={selectedRepo}
         collapsed={sidebarCollapsed}
@@ -222,7 +229,7 @@ export default function Dashboard({ user, onLogout }) {
           user={user}
           selectedRepo={selectedRepo}
           selectedFile={selectedFile}
-          activeView={currentView}
+          activeView={activeView}
           onSearchOpen={() => setIsSearchOpen(true)}
           onNotificationOpen={() => setIsNotificationOpen(true)}
           onLogout={onLogout}
@@ -235,7 +242,7 @@ export default function Dashboard({ user, onLogout }) {
         <main className="flex-1 overflow-hidden relative">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentView}
+              key={activeView}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -249,7 +256,7 @@ export default function Dashboard({ user, onLogout }) {
 
         {/* Quick Actions Floating Panel */}
         <QuickActions
-          activeView={currentView}
+          activeView={activeView}
           selectedFile={selectedFile}
           onGenerateDoc={handleGenerateDocumentation}
           loading={loading}
