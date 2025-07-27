@@ -574,6 +574,7 @@ export default function Dashboard() {
           <CheckoutModal
             isOpen={showCheckoutModal}
             onClose={() => setShowCheckoutModal(false)}
+            selectedPlan="pro"
           />
         )}
 

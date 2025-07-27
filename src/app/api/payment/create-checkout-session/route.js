@@ -2,17 +2,53 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { planId, customerEmail, successUrl, cancelUrl, metadata } = await request.json();
+    const body = await request.json();
+    console.log('Body reçu:', JSON.stringify(body, null, 2));
+    
+    const { planId, customerEmail, successUrl, cancelUrl, metadata } = body;
 
-    console.log('Création de session de paiement:', { planId, customerEmail });
+    console.log('Données extraites:', { 
+      planId, 
+      customerEmail, 
+      successUrl, 
+      cancelUrl, 
+      hasMetadata: !!metadata 
+    });
 
     // Validation des données
-    if (!planId || !customerEmail || !successUrl || !cancelUrl) {
+    if (!planId) {
+      console.error('planId manquant');
       return NextResponse.json(
-        { error: 'Données manquantes pour la création de la session' },
+        { error: 'Plan ID manquant pour la création de la session' },
         { status: 400 }
       );
     }
+
+    if (!customerEmail) {
+      console.error('customerEmail manquant');
+      return NextResponse.json(
+        { error: 'Email client manquant pour la création de la session' },
+        { status: 400 }
+      );
+    }
+
+    if (!successUrl) {
+      console.error('successUrl manquant');
+      return NextResponse.json(
+        { error: 'URL de succès manquante pour la création de la session' },
+        { status: 400 }
+      );
+    }
+
+    if (!cancelUrl) {
+      console.error('cancelUrl manquant');
+      return NextResponse.json(
+        { error: 'URL d\'annulation manquante pour la création de la session' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Création de session de paiement:', { planId, customerEmail });
 
     // Vérifier si Stripe est configuré
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -102,7 +138,7 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Erreur lors de la création de la session:', error);
-    
+
     return NextResponse.json(
       { error: 'Erreur lors de la création de la session de paiement' },
       { status: 500 }
