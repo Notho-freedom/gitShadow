@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '../../../components/AuthProvider';
 import Logo from '../../../components/Logo';
 
 function AuthCallbackContent() {
@@ -9,6 +10,7 @@ function AuthCallbackContent() {
   const [error, setError] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login } = useAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -55,14 +57,15 @@ function AuthCallbackContent() {
 
         const { user } = await response.json();
 
-        // Stocker les données utilisateur
-        localStorage.setItem('github_user', JSON.stringify(user));
+        // Utiliser l'AuthProvider pour connecter l'utilisateur
+        login(user, false);
 
         setStatus('success');
 
         // Rediriger vers l'URL d'origine après un court délai
         setTimeout(() => {
-          router.push(returnUrl);
+          // Forcer le rafraîchissement de la page pour s'assurer que l'état est mis à jour
+          window.location.href = returnUrl;
         }, 1500);
 
       } catch (err) {
@@ -73,7 +76,7 @@ function AuthCallbackContent() {
     };
 
     handleCallback();
-  }, [searchParams, router]);
+  }, [searchParams, router, login]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-6">

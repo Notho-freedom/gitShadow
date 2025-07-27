@@ -3,14 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, onFileSelect, loading }) {
+export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, onFileSelect, loading, onFilesUpdate }) {
   const [repos, setRepos] = useState([]);
-  const [files, setFiles] = useState([]);
+  const [commits, setCommits] = useState([]);
+  const [selectedCommit, setSelectedCommit] = useState(null);
+  const [currentPath, setCurrentPath] = useState('');
+  const [fileTree, setFileTree] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState('all'); // all, public, private, fork
-  const [sortBy, setSortBy] = useState('updated'); // updated, created, name, stars
-  const [viewMode, setViewMode] = useState('grid'); // grid, list, compact
+  const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('updated');
+  const [viewMode, setViewMode] = useState('grid');
   const [isLoadingRepos, setIsLoadingRepos] = useState(true);
+  const [isLoadingCommits, setIsLoadingCommits] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [error, setError] = useState(null);
 
@@ -19,14 +23,34 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     fetchRepositories();
   }, [user]);
 
-  // Charger les fichiers quand un dépôt est sélectionné
+  // Charger les commits quand un dépôt est sélectionné
   useEffect(() => {
     if (selectedRepo) {
-      fetchFiles(selectedRepo);
+      fetchCommits(selectedRepo);
+      setCurrentPath('');
+      setSelectedCommit(null);
+      setFileTree([]);
     } else {
-      setFiles([]);
+      setCommits([]);
+      setSelectedCommit(null);
+      setCurrentPath('');
+      setFileTree([]);
     }
   }, [selectedRepo]);
+
+  // Charger les fichiers quand un commit est sélectionné
+  useEffect(() => {
+    if (selectedRepo && selectedCommit) {
+      fetchFileTree(selectedRepo, selectedCommit);
+    }
+  }, [selectedRepo, selectedCommit]);
+
+  // Notifier le parent quand les fichiers sont mis à jour
+  useEffect(() => {
+    if (onFilesUpdate && fileTree.length > 0) {
+      onFilesUpdate(fileTree);
+    }
+  }, [fileTree, onFilesUpdate]);
 
   const fetchRepositories = async () => {
     setIsLoadingRepos(true);
@@ -56,10 +80,10 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     }
   };
 
-  const fetchFiles = async (repo) => {
-    setIsLoadingFiles(true);
+  const fetchCommits = async (repo) => {
+    setIsLoadingCommits(true);
     try {
-      const response = await fetch('/api/fetchRepo', {
+      const response = await fetch('/api/fetchCommits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +95,36 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
 
       if (response.ok) {
         const data = await response.json();
-        setFiles(data.files || []);
+        setCommits(data.commits || []);
+        // Sélectionner automatiquement le premier commit (HEAD)
+        if (data.commits && data.commits.length > 0) {
+          setSelectedCommit(data.commits[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des commits:', error);
+    } finally {
+      setIsLoadingCommits(false);
+    }
+  };
+
+  const fetchFileTree = async (repo, commit) => {
+    setIsLoadingFiles(true);
+    try {
+      const response = await fetch('/api/fetchRepo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: repo.owner?.login || repo.owner,
+          repo: repo.name,
+          ref: commit.sha,
+          accessToken: user.access_token
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFileTree(data.files || []);
       }
     } catch (error) {
       console.error('Erreur lors du chargement des fichiers:', error);
@@ -80,7 +133,13 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     }
   };
 
-  const getFileIcon = (filename) => {
+  const navigateToPath = (path) => {
+    setCurrentPath(path);
+  };
+
+  const getFileIcon = (filename, type) => {
+    if (type === 'dir') return '📁';
+    
     const ext = filename.split('.').pop()?.toLowerCase();
     const iconMap = {
       'js': '⚛️',
@@ -98,25 +157,24 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
       'json': '📄',
       'md': '📝',
       'sql': '🗄️',
-      'sh': '💻',
-      'dockerfile': '🐳',
-      'gitignore': '🚫',
+      'xml': '📋',
       'yml': '⚙️',
       'yaml': '⚙️',
-      'xml': '📄',
       'txt': '📄',
-      'pdf': '📕',
-      'png': '🖼️',
-      'jpg': '🖼️',
-      'jpeg': '🖼️',
-      'gif': '🖼️',
-      'svg': '🖼️'
+      'log': '📋',
+      'sh': '🐚',
+      'bat': '🖥️',
+      'ps1': '🖥️',
+      'gitignore': '🚫',
+      'dockerfile': '🐳',
+      'readme': '📖'
     };
+    
     return iconMap[ext] || '📄';
   };
 
   const getLanguageColor = (language) => {
-    const colorMap = {
+    const colors = {
       'JavaScript': '#f1e05a',
       'TypeScript': '#2b7489',
       'Python': '#3572A5',
@@ -126,23 +184,19 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
       'HTML': '#e34c26',
       'CSS': '#563d7c',
       'SCSS': '#cf649a',
-      'Sass': '#cf649a',
       'JSON': '#292b36',
       'Markdown': '#083fa1',
       'SQL': '#e38c00',
       'Shell': '#89e051',
-      'Dockerfile': '#384d54',
-      'YAML': '#cb171e',
-      'XML': '#f0db4f',
-      'Rust': '#dea584',
-      'Go': '#00ADD8',
       'PHP': '#4F5D95',
       'Ruby': '#701516',
+      'Go': '#00ADD8',
+      'Rust': '#dea584',
       'Swift': '#ffac45',
       'Kotlin': '#F18E33',
-      'Scala': '#c22d40'
+      'Dart': '#00B4AB'
     };
-    return colorMap[language] || '#6e7781';
+    return colors[language] || '#8250df';
   };
 
   const formatFileSize = (bytes) => {
@@ -154,45 +208,57 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    
-    if (diffInDays === 0) return 'Aujourd\'hui';
-    if (diffInDays === 1) return 'Hier';
-    if (diffInDays < 7) return `Il y a ${diffInDays} jours`;
-    if (diffInDays < 30) return `Il y a ${Math.floor(diffInDays / 7)} semaines`;
-    if (diffInDays < 365) return `Il y a ${Math.floor(diffInDays / 30)} mois`;
-    return `Il y a ${Math.floor(diffInDays / 365)} ans`;
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const filteredAndSortedRepos = repos
-    .filter(repo => {
-      const matchesSearch = repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           repo.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = filter === 'all' || 
-                           (filter === 'public' && !repo.private) ||
-                           (filter === 'private' && repo.private) ||
-                           (filter === 'fork' && repo.fork);
-      return matchesSearch && matchesFilter;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'created':
-          return new Date(b.created_at) - new Date(a.created_at);
-        case 'stars':
-          return b.stargazers_count - a.stargazers_count;
-        default:
-          return new Date(b.updated_at) - new Date(a.updated_at);
-      }
-    });
+  const getCurrentPathItems = () => {
+    if (!currentPath) return [];
+    return currentPath.split('/').filter(Boolean);
+  };
 
-  const filteredFiles = files.filter(file => 
-    file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    file.path.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getFilesInCurrentPath = () => {
+    if (!fileTree || !currentPath) {
+      return fileTree.filter(item => !item.path.includes('/'));
+    }
+    return fileTree.filter(item => {
+      const itemPath = item.path;
+      const currentPathWithSlash = currentPath + '/';
+      return itemPath.startsWith(currentPathWithSlash) && 
+             !itemPath.substring(currentPathWithSlash.length).includes('/');
+    });
+  };
+
+  const filteredAndSortedRepos = repos.filter(repo => {
+    if (searchQuery && !selectedRepo) {
+      return repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             repo.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    return true;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'created':
+        return new Date(b.created_at) - new Date(a.created_at);
+      case 'stars':
+        return b.stargazers_count - a.stargazers_count;
+      default:
+        return new Date(b.updated_at) - new Date(a.updated_at);
+    }
+  });
+
+  const filteredFiles = getFilesInCurrentPath().filter(file => {
+    if (searchQuery && selectedRepo) {
+      return file.name.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    return true;
+  });
 
   if (isLoadingRepos) {
     return (
@@ -245,6 +311,57 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
             </motion.button>
           )}
         </div>
+
+        {/* Breadcrumb pour la navigation de fichiers */}
+        {selectedRepo && selectedCommit && (
+          <div className="flex items-center space-x-2 mb-4 text-sm">
+            <span className="text-gray-400">📁</span>
+            <button
+              onClick={() => navigateToPath('')}
+              className="text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              {selectedRepo.name}
+            </button>
+            {getCurrentPathItems().map((item, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <span className="text-gray-400">/</span>
+                <button
+                  onClick={() => navigateToPath(getCurrentPathItems().slice(0, index + 1).join('/'))}
+                  className="text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  {item}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Sélection de commit */}
+        {selectedRepo && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Commit :
+            </label>
+            <select
+              value={selectedCommit?.sha || ''}
+              onChange={(e) => {
+                const commit = commits.find(c => c.sha === e.target.value);
+                setSelectedCommit(commit);
+              }}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {isLoadingCommits ? (
+                <option>Chargement des commits...</option>
+              ) : (
+                commits.map((commit) => (
+                  <option key={commit.sha} value={commit.sha}>
+                    {commit.message} ({commit.sha.substring(0, 7)}) - {formatDate(commit.date)}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="flex items-center space-x-4">
@@ -384,7 +501,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
             </AnimatePresence>
           </div>
         ) : (
-          // File List
+          // File Explorer
           <div className="space-y-2">
             {isLoadingFiles ? (
               <div className="flex items-center justify-center py-12">
@@ -400,16 +517,24 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.2, delay: index * 0.02 }}
                     whileHover={{ x: 5 }}
-                    onClick={() => onFileSelect(file)}
+                    onClick={() => {
+                      if (file.type === 'dir') {
+                        navigateToPath(file.path);
+                      } else {
+                        onFileSelect(file);
+                      }
+                    }}
                     className="flex items-center space-x-4 p-4 bg-gray-800/30 border border-gray-700/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-800/50 hover:border-blue-500/30"
                   >
-                    <span className="text-2xl">{getFileIcon(file.name)}</span>
+                    <span className="text-2xl">{getFileIcon(file.name, file.type)}</span>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-white font-medium truncate">{file.name}</h4>
                       <p className="text-gray-400 text-sm truncate">{file.path}</p>
                     </div>
                     <div className="text-right text-sm text-gray-400">
-                      <div>{formatFileSize(file.size)}</div>
+                      {file.type !== 'dir' && (
+                        <div>{formatFileSize(file.size)}</div>
+                      )}
                       <div>{formatDate(file.updated_at || file.created_at)}</div>
                     </div>
                   </motion.div>
@@ -431,14 +556,14 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
           </div>
         )}
 
-        {selectedRepo && filteredFiles.length === 0 && !isLoadingFiles && (
+        {selectedRepo && selectedCommit && filteredFiles.length === 0 && !isLoadingFiles && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">📄</span>
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Aucun fichier trouvé</h3>
             <p className="text-gray-400">
-              {searchQuery ? 'Aucun fichier ne correspond à votre recherche' : 'Ce dépôt ne contient aucun fichier'}
+              {searchQuery ? 'Aucun fichier ne correspond à votre recherche' : 'Ce répertoire ne contient aucun fichier'}
             </p>
           </div>
         )}

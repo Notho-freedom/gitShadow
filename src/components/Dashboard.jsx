@@ -252,6 +252,11 @@ export default function Dashboard() {
     }
   }, [selectedRepo, user.access_token]);
 
+  // Fonction pour récupérer les fichiers du RepositoryExplorer
+  const handleRepoFilesUpdate = useCallback((files) => {
+    setRepoFiles(files);
+  }, []);
+
   const handleGenerateDocumentation = useCallback(async () => {
     if (!selectedFile || !fileContent) return;
 
@@ -389,6 +394,7 @@ export default function Dashboard() {
             onRepoSelect={handleRepoSelect}
             onFileSelect={handleFileSelect}
             loading={loadingState}
+            onFilesUpdate={handleRepoFilesUpdate}
           />
         );
 
