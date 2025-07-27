@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Logo from '../../components/Logo';
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -106,5 +106,23 @@ export default function AuthPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="mb-8">
+            <Logo size="lg" animate={false} />
+          </div>
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <AuthPageContent />
+    </Suspense>
   );
 } 
