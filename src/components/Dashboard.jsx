@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './AuthProvider';
+import { useData } from './DataProvider';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
 import RepositoryExplorer from './RepositoryExplorer';
@@ -24,8 +25,16 @@ import PromotionPopup from './PromotionPopup';
 
 export default function Dashboard() {
   const { user, loading, isGuest, updateUser } = useAuth();
+  const { 
+    selectedRepo, 
+    selectRepository, 
+    loading: dataLoading, 
+    error: dataError,
+    hasSelectedRepo,
+    hasRepoData
+  } = useData();
+  
   const [activeView, setActiveView] = useState('explorer');
-  const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
   const [currentView, setCurrentView] = useState('repos'); // 'repos', 'explorer', 'editor', 'documentation'
@@ -63,6 +72,13 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Synchroniser l'utilisateur avec le DataProvider
+  useEffect(() => {
+    if (user && !isGuest) {
+      // L'utilisateur est déjà géré par le DataProvider via AuthProvider
+    }
+  }, [user, isGuest]);
+
   // Vérifier si user existe et a les propriétés nécessaires
   if (loading || !user || !user.plan) {
     return (
@@ -84,131 +100,102 @@ export default function Dashboard() {
     
     // Pour les invités, toutes les fonctionnalités premium sont verrouillées
     if (isGuest) {
-      const guestAllowedFeatures = ['repos', 'files', 'commits', 'code'];
+      const guestAllowedFeatures = ['repos', 'files', 'commits', 'code', 'explorer'];
       return !guestAllowedFeatures.includes(feature);
     }
     
-    // Pour les utilisateurs connectés, vérifier selon le plan
-    const premiumFeatures = ['analytics', 'collaboration', 'documentation'];
-    return user.plan === 'free' && premiumFeatures.includes(feature);
+    // Définir les fonctionnalités par plan
+    const planFeatures = {
+      free: ['repos', 'files', 'commits', 'code', 'explorer', 'editor'],
+      pro: ['repos', 'files', 'commits', 'code', 'explorer', 'editor', 'analytics', 'collaboration', 'documentation', 'search'],
+      enterprise: ['repos', 'files', 'commits', 'code', 'explorer', 'editor', 'analytics', 'collaboration', 'documentation', 'search', 'advanced_analytics', 'team_management', 'custom_integrations', 'format', 'share']
+    };
+    
+    const currentPlanFeatures = planFeatures[user.plan] || planFeatures.free;
+    return !currentPlanFeatures.includes(feature);
+  };
+
+  // Fonction pour vérifier et afficher la popup d'upgrade
+  const checkAndShowUpgrade = (feature) => {
+    if (requiresUpgrade(feature)) {
+      setShowUpgradeNotice(true);
+      return true; // Indique qu'un upgrade est nécessaire
+    }
+    return false; // Indique qu'aucun upgrade n'est nécessaire
   };
 
   // Fonction pour gérer le changement de vue avec vérification d'upgrade
   const handleViewChange = (view) => {
-    if (requiresUpgrade(view)) {
-      setShowUpgradeNotice(true);
-      return;
+    if (checkAndShowUpgrade(view)) {
+      return; // Arrêter ici si un upgrade est nécessaire
     }
     setActiveView(view);
-    
-    // Navigation basée sur la vue sélectionnée
-    switch (view) {
-      case 'repos':
-        setCurrentView('repos');
-        break;
-      case 'editor':
-        if (selectedFile) {
-          setCurrentView('editor');
-        } else {
-          // Si aucun fichier n'est sélectionné, rester dans la vue actuelle
-          return;
-        }
-        break;
-      case 'documentation':
-        if (documentation) {
-          setCurrentView('documentation');
-        } else {
-          // Si aucune documentation n'est générée, rester dans la vue actuelle
-          return;
-        }
-        break;
-      case 'analytics':
-        setCurrentView('analytics');
-        break;
-      case 'collaboration':
-        setCurrentView('collaboration');
-        break;
-      case 'settings':
-        setCurrentView('settings');
-        break;
-      default:
-        // Pour les autres vues, garder la vue actuelle
-        break;
-    }
   };
 
-  const handleUpgrade = () => {
-    setShowCheckoutModal(true);
-    setShowUpgradeNotice(false);
-  };
-
-  const handleGuestRepoAdd = async () => {
-    if (!guestRepoInput.trim()) return;
-
-    setLoadingState(true);
-    setGuestRepoError('');
-
+  // Fonction pour gérer la sélection d'un repository
+  const handleRepoSelect = async (repo) => {
     try {
-      // Extraire owner et repo de l'URL
-      const match = guestRepoInput.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-      if (!match) {
-        setGuestRepoError('Format d\'URL invalide. Utilisez: https://github.com/owner/repository');
-        return;
-      }
-
-      const [, owner, repo] = match;
-      const repoName = repo.replace('.git', '');
-
-      // Vérifier si le dépôt existe et est public
-      const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}`);
-      if (!response.ok) {
-        setGuestRepoError('Dépôt non trouvé ou privé. Seuls les dépôts publics sont autorisés.');
-        return;
-      }
-
-      const repoData = await response.json();
-      if (repoData.private) {
-        setGuestRepoError('Ce dépôt est privé. Seuls les dépôts publics sont autorisés.');
-        return;
-      }
-
-      // Ajouter le dépôt à la liste
-      const newRepo = {
-        id: repoData.id,
-        name: repoData.name,
-        full_name: repoData.full_name,
-        description: repoData.description,
-        owner: repoData.owner,
-        default_branch: repoData.default_branch,
-        addedAt: new Date().toISOString()
-      };
-
-      const updatedRepos = [...(user.repos || []), newRepo];
-      updateUser({ ...user, repos: updatedRepos });
-      setGuestRepoInput('');
+      setLoadingState(true);
+      await selectRepository(repo);
+      setCurrentView('explorer');
+      setActiveView('explorer');
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du dépôt:', error);
-      setGuestRepoError('Erreur lors de l\'ajout du dépôt. Vérifiez l\'URL et réessayez.');
+      console.error('Erreur lors de la sélection du repository:', error);
     } finally {
       setLoadingState(false);
     }
   };
 
-  const handleRepoSelect = useCallback((repo) => {
-    setSelectedRepo(repo);
+  // Fonction pour gérer l'upgrade
+  const handleUpgrade = () => {
+    setShowCheckoutModal(true);
+    setShowUpgradeNotice(false);
+  };
+
+  // Fonction pour gérer l'ajout d'un repository invité
+  const handleGuestRepoAdd = async () => {
+    if (!guestRepoInput.trim()) {
+      setGuestRepoError('Veuillez entrer un nom de repository valide');
+      return;
+    }
+
+    try {
+      setLoadingState(true);
+      setGuestRepoError('');
+
+      // Créer un objet repository pour les invités
+      const guestRepo = {
+        name: guestRepoInput,
+        owner: { login: 'guest' },
+        full_name: `guest/${guestRepoInput}`,
+        description: 'Repository invité',
+        private: false,
+        fork: false,
+        stargazers_count: 0,
+        watchers_count: 0,
+        language: null,
+        default_branch: 'main',
+        updated_at: new Date().toISOString()
+      };
+
+      await selectRepository(guestRepo);
+      setGuestRepoInput('');
+      setCurrentView('explorer');
+      setActiveView('explorer');
+    } catch (error) {
+      setGuestRepoError('Erreur lors de l\'ajout du repository');
+      console.error('Erreur handleGuestRepoAdd:', error);
+    } finally {
+      setLoadingState(false);
+    }
+  };
+
+  const handleBackToRepos = useCallback(() => {
+    setCurrentView('repos');
+    setActiveView('repos');
     setSelectedFile(null);
     setFileContent('');
     setDocumentation('');
-    // Ne pas changer currentView, rester dans RepositoryExplorer
-  }, []);
-
-  const handleBackToRepos = useCallback(() => {
-    setSelectedRepo(null);
-    setSelectedFile(null);
-    setFileContent('');
-    setRepoFiles([]);
-    setCurrentView('repos');
-    setActiveView('repos');
   }, []);
 
   const handleBackToExplorer = useCallback(() => {
@@ -218,6 +205,8 @@ export default function Dashboard() {
   }, []);
 
   const handleFileSelect = useCallback(async (file) => {
+    if (!selectedRepo) return;
+
     setSelectedFile(file);
     setLoadingState(true);
 
@@ -324,7 +313,7 @@ export default function Dashboard() {
                   <button
                     onClick={handleGuestRepoAdd}
                     disabled={loadingState || !guestRepoInput}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                   >
                     {loadingState ? 'Ajout...' : 'Ajouter'}
                   </button>
@@ -335,87 +324,62 @@ export default function Dashboard() {
               </div>
 
               {/* Liste des dépôts invités */}
-              {user.repos && user.repos.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Vos dépôts</h3>
-                  <div className="grid gap-4">
-                    {user.repos.map((repo) => (
-                      <motion.div
-                        key={repo.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+                <h3 className="text-lg font-semibold text-white mb-4">Dépôts explorés</h3>
+                {user.repos && user.repos.length > 0 ? (
+                  <div className="space-y-3">
+                    {user.repos.map((repo, index) => (
+                      <div
+                        key={index}
+                        className="bg-gray-700/50 rounded-lg p-4 border border-gray-600 hover:border-blue-500 transition-colors cursor-pointer"
                         onClick={() => handleRepoSelect(repo)}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex-1">
+                          <div>
                             <h4 className="text-white font-medium">{repo.full_name}</h4>
-                            {repo.description && (
-                              <p className="text-gray-400 text-sm mt-1">{repo.description}</p>
-                            )}
-                            <p className="text-gray-500 text-xs mt-2">
-                              Ajouté le {new Date(repo.addedAt).toLocaleDateString()}
-                            </p>
+                            <p className="text-gray-400 text-sm">{repo.description || 'Aucune description'}</p>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const updatedRepos = user.repos.filter(r => r.id !== repo.id);
-                              updateUser({ ...user, repos: updatedRepos });
-                            }}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
-                          >
-                            Supprimer
-                          </button>
+                          <span className="text-gray-500 text-sm">
+                            {new Date(repo.addedAt).toLocaleDateString('fr-FR')}
+                          </span>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Message si aucun dépôt */}
-              {(!user.repos || user.repos.length === 0) && (
-                <div className="text-center py-12">
-                  <div className="text-gray-400 text-6xl mb-4">📁</div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Aucun dépôt ajouté</h3>
-                  <p className="text-gray-400">
-                    Ajoutez un dépôt GitHub public pour commencer à explorer votre code
+                ) : (
+                  <p className="text-gray-400 text-center py-8">
+                    Aucun dépôt ajouté. Ajoutez un dépôt public pour commencer.
                   </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           );
         }
-        
+
         return (
           <RepositoryExplorer
-            user={user}
-            selectedRepo={selectedRepo}
             onRepoSelect={handleRepoSelect}
-            onFileSelect={handleFileSelect}
-            loading={loadingState}
             onFilesUpdate={handleRepoFilesUpdate}
+            loading={loadingState}
           />
         );
 
       case 'explorer':
-        if (!selectedRepo) {
+        if (!hasSelectedRepo) {
           return (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📂</div>
-              <h3 className="text-xl font-semibold text-white mb-2">Aucun dépôt sélectionné</h3>
-              <p className="text-gray-400">
-                Sélectionnez un dépôt pour explorer ses fichiers
-              </p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-gray-400 text-6xl mb-4">📁</div>
+                <h3 className="text-xl font-semibold text-white mb-2">Aucun repository sélectionné</h3>
+                <p className="text-gray-400">Sélectionnez un repository pour commencer l'exploration</p>
+              </div>
             </div>
           );
         }
 
         return (
           <FileTreeExplorer
-            user={user}
-            selectedRepo={selectedRepo}
+            repository={selectedRepo}
             onFileSelect={handleFileSelect}
             onBackToRepos={handleBackToRepos}
             loading={loadingState}
@@ -423,14 +387,14 @@ export default function Dashboard() {
         );
 
       case 'editor':
-        if (!selectedFile) {
+        if (!selectedFile || !fileContent) {
           return (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">💻</div>
-              <h3 className="text-xl font-semibold text-white mb-2">Aucun fichier sélectionné</h3>
-              <p className="text-gray-400">
-                Sélectionnez un fichier pour voir son contenu
-              </p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-gray-400 text-6xl mb-4">📝</div>
+                <h3 className="text-xl font-semibold text-white mb-2">Aucun fichier sélectionné</h3>
+                <p className="text-gray-400">Sélectionnez un fichier pour l'éditer</p>
+              </div>
             </div>
           );
         }
@@ -439,51 +403,45 @@ export default function Dashboard() {
           <CodeEditorWithTree
             file={selectedFile}
             content={fileContent}
-            onGenerateDoc={handleGenerateDocumentation}
+            repository={selectedRepo}
+            onGenerateDocumentation={handleGenerateDocumentation}
+            onBackToExplorer={() => setCurrentView('explorer')}
             loading={loadingState}
-            theme={theme}
-            onBackToExplorer={handleBackToExplorer}
-            onFileSelect={handleFileSelect}
-            files={repoFiles}
-            selectedRepo={selectedRepo}
-            user={user}
           />
         );
 
       case 'documentation':
+        if (!documentation) {
+          return (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-gray-400 text-6xl mb-4">📚</div>
+                <h3 className="text-xl font-semibold text-white mb-2">Aucune documentation générée</h3>
+                <p className="text-gray-400">Générez de la documentation à partir d'un fichier</p>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <DocumentationPanel
-            file={selectedFile}
-            content={fileContent}
             documentation={documentation}
+            file={selectedFile}
+            repository={selectedRepo}
             onBackToEditor={() => setCurrentView('editor')}
-            theme={theme}
           />
         );
 
-      case 'analytics':
-        return <AnalyticsPanel user={user} selectedRepo={selectedRepo} />;
-      case 'collaboration':
-        return <CollaborationPanel user={user} selectedRepo={selectedRepo} />;
-      case 'settings':
-        return (
-          <SettingsPanel
-            user={user}
-            theme={theme}
-            setTheme={setTheme}
-            layout={layout}
-            setLayout={setLayout}
-          />
-        );
-      case 'billing':
-        return (
-          <BillingPanel
-            user={user}
-            onUpgrade={() => setShowCheckoutModal(true)}
-          />
-        );
       default:
-        return null;
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="text-gray-400 text-6xl mb-4">❓</div>
+              <h3 className="text-xl font-semibold text-white mb-2">Vue non trouvée</h3>
+              <p className="text-gray-400">Cette vue n'existe pas</p>
+            </div>
+          </div>
+        );
     }
   };
 
@@ -497,6 +455,7 @@ export default function Dashboard() {
         selectedRepo={selectedRepo}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        checkAndShowUpgrade={checkAndShowUpgrade}
       />
 
       {/* Main Content Area */}
@@ -512,6 +471,7 @@ export default function Dashboard() {
           theme={theme}
           layout={layout}
           onLayoutChange={setLayout}
+          checkAndShowUpgrade={checkAndShowUpgrade}
         />
 
         {/* Main Content */}
@@ -536,6 +496,7 @@ export default function Dashboard() {
           selectedFile={selectedFile}
           onGenerateDoc={handleGenerateDocumentation}
           loading={loadingState}
+          checkAndShowUpgrade={checkAndShowUpgrade}
         />
       </div>
 
@@ -546,6 +507,7 @@ export default function Dashboard() {
         user={user}
         selectedRepo={selectedRepo}
         onFileSelect={handleFileSelect}
+        checkAndShowUpgrade={checkAndShowUpgrade}
       />
 
       {/* Notification Center */}

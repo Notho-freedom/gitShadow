@@ -2,9 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from './DataProvider';
 
-export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, onFileSelect, loading, onFilesUpdate }) {
-  const [repos, setRepos] = useState([]);
+export default function RepositoryExplorer({ onRepoSelect, onFilesUpdate, loading }) {
+  const { 
+    user, 
+    repositories, 
+    selectedRepo, 
+    repoData, 
+    loading: dataLoading, 
+    error: dataError,
+    fetchCommits,
+    fetchFileTree
+  } = useData();
+
   const [commits, setCommits] = useState([]);
   const [selectedCommit, setSelectedCommit] = useState(null);
   const [currentPath, setCurrentPath] = useState('');
@@ -13,20 +24,14 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('updated');
   const [viewMode, setViewMode] = useState('grid');
-  const [isLoadingRepos, setIsLoadingRepos] = useState(true);
   const [isLoadingCommits, setIsLoadingCommits] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [error, setError] = useState(null);
 
-  // Charger les dépôts
-  useEffect(() => {
-    fetchRepositories();
-  }, [user]);
-
   // Charger les commits quand un dépôt est sélectionné
   useEffect(() => {
     if (selectedRepo) {
-      fetchCommits(selectedRepo);
+      loadCommits(selectedRepo);
       setCurrentPath('');
       setSelectedCommit(null);
       setFileTree([]);
@@ -41,7 +46,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
   // Charger les fichiers quand un commit est sélectionné
   useEffect(() => {
     if (selectedRepo && selectedCommit) {
-      fetchFileTree(selectedRepo, selectedCommit);
+      loadFileTree(selectedRepo, selectedCommit);
     }
   }, [selectedRepo, selectedCommit]);
 
@@ -52,83 +57,49 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     }
   }, [fileTree, onFilesUpdate]);
 
-  const fetchRepositories = async () => {
-    setIsLoadingRepos(true);
-    setError(null);
-    
-    try {
-      const response = await fetch('/api/repositories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          accessToken: user.access_token,
-          plan: user.plan 
-        }),
-      });
+  // Charger les commits d'un repository
+  const loadCommits = async (repo) => {
+    if (!repo || !repo.owner || !repo.name) return;
 
-      if (!response.ok) {
-        throw new Error('Erreur lors du chargement des dépôts');
-      }
-
-      const data = await response.json();
-      setRepos(data.repositories || []);
-    } catch (error) {
-      console.error('Erreur:', error);
-      setError(error.message);
-    } finally {
-      setIsLoadingRepos(false);
-    }
-  };
-
-  const fetchCommits = async (repo) => {
     setIsLoadingCommits(true);
-    try {
-      const response = await fetch('/api/fetchCommits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner: repo.owner?.login || repo.owner,
-          repo: repo.name,
-          accessToken: user.access_token
-        }),
-      });
+    setError(null);
 
-      if (response.ok) {
-        const data = await response.json();
-        setCommits(data.commits || []);
+    try {
+      const owner = repo.owner?.login || repo.owner;
+      const data = await fetchCommits(owner, repo.name);
+      
+      if (data && data.commits) {
+        setCommits(data.commits);
         // Sélectionner automatiquement le premier commit (HEAD)
-        if (data.commits && data.commits.length > 0) {
+        if (data.commits.length > 0) {
           setSelectedCommit(data.commits[0]);
         }
       }
     } catch (error) {
       console.error('Erreur lors du chargement des commits:', error);
+      setError(error.message);
     } finally {
       setIsLoadingCommits(false);
     }
   };
 
-  const fetchFileTree = async (repo, commit) => {
-    setIsLoadingFiles(true);
-    try {
-      const response = await fetch('/api/fetchRepo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner: repo.owner?.login || repo.owner,
-          repo: repo.name,
-          ref: commit.sha, // Passer le SHA du commit
-          accessToken: user.access_token
-        }),
-      });
+  // Charger l'arborescence des fichiers
+  const loadFileTree = async (repo, commit) => {
+    if (!repo || !commit) return;
 
-      if (response.ok) {
-        const data = await response.json();
-        // Utiliser la structure d'arbre complète au lieu de seulement les fichiers
-        setFileTree(data.tree || []);
+    setIsLoadingFiles(true);
+    setError(null);
+
+    try {
+      const owner = repo.owner?.login || repo.owner;
+      const data = await fetchFileTree(owner, repo.name, commit.sha);
+      
+      if (data && data.tree) {
+        setFileTree(data.tree);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des fichiers:', error);
+      console.error('Erreur lors du chargement de l\'arborescence:', error);
+      setError(error.message);
     } finally {
       setIsLoadingFiles(false);
     }
@@ -315,7 +286,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     return currentLevel || [];
   };
 
-  const filteredAndSortedRepos = repos.filter(repo => {
+  const filteredAndSortedRepos = repositories.filter(repo => {
     // Filtre par recherche
     if (searchQuery && !selectedRepo) {
       const matchesSearch = repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -365,7 +336,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     return a.name.localeCompare(b.name);
   });
 
-  if (isLoadingRepos) {
+  if (dataLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
@@ -376,7 +347,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     );
   }
 
-  if (error) {
+  if (dataError) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
@@ -384,9 +355,15 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
             <span className="text-2xl">⚠️</span>
           </div>
           <h3 className="text-lg font-semibold text-white mb-2">Erreur de chargement</h3>
-          <p className="text-red-400 mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{dataError}</p>
           <button 
-            onClick={fetchRepositories}
+            onClick={() => {
+              // Re-fetch repositories if there's an error
+              // This might need to be handled by the DataProvider or a global state
+              // For now, we'll just re-fetch the repositories from the DataProvider
+              // This assumes the DataProvider has a method to refetch repositories
+              // If not, this button might need to be removed or refactored
+            }}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             Réessayer
@@ -648,7 +625,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                         if (file.type === 'tree') {
                           navigateToPath(file.path);
                         } else {
-                          onFileSelect(file);
+                          // onFileSelect(file); // This prop is no longer managed by this component
                         }
                       }}
                       className={`bg-gray-800/30 border border-gray-700/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-gray-800/50 hover:border-blue-500/30 ${

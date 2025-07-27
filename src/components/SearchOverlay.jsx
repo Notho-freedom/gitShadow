@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedRepo, user }) {
+export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedRepo, user, checkAndShowUpgrade }) {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -45,6 +45,11 @@ export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedR
   };
 
   const handleSearch = async () => {
+    // Vérifier si l'utilisateur a accès à la fonctionnalité de recherche
+    if (checkAndShowUpgrade && checkAndShowUpgrade('search')) {
+      return; // Arrêter ici si un upgrade est nécessaire
+    }
+
     if (!query.trim()) {
       setSearchResults([]);
       return;

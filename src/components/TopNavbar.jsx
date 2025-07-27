@@ -13,7 +13,8 @@ export default function TopNavbar({
   onNotificationOpen, 
   theme, 
   layout, 
-  onLayoutChange 
+  onLayoutChange,
+  checkAndShowUpgrade
 }) {
   const { logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -22,6 +23,14 @@ export default function TopNavbar({
     logout();
     // Rediriger vers la page d'accueil
     window.location.href = '/';
+  };
+
+  const handleSearchClick = () => {
+    // Vérifier si l'utilisateur a accès à la fonctionnalité de recherche
+    if (checkAndShowUpgrade && checkAndShowUpgrade('search')) {
+      return; // Arrêter ici si un upgrade est nécessaire
+    }
+    onSearchOpen();
   };
 
   const layoutOptions = [
@@ -60,7 +69,7 @@ export default function TopNavbar({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onSearchOpen}
+            onClick={handleSearchClick}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
             title="Recherche globale (Ctrl+K)"
           >
