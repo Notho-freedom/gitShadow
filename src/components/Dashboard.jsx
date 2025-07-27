@@ -67,7 +67,8 @@ export default function Dashboard() {
       // Nettoyer l'URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (payment === 'cancelled') {
-      alert('Paiement annulé');
+      setPaymentSuccessData({ plan: 'cancelled', isTest: false });
+      setShowPaymentSuccess(true);
       // Nettoyer l'URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -141,7 +142,7 @@ export default function Dashboard() {
       setCurrentView('explorer');
       setActiveView('explorer');
     } catch (error) {
-      console.error('Erreur lors de la sélection du repository:', error);
+      // Gérer l'erreur silencieusement
     } finally {
       setLoadingState(false);
     }
@@ -185,7 +186,6 @@ export default function Dashboard() {
       setActiveView('explorer');
     } catch (error) {
       setGuestRepoError('Erreur lors de l\'ajout du repository');
-      console.error('Erreur handleGuestRepoAdd:', error);
     } finally {
       setLoadingState(false);
     }
@@ -222,7 +222,6 @@ export default function Dashboard() {
         throw new Error(data?.error || 'Erreur lors du chargement du fichier');
       }
     } catch (error) {
-      console.error('Erreur lors du chargement du fichier:', error);
       setFileContent(`// Erreur: ${error.message}`);
     } finally {
       setLoadingState(false);
@@ -230,9 +229,9 @@ export default function Dashboard() {
   }, [selectedRepo, fetchFileContent]);
 
   // Fonction pour récupérer les fichiers du RepositoryExplorer
-  const handleRepoFilesUpdate = useCallback((files) => {
+  const handleRepoFilesUpdate = (files) => {
     setRepoFiles(files);
-  }, []);
+  };
 
   const handleGenerateDocumentation = useCallback(async () => {
     if (!selectedFile || !fileContent) return;
@@ -257,7 +256,7 @@ export default function Dashboard() {
         setCurrentView('documentation');
       }
     } catch (error) {
-      console.error('Erreur lors de la génération de documentation:', error);
+      setDocumentation('// Erreur lors de la génération de la documentation');
     } finally {
       setLoadingState(false);
     }

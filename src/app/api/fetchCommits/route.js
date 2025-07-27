@@ -105,7 +105,6 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('Erreur dans fetchCommits GET:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des commits' },
       { status: 500 }

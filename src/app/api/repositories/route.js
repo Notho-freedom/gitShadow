@@ -64,7 +64,6 @@ export async function GET(request) {
     return NextResponse.json({ repositories: formattedRepos });
 
   } catch (error) {
-    console.error('Erreur dans repositories:', error);
     return NextResponse.json(
       { error: 'Erreur lors de la récupération des dépôts' },
       { status: 500 }

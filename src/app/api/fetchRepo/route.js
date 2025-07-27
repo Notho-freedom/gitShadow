@@ -162,7 +162,6 @@ export async function POST(request) {
         );
       } else {
         // En cas d'erreur API, on continue avec des valeurs par défaut
-        console.warn(`Impossible de récupérer les infos du dépôt: ${repoInfoResponse.status}`);
         repoInfo = {
           name: repo,
           full_name: `${owner}/${repo}`,
@@ -174,7 +173,6 @@ export async function POST(request) {
         };
       }
     } catch (error) {
-      console.warn('Erreur lors de la récupération des infos du dépôt:', error);
       repoInfo = {
         name: repo,
         full_name: `${owner}/${repo}`,
@@ -227,20 +225,20 @@ export async function POST(request) {
                 break;
               }
             } catch (error) {
-              console.warn(`Erreur avec la branche ${branch}:`, error);
+              // Continuer avec la branche suivante si une erreur survient
               continue;
             }
           }
         }
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération de l\'arborescence:', error);
+      // Gérer l'erreur silencieusement
     }
 
     if (!treeData) {
       return new Response(
         JSON.stringify({ error: 'Impossible de récupérer l\'arborescence du dépôt. Le dépôt pourrait être vide ou privé.' }), 
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 

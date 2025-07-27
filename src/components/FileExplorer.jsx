@@ -45,7 +45,6 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
         throw new Error(errorData.error || 'Erreur de réponse du serveur');
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de l\'arborescence:', error);
       setFileTree([]);
     } finally {
       setLoading(false);

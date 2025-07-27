@@ -28,7 +28,6 @@ export default function UserStats({ user }) {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      console.error('Erreur lors du chargement des statistiques utilisateur:', error);
       setError(error.message);
     } finally {
       setLoading(false);

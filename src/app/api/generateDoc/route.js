@@ -102,9 +102,7 @@ export async function POST(request) {
     );
 
   } catch (error) {
-    console.error('Erreur dans generateDoc:', error);
-    
-    // En cas d'erreur, retourner une documentation de base
+    // En cas d'erreur, retourner une documentation de fallback
     return generateFallbackDocumentation(error.message);
   }
 }

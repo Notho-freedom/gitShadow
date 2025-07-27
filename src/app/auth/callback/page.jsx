@@ -35,7 +35,7 @@ function AuthCallbackContent() {
             const stateData = JSON.parse(atob(state));
             returnUrl = stateData.returnUrl || '/dashboard';
           } catch (stateError) {
-            console.warn('Erreur lors du décodage du state:', stateError);
+            // Gérer l'erreur silencieusement
           }
         }
 
@@ -69,7 +69,6 @@ function AuthCallbackContent() {
         }, 1500);
 
       } catch (err) {
-        console.error('Erreur de callback OAuth:', err);
         setError(err.message);
         setStatus('error');
       }

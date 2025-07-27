@@ -30,7 +30,7 @@ export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedR
         setFileTree(data.tree);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de l\'arborescence:', error);
+      // Gérer l'erreur silencieusement
     }
   };
 
@@ -89,7 +89,7 @@ export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedR
             });
           }
         } catch (error) {
-          console.error('Erreur lors de la recherche dans les commits:', error);
+          // Gérer l'erreur silencieusement
         }
       }
 
@@ -111,7 +111,6 @@ export default function SearchOverlay({ isOpen, onClose, onFileSelect, selectedR
 
       setSearchResults(sortedResults.slice(0, 20)); // Limiter à 20 résultats
     } catch (error) {
-      console.error('Erreur lors de la recherche:', error);
       setSearchResults([]);
     } finally {
       setIsSearching(false);
