@@ -78,6 +78,19 @@ export default function Navbar() {
                   Invité
                 </span>
               )}
+              {!isGuest && user.plan && (
+                <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                  user.plan === 'free' ? 'bg-gray-600 text-white' :
+                  user.plan === 'pro' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' :
+                  user.plan === 'enterprise' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' :
+                  'bg-gray-600 text-white'
+                }`}>
+                  {user.plan === 'free' ? 'FREE' :
+                   user.plan === 'pro' ? 'PRO' :
+                   user.plan === 'enterprise' ? 'ENTERPRISE' :
+                   user.plan.toUpperCase()}
+                </span>
+              )}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -92,11 +105,31 @@ export default function Navbar() {
                 className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 py-2 z-50"
               >
                 <div className="px-4 py-2 border-b border-gray-700">
-                  <p className="text-white font-medium">{user.name}</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-white font-medium">{user.name}</p>
+                    {!isGuest && user.plan && (
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        user.plan === 'free' ? 'bg-gray-600 text-white' :
+                        user.plan === 'pro' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' :
+                        user.plan === 'enterprise' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' :
+                        'bg-gray-600 text-white'
+                      }`}>
+                        {user.plan === 'free' ? 'FREE' :
+                         user.plan === 'pro' ? 'PRO' :
+                         user.plan === 'enterprise' ? 'ENTERPRISE' :
+                         user.plan.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-400 text-sm">{user.email || 'Aucun email'}</p>
                   {isGuest && (
                     <p className="text-yellow-400 text-xs mt-1">
                       Mode invité - {user.repos?.length || 0}/3 dépôts
+                    </p>
+                  )}
+                  {!isGuest && user.plan === 'free' && (
+                    <p className="text-blue-400 text-xs mt-1">
+                      ✨ Passez au Pro pour débloquer toutes les fonctionnalités
                     </p>
                   )}
                 </div>
