@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Logo from './Logo';
+import { useAuth } from './AuthProvider';
 
 export default function TopNavbar({ 
   user, 
@@ -11,13 +11,18 @@ export default function TopNavbar({
   activeView, 
   onSearchOpen, 
   onNotificationOpen, 
-  onLogout,
-  theme,
-  layout,
-  onLayoutChange
+  theme, 
+  layout, 
+  onLayoutChange 
 }) {
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isLayoutMenuOpen, setIsLayoutMenuOpen] = useState(false);
+  const { logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    // Rediriger vers la page d'accueil
+    window.location.href = '/';
+  };
 
   const layoutOptions = [
     { id: 'default', name: 'Défaut', icon: '📱' },
@@ -67,7 +72,7 @@ export default function TopNavbar({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setIsLayoutMenuOpen(!isLayoutMenuOpen)}
+            onClick={() => setShowUserMenu(!showUserMenu)}
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
             title="Changer la disposition"
           >
@@ -118,7 +123,7 @@ export default function TopNavbar({
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center space-x-3 p-2 hover:bg-gray-700/50 rounded-lg transition-all duration-200"
           >
             <img 
@@ -137,7 +142,7 @@ export default function TopNavbar({
 
           {/* User Dropdown */}
           <AnimatePresence>
-            {isUserMenuOpen && (
+            {showUserMenu && (
               <motion.div
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -171,7 +176,7 @@ export default function TopNavbar({
                   </button>
                   <div className="border-t border-gray-700 my-2"></div>
                   <button 
-                    onClick={onLogout}
+                    onClick={handleLogout}
                     className="w-full text-left px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
                   >
                     Se déconnecter
@@ -184,7 +189,7 @@ export default function TopNavbar({
 
         {/* Layout Menu */}
         <AnimatePresence>
-          {isLayoutMenuOpen && (
+          {showUserMenu && (
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -201,7 +206,7 @@ export default function TopNavbar({
                     key={option.id}
                     onClick={() => {
                       onLayoutChange(option.id);
-                      setIsLayoutMenuOpen(false);
+                      setShowUserMenu(false);
                     }}
                     className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center space-x-2 ${
                       layout === option.id 
@@ -220,12 +225,11 @@ export default function TopNavbar({
       </div>
 
       {/* Click outside to close menus */}
-      {(isUserMenuOpen || isLayoutMenuOpen) && (
+      {(showUserMenu) && (
         <div 
           className="fixed inset-0 z-40" 
           onClick={() => {
-            setIsUserMenuOpen(false);
-            setIsLayoutMenuOpen(false);
+            setShowUserMenu(false);
           }}
         />
       )}

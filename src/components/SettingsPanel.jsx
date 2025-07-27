@@ -2,16 +2,22 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import Logo from './Logo';
+import { useAuth } from './AuthProvider';
 
-export default function SettingsPanel({ user, theme, setTheme, layout, setLayout, onLogout }) {
+export default function SettingsPanel({ user, theme, setTheme, layout, setLayout }) {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
   const [notifications, setNotifications] = useState({
     email: true,
-    push: true,
-    updates: false,
-    marketing: false
+    push: false,
+    updates: true
   });
+
+  const handleLogout = () => {
+    logout();
+    // Rediriger vers la page d'accueil
+    window.location.href = '/';
+  };
 
   const tabs = [
     { id: 'general', name: 'Général', icon: '⚙️' },
@@ -362,7 +368,7 @@ export default function SettingsPanel({ user, theme, setTheme, layout, setLayout
                 <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
                   <h4 className="text-lg font-semibold text-white mb-4">Déconnexion</h4>
                   <button 
-                    onClick={onLogout}
+                    onClick={handleLogout}
                     className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
                   >
                     Se déconnecter

@@ -13,7 +13,10 @@ export default function CodeEditorWithTree({
   loading, 
   theme,
   onBackToExplorer,
-  isGuest = false
+  onFileSelect,
+  files,
+  selectedRepo,
+  user
 }) {
   const [showTree, setShowTree] = useState(true);
   const [treeWidth, setTreeWidth] = useState(280);
@@ -54,24 +57,73 @@ export default function CodeEditorWithTree({
     setExpandedFolders(newExpanded);
   };
 
-  // Charger la structure arborescente du commit quand le fichier est sélectionné
+  // Charger la structure arborescente du commit quand les fichiers sont disponibles
   useEffect(() => {
-    if (file && file.path) {
-      loadCommitTree();
+    if (files && files.length > 0) {
+      buildTreeStructure();
     }
-  }, [file]);
+  }, [files]);
 
-  const loadCommitTree = async () => {
-    if (!file || !file.path) return;
+  const buildTreeStructure = () => {
+    if (!files || files.length === 0) return;
     
     setLoadingTree(true);
     try {
-      // Pour les invités, on ne peut pas charger l'arborescence complète
-      // car on n'a pas accès aux informations du dépôt
-      // On peut seulement afficher les fichiers déjà chargés
-      setTreeStructure([]);
+      // Construire l'arborescence à partir des fichiers
+      const tree = [];
+      const folderMap = new Map();
+      
+      files.forEach(file => {
+        const pathParts = file.path.split('/');
+        let currentPath = '';
+        
+        // Créer les dossiers parents
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          const folderName = pathParts[i];
+          const parentPath = currentPath;
+          currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+          
+          if (!folderMap.has(currentPath)) {
+            const folderItem = {
+              path: currentPath,
+              name: folderName,
+              type: 'tree',
+              isFolder: true,
+              children: []
+            };
+            folderMap.set(currentPath, folderItem);
+            
+            if (parentPath) {
+              const parent = folderMap.get(parentPath);
+              if (parent) {
+                parent.children.push(folderItem);
+              }
+            } else {
+              tree.push(folderItem);
+            }
+          }
+        }
+        
+        // Ajouter le fichier
+        const fileItem = {
+          ...file,
+          name: pathParts[pathParts.length - 1],
+          isFolder: false
+        };
+        
+        if (currentPath) {
+          const parent = folderMap.get(currentPath);
+          if (parent) {
+            parent.children.push(fileItem);
+          }
+        } else {
+          tree.push(fileItem);
+        }
+      });
+      
+      setTreeStructure(tree);
     } catch (error) {
-      console.error('Erreur lors du chargement de l\'arborescence du commit:', error);
+      console.error('Erreur lors de la construction de l\'arborescence:', error);
     } finally {
       setLoadingTree(false);
     }
