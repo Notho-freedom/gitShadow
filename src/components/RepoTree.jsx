@@ -13,7 +13,7 @@ export default function RepoTree({ repoTree = [], searchQuery = '', onSelectFile
       if (a.type !== 'tree' && b.type === 'tree') return 1;
       
       // Si les deux sont du même type, trier par nom
-      return a.name.localeCompare(b.name);
+      return (a.name || '').localeCompare(b.name || '');
     });
   };
 

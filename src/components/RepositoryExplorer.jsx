@@ -311,7 +311,7 @@ export default function RepositoryExplorer({ onRepoSelect, onFilesUpdate, loadin
   }).sort((a, b) => {
     switch (sortBy) {
       case 'name':
-        return a.name.localeCompare(b.name);
+        return (a.name || '').localeCompare(b.name || '');
       case 'created':
         return new Date(b.created_at) - new Date(a.created_at);
       case 'stars':
@@ -331,7 +331,7 @@ export default function RepositoryExplorer({ onRepoSelect, onFilesUpdate, loadin
     if (a.type !== b.type) {
       return a.type === 'tree' ? -1 : 1;
     }
-    return a.name.localeCompare(b.name);
+    return (a.name || '').localeCompare(b.name || '');
   });
 
   if (dataLoading) {

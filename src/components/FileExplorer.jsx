@@ -110,7 +110,7 @@ export default function FileExplorer({ repo, commit, onFileSelect, selectedFile 
           if (a.type !== b.type) {
             return a.type === 'tree' ? -1 : 1;
           }
-          return a.name.localeCompare(b.name);
+          return (a.name || '').localeCompare(b.name || '');
         });
     };
 

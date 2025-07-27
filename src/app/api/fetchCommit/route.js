@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { owner, repo, commitSha, accessToken } = await request.json();
+    const body = await request.json();
+    const { owner, repo, commitSha, sha, accessToken } = body;
+    
+    // Accepter soit commitSha soit sha
+    const commitHash = commitSha || sha;
 
-    if (!owner || !repo || !commitSha) {
+    if (!owner || !repo || !commitHash) {
       return NextResponse.json(
-        { error: 'Paramètres owner, repo et commitSha requis' },
+        { error: 'Paramètres owner, repo et commitSha/sha requis' },
         { status: 400 }
       );
     }
@@ -26,7 +30,7 @@ export async function POST(request) {
 
     // Récupérer les détails du commit
     const commitResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits/${commitSha}`,
+      `https://api.github.com/repos/${owner}/${repo}/commits/${commitHash}`,
       { headers }
     );
 
@@ -41,7 +45,7 @@ export async function POST(request) {
 
     // Récupérer l'arborescence complète du commit
     const treeResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/trees/${commitSha}?recursive=1`,
+      `https://api.github.com/repos/${owner}/${repo}/git/trees/${commitHash}?recursive=1`,
       { headers }
     );
 

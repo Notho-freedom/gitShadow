@@ -132,7 +132,7 @@ export default function FileTreeExplorer({
         if (!aIsFolder && bIsFolder) return 1;
         
         // Si les deux sont du même type, trier par nom
-        return a.name.localeCompare(b.name);
+        return (a.name || '').localeCompare(b.name || '');
       });
     }
 
@@ -149,7 +149,7 @@ export default function FileTreeExplorer({
             if (!aIsFolder && bIsFolder) return 1;
             
             // Si les deux sont du même type, trier par nom
-            return a.name.localeCompare(b.name);
+            return (a.name || '').localeCompare(b.name || '');
           });
         }
         if (item.children) {
@@ -383,7 +383,7 @@ export default function FileTreeExplorer({
                     if (!aIsFolder && bIsFolder) return 1;
                     
                     // Si les deux sont du même type, trier par nom
-                    return a.name.localeCompare(b.name);
+                    return (a.name || '').localeCompare(b.name || '');
                   })
                   .map(item => renderTreeItem(item))
                   .filter(Boolean)}

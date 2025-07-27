@@ -121,7 +121,7 @@ export default function RepositoryList({ user, onRepoSelect, selectedRepo }) {
     .sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          return a.name.localeCompare(b.name);
+          return (a.name || '').localeCompare(b.name || '');
         case 'stars':
           return b.stargazers_count - a.stargazers_count;
         case 'created':

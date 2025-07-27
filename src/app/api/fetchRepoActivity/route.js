@@ -52,12 +52,14 @@ export async function POST(request) {
     let recentBranches = [];
     if (branchesResponse.ok) {
       const branches = await branchesResponse.json();
-      recentBranches = branches.map(branch => ({
-        name: branch.name,
-        commit: branch.commit.sha.substring(0, 7),
-        date: branch.commit.commit.author.date,
-        author: branch.commit.commit.author.name
-      }));
+      recentBranches = branches
+        .filter(branch => branch.commit && branch.commit.commit && branch.commit.commit.author)
+        .map(branch => ({
+          name: branch.name,
+          commit: branch.commit.sha.substring(0, 7),
+          date: branch.commit.commit.author.date,
+          author: branch.commit.commit.author.name
+        }));
     }
 
     // Récupérer les pull requests récentes
@@ -69,15 +71,17 @@ export async function POST(request) {
     let recentPulls = [];
     if (pullsResponse.ok) {
       const pulls = await pullsResponse.json();
-      recentPulls = pulls.map(pull => ({
-        number: pull.number,
-        title: pull.title,
-        author: pull.user.login,
-        state: pull.state,
-        created_at: pull.created_at,
-        html_url: pull.html_url,
-        avatar_url: pull.user.avatar_url
-      }));
+      recentPulls = pulls
+        .filter(pull => pull.user)
+        .map(pull => ({
+          number: pull.number,
+          title: pull.title,
+          author: pull.user.login,
+          state: pull.state,
+          created_at: pull.created_at,
+          html_url: pull.html_url,
+          avatar_url: pull.user.avatar_url
+        }));
     }
 
     // Récupérer les issues récentes
@@ -90,7 +94,7 @@ export async function POST(request) {
     if (issuesResponse.ok) {
       const issues = await issuesResponse.json();
       recentIssues = issues
-        .filter(issue => !issue.pull_request) // Exclure les PRs
+        .filter(issue => !issue.pull_request && issue.user) // Exclure les PRs et issues sans utilisateur
         .map(issue => ({
           number: issue.number,
           title: issue.title,
@@ -99,7 +103,7 @@ export async function POST(request) {
           created_at: issue.created_at,
           html_url: issue.html_url,
           avatar_url: issue.user.avatar_url,
-          labels: issue.labels.map(label => ({
+          labels: (issue.labels || []).map(label => ({
             name: label.name,
             color: label.color
           }))
