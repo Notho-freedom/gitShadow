@@ -78,10 +78,18 @@ export default function CheckoutModal({ isOpen, onClose, selectedPlan = null }) 
         throw new Error(errorData.error || 'Erreur lors de la création de la session de paiement');
       }
 
-      const { sessionUrl } = await response.json();
+      const { sessionUrl, isTest } = await response.json();
       
-      // Rediriger vers Stripe Checkout
-      window.location.href = sessionUrl;
+      if (isTest) {
+        // Mode de test - afficher un message informatif
+        alert(`Mode de test activé !\n\nPlan sélectionné : ${planId.toUpperCase()}\nPrix : €${plans.find(p => p.id === planId)?.price}\n\nEn production, vous seriez redirigé vers Stripe pour le paiement.`);
+        
+        // Simuler la redirection vers la page de succès
+        window.location.href = sessionUrl;
+      } else {
+        // Mode production - rediriger vers Stripe Checkout
+        window.location.href = sessionUrl;
+      }
 
     } catch (err) {
       console.error('Erreur de paiement:', err);
@@ -133,6 +141,16 @@ export default function CheckoutModal({ isOpen, onClose, selectedPlan = null }) 
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-white mb-2">Choisissez votre plan</h2>
             <p className="text-gray-300">Débloquez toutes les fonctionnalités de gitShadow</p>
+            
+            {/* Mode de test notice */}
+            {!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
+              <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                <p className="text-yellow-300 text-sm">
+                  🧪 <strong>Mode de test activé</strong> - Stripe n'est pas configuré. 
+                  Le processus de paiement sera simulé.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Plans Grid */}

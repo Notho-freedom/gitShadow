@@ -47,9 +47,10 @@ export default function Dashboard() {
     const urlParams = new URLSearchParams(window.location.search);
     const payment = urlParams.get('payment');
     const plan = urlParams.get('plan');
+    const test = urlParams.get('test');
     
     if (payment === 'success' && plan) {
-      setPaymentSuccessData({ plan, isTest: false });
+      setPaymentSuccessData({ plan, isTest: test === 'true' });
       setShowPaymentSuccess(true);
       // Nettoyer l'URL
       window.history.replaceState({}, document.title, window.location.pathname);

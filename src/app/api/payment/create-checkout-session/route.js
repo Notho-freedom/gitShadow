@@ -16,10 +16,33 @@ export async function POST(request) {
 
     // Vérifier si Stripe est configuré
     if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json(
-        { error: 'Stripe non configuré' },
-        { status: 500 }
-      );
+      console.log('Stripe non configuré - mode développement activé');
+      
+      // Mode développement : simuler le processus de paiement
+      const plans = {
+        'pro': { name: 'Pro', price: '19' },
+        'enterprise': { name: 'Enterprise', price: '199' }
+      };
+      
+      const plan = plans[planId];
+      if (!plan) {
+        return NextResponse.json(
+          { error: 'Plan invalide' },
+          { status: 400 }
+        );
+      }
+
+      // Simuler un délai de traitement
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Retourner une URL de succès simulée
+      const testSuccessUrl = `${successUrl}?test=true&plan=${planId}&email=${encodeURIComponent(customerEmail)}&amount=${plan.price}`;
+      
+      return NextResponse.json({
+        sessionId: `test_session_${Date.now()}`,
+        sessionUrl: testSuccessUrl,
+        isTest: true
+      });
     }
 
     // Importer Stripe de manière dynamique
@@ -73,7 +96,8 @@ export async function POST(request) {
 
     return NextResponse.json({
       sessionId: session.id,
-      sessionUrl: session.url
+      sessionUrl: session.url,
+      isTest: false
     });
 
   } catch (error) {
