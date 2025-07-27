@@ -1,13 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from './AuthProvider';
 
 export default function CheckoutModal({ isOpen, onClose, selectedPlan = null }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentPlan, setCurrentPlan] = useState(selectedPlan || 'pro');
   const { user } = useAuth();
+
+  // Mettre à jour le plan sélectionné quand selectedPlan change
+  useEffect(() => {
+    if (selectedPlan) {
+      setCurrentPlan(selectedPlan);
+    }
+  }, [selectedPlan]);
 
   const plans = [
     {
@@ -54,6 +62,17 @@ export default function CheckoutModal({ isOpen, onClose, selectedPlan = null }) 
         return;
       }
 
+      // Vérifier que l'utilisateur a un email (nécessaire pour Stripe)
+      if (!user.email) {
+        // Pour les utilisateurs invités, rediriger vers l'authentification
+        if (user.isGuest) {
+          const currentUrl = window.location.href;
+          window.location.href = `/auth?returnUrl=${encodeURIComponent(currentUrl)}&plan=${planId}`;
+          return;
+        }
+        throw new Error('Email utilisateur requis pour le paiement');
+      }
+
       // Créer la session de paiement
       const response = await fetch('/api/payment/create-checkout-session', {
         method: 'POST',
@@ -66,7 +85,7 @@ export default function CheckoutModal({ isOpen, onClose, selectedPlan = null }) 
           successUrl: `${window.location.origin}/dashboard?payment=success&plan=${planId}`,
           cancelUrl: `${window.location.origin}/dashboard?payment=cancelled`,
           metadata: {
-            userId: user.id,
+            userId: user.id || user.login,
             userLogin: user.login,
             planId
           }
