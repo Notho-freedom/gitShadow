@@ -171,9 +171,9 @@ export default function GuestExplorer() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 pt-20">
       {/* Header */}
-      <div className="bg-black/20 border-b border-white/10 px-6 py-4">
+      <div className="bg-black/20 border-b border-white/10 px-6 py-4 sticky top-20 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
@@ -212,12 +212,20 @@ export default function GuestExplorer() {
               transition={{ duration: 0.3 }}
               className="text-center"
             >
-              <h1 className="text-4xl font-bold text-white mb-6">
-                Analysez votre dépôt GitHub
-              </h1>
-              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Collez l'URL de votre dépôt GitHub pour générer automatiquement une documentation intelligente
-              </p>
+                             <motion.div
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.6 }}
+                 className="mb-8"
+               >
+                 <h1 className="text-5xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                   Analysez votre dépôt GitHub
+                 </h1>
+                 <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                   Collez l'URL de votre dépôt GitHub pour générer automatiquement une documentation intelligente 
+                   et explorer votre code avec l'IA
+                 </p>
+               </motion.div>
               
               <RepositoryInput
                 onRepoUrlChange={handleRepoUrlChange}
@@ -324,25 +332,78 @@ export default function GuestExplorer() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-8 p-6 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-white/10"
+          className="mt-12 p-8 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 rounded-2xl border border-white/10 backdrop-blur-sm"
         >
           <div className="text-center">
-            <h3 className="text-xl font-semibold text-white mb-2">
-              Débloquez toutes les fonctionnalités
-            </h3>
-            <p className="text-gray-300 mb-4">
-              Connectez-vous pour accéder à l'historique complet, aux analyses avancées et à l'export de documentation
-            </p>
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-3">
+                Débloquez toutes les fonctionnalités
+              </h3>
+              <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+                Connectez-vous pour accéder à l'historique complet, aux analyses avancées, 
+                à l'export de documentation et à vos dépôts privés
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-center space-x-3 mb-2">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-white font-medium">Historique complet des commits</span>
+                </div>
+                <div className="flex items-center space-x-3 mb-2">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-white font-medium">Analyses avancées</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-white font-medium">Export de documentation</span>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-center space-x-3 mb-2">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-white font-medium">Dépôts privés</span>
+                </div>
+                <div className="flex items-center space-x-3 mb-2">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-white font-medium">Collaboration équipe</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-white font-medium">Sauvegarde automatique</span>
+                </div>
+              </div>
+            </div>
+            
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => window.location.href = '/auth'}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold text-lg transform hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 Se connecter gratuitement
               </button>
               <button
                 onClick={() => window.location.href = '/pricing'}
-                className="px-6 py-3 border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all duration-200 font-medium"
+                className="px-8 py-4 border-2 border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-300 font-semibold text-lg"
               >
                 Voir les tarifs
               </button>

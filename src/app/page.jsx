@@ -26,7 +26,9 @@ export default function HomePage() {
       {/* Guest Explorer */}
       <AnimatePresence>
         {showGuestExplorer && (
-          <GuestExplorer />
+          <div className="relative z-30">
+            <GuestExplorer />
+          </div>
         )}
       </AnimatePresence>
 
