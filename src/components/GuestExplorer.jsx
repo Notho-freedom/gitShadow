@@ -9,7 +9,7 @@ import GuestFileExplorer from './GuestFileExplorer';
 import GuestCommitHistory from './GuestCommitHistory';
 
 export default function GuestExplorer() {
-  const [currentView, setCurrentView] = useState('input'); // 'input', 'explorer', 'documentation'
+  const [currentView, setCurrentView] = useState('input'); // 'input', 'explorer', 'editor'
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedCommit, setSelectedCommit] = useState(null);
@@ -105,7 +105,7 @@ export default function GuestExplorer() {
         setDocumentation(docData.documentation || '');
       }
 
-      setCurrentView('documentation');
+      setCurrentView('editor');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -240,20 +240,20 @@ export default function GuestExplorer() {
               transition={{ duration: 0.3 }}
               className="text-center"
             >
-                             <motion.div
-                 initial={{ opacity: 0, y: 20 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 transition={{ duration: 0.6 }}
-                 className="mb-8"
-               >
-                 <h1 className="text-5xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                   Analysez votre dépôt GitHub
-                 </h1>
-                 <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                   Collez l'URL de votre dépôt GitHub pour générer automatiquement une documentation intelligente 
-                   et explorer votre code avec l'IA
-                 </p>
-               </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="mb-8"
+              >
+                <h1 className="text-5xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  Analysez votre dépôt GitHub
+                </h1>
+                <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                  Collez l'URL de votre dépôt GitHub pour générer automatiquement une documentation intelligente 
+                  et explorer votre code avec l'IA
+                </p>
+              </motion.div>
               
               <RepositoryInput
                 onRepoUrlChange={handleRepoUrlChange}
@@ -300,46 +300,64 @@ export default function GuestExplorer() {
             </motion.div>
           )}
 
-          {currentView === 'documentation' && (
+          {currentView === 'editor' && (
             <motion.div
-              key="documentation"
+              key="editor"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
             >
               {/* Code Viewer */}
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold text-white">Code source</h3>
-                  <button
-                    onClick={handleBackToExplorer}
-                    className="text-gray-400 hover:text-white transition-colors"
-                  >
-                    ← Retour
-                  </button>
-                </div>
-                {selectedFile && (
-                  <div className="mb-2">
-                    <span className="text-sm text-gray-400">{selectedFile.path}</span>
+              <div className="lg:col-span-2">
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-white">Code source</h3>
+                    <button
+                      onClick={handleBackToExplorer}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      ← Retour à l'explorateur
+                    </button>
                   </div>
-                )}
-                <CodeViewer
-                  content={fileContent}
-                  file={selectedFile}
-                  loading={loading}
-                />
+                  {selectedFile && (
+                    <div className="mb-2">
+                      <span className="text-sm text-gray-400">{selectedFile.path}</span>
+                    </div>
+                  )}
+                  <CodeViewer
+                    content={fileContent}
+                    file={selectedFile}
+                    loading={loading}
+                  />
+                </div>
               </div>
 
-              {/* Documentation */}
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-semibold text-white mb-4">Documentation générée</h3>
-                <DocumentationPanel
-                  documentation={documentation}
-                  file={selectedFile ? { ...selectedFile, content: fileContent } : null}
-                  repository={repoData}
-                />
+              {/* Documentation et Navigation des fichiers */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Documentation */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-white mb-4">Documentation générée</h3>
+                  <DocumentationPanel
+                    documentation={documentation}
+                    file={selectedFile ? { ...selectedFile, content: fileContent } : null}
+                    repository={repoData}
+                  />
+                </div>
+
+                {/* Navigation des fichiers */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-white mb-4">Autres fichiers</h3>
+                  <div className="max-h-64 overflow-y-auto">
+                    <GuestFileExplorer
+                      files={repoFiles}
+                      onFileSelect={handleFileSelect}
+                      selectedFile={selectedFile}
+                      loading={false}
+                    />
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
