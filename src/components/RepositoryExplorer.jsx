@@ -144,6 +144,78 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
     });
   };
 
+  // Fonction pour obtenir les enfants d'un dossier
+  const getFolderChildren = (folderPath) => {
+    if (!files.length) return [];
+    
+    const folderPathWithSlash = folderPath + '/';
+    return files.filter(file => {
+      const filePath = file.path;
+      
+      // Vérifier si le fichier est dans le dossier spécifié
+      if (filePath.startsWith(folderPathWithSlash)) {
+        const relativePath = filePath.substring(folderPathWithSlash.length);
+        const pathParts = relativePath.split('/');
+        
+        // Retourner seulement les éléments directs du dossier
+        return pathParts.length === 1 || pathParts[0] === '';
+      }
+      return false;
+    });
+  };
+
+  // Fonction pour déterminer si un élément est un dossier
+  const isFolder = (file) => {
+    return file.type === 'tree' || file.path.endsWith('/') || file.isFolder;
+  };
+
+  // Fonction pour obtenir le nom du fichier/dossier depuis le chemin
+  const getFileName = (filePath) => {
+    const parts = filePath.split('/');
+    return parts[parts.length - 1] || parts[parts.length - 2] || filePath;
+  };
+
+  // Fonction pour obtenir le chemin du dossier parent
+  const getParentPath = (filePath) => {
+    const parts = filePath.split('/');
+    return parts.slice(0, -1).join('/');
+  };
+
+  // Fonction pour charger le contenu d'un fichier
+  const loadFileContent = async (file) => {
+    if (!selectedRepo || !user?.access_token) return;
+    
+    try {
+      const response = await fetch('/api/fetchFileContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: selectedRepo.owner?.login || selectedRepo.owner || selectedRepo.full_name?.split('/')[0] || 'unknown',
+          repo: selectedRepo.name,
+          path: file.path,
+          branch: selectedRepo.default_branch || 'main',
+          accessToken: user.access_token
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement du contenu du fichier');
+      }
+
+      const data = await response.json();
+      
+      // Appeler la fonction de sélection de fichier avec le contenu
+      onFileSelect({
+        ...file,
+        content: data.content,
+        size: data.size
+      });
+    } catch (error) {
+      console.error('Erreur lors du chargement du contenu:', error);
+      setError(error.message);
+    }
+  };
+
   const toggleFolder = (folderPath) => {
     const newExpanded = new Set(expandedFolders);
     if (newExpanded.has(folderPath)) {
@@ -435,8 +507,8 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
               // Vue arbre
               <div className="space-y-2">
                 {filteredFiles.map((file, index) => {
-                  const isFolder = file.type === 'tree' || file.path.endsWith('/');
-                  const folderPath = isFolder ? file.path : file.path.split('/').slice(0, -1).join('/');
+                  const isFolderItem = isFolder(file);
+                  const folderPath = isFolderItem ? file.path : file.path.split('/').slice(0, -1).join('/');
                   
                   return (
                     <motion.div
@@ -446,21 +518,23 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                       transition={{ duration: 0.2, delay: index * 0.05 }}
                       className="flex items-center py-2 px-3 hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors"
                       onClick={() => {
-                        if (isFolder) {
-                          navigateToFolder(file.path, file.name);
+                        if (isFolderItem) {
+                          // Pour les dossiers, naviguer vers le dossier et montrer ses enfants
+                          navigateToFolder(file.path, getFileName(file.path));
                         } else {
-                          onFileSelect(file);
+                          // Pour les fichiers, charger le contenu et ouvrir l'éditeur
+                          loadFileContent(file);
                         }
                       }}
                     >
                       <FileIcon 
-                        type={isFolder ? "tree" : "file"} 
-                        name={file.name} 
+                        type={isFolderItem ? "tree" : "file"} 
+                        name={getFileName(file.path)} 
                         size="sm" 
                         className="mr-3"
                       />
-                      <span className="text-gray-300 text-sm flex-1">{file.name}</span>
-                      {!isFolder && (
+                      <span className="text-gray-300 text-sm flex-1">{getFileName(file.path)}</span>
+                      {!isFolderItem && (
                         <span className="text-gray-500 text-xs">{formatFileSize(file.size || 0)}</span>
                       )}
                     </motion.div>
@@ -475,7 +549,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                   : 'grid-cols-1'
               }`}>
                 {filteredFiles.map((file, index) => {
-                  const isFolder = file.type === 'tree' || file.path.endsWith('/');
+                  const isFolderItem = isFolder(file);
                   
                   return (
                     <motion.div
@@ -485,23 +559,25 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                       transition={{ duration: 0.2, delay: index * 0.05 }}
                       whileHover={{ scale: 1.05 }}
                       onClick={() => {
-                        if (isFolder) {
-                          navigateToFolder(file.path, file.name);
+                        if (isFolderItem) {
+                          // Pour les dossiers, naviguer vers le dossier et montrer ses enfants
+                          navigateToFolder(file.path, getFileName(file.path));
                         } else {
-                          onFileSelect(file);
+                          // Pour les fichiers, charger le contenu et ouvrir l'éditeur
+                          loadFileContent(file);
                         }
                       }}
                       className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl cursor-pointer transition-all duration-200 hover:border-blue-500/50 hover:bg-gray-800/70"
                     >
                       <div className="text-center">
                         <FileIcon 
-                          type={isFolder ? "tree" : "file"} 
-                          name={file.name} 
+                          type={isFolderItem ? "tree" : "file"} 
+                          name={getFileName(file.path)} 
                           size="lg" 
                           className="mx-auto mb-3"
                         />
-                        <h4 className="text-white font-medium text-sm truncate">{file.name}</h4>
-                        {!isFolder && (
+                        <h4 className="text-white font-medium text-sm truncate">{getFileName(file.path)}</h4>
+                        {!isFolderItem && (
                           <p className="text-gray-400 text-xs mt-1">{formatFileSize(file.size || 0)}</p>
                         )}
                       </div>

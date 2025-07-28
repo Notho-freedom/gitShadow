@@ -1,148 +1,105 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import FileIcon from './FileIcon';
 
 export default function GuestFileExplorer({ files, onFileSelect, selectedFile, loading }) {
-  const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('grid'); // grid, list
+  const [treeView, setTreeView] = useState(true); // true = vue arbre, false = vue grille
+  
+  // Navigation par niveaux
+  const [currentPath, setCurrentPath] = useState('');
+  const [breadcrumbs, setBreadcrumbs] = useState([]);
 
-  const toggleFolder = (folderPath) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderPath)) {
-      newExpanded.delete(folderPath);
-    } else {
-      newExpanded.add(folderPath);
-    }
-    setExpandedFolders(newExpanded);
-  };
-
-  const getFolderPath = (filePath) => {
-    const parts = filePath.split('/');
-    return parts.slice(0, -1).join('/');
-  };
-
-  const getFileName = (filePath) => {
-    return filePath.split('/').pop();
-  };
-
+  // Fonction pour déterminer si un élément est un dossier
   const isFolder = (file) => {
-    return file.type === 'tree' || file.type === 'dir' || file.mode === '040000';
+    return file.type === 'tree' || file.path.endsWith('/') || file.isFolder;
   };
 
-  const isFile = (file) => {
-    return file.type === 'blob' || file.type === 'file' || file.mode === '100644' || file.mode === '100755';
+  // Fonction pour obtenir le nom du fichier/dossier depuis le chemin
+  const getFileName = (filePath) => {
+    const parts = filePath.split('/');
+    return parts[parts.length - 1] || parts[parts.length - 2] || filePath;
   };
 
-  const getFileExtension = (filename) => {
-    return filename.split('.').pop()?.toLowerCase() || '';
+  // Navigation par niveaux
+  const navigateToFolder = (folderPath, folderName) => {
+    setCurrentPath(folderPath);
+    const newBreadcrumbs = [...breadcrumbs, { path: folderPath, name: folderName }];
+    setBreadcrumbs(newBreadcrumbs);
+  };
+
+  const navigateToBreadcrumb = (index) => {
+    if (index === -1) {
+      // Retour à la racine
+      setCurrentPath('');
+      setBreadcrumbs([]);
+    } else {
+      // Navigation vers un niveau spécifique
+      const targetBreadcrumb = breadcrumbs[index];
+      setCurrentPath(targetBreadcrumb.path);
+      setBreadcrumbs(breadcrumbs.slice(0, index + 1));
+    }
+  };
+
+  // Obtenir les éléments du niveau actuel
+  const getCurrentLevelItems = () => {
+    if (!files.length) return [];
+
+    if (currentPath === '') {
+      // Niveau racine - fichiers et dossiers de premier niveau
+      const rootItems = files.filter(file => {
+        const pathParts = file.path.split('/');
+        return pathParts.length === 1 || (pathParts.length === 2 && pathParts[1] === '');
+      });
+      return rootItems;
+    }
+
+    // Trouver les éléments du dossier actuel
+    return files.filter(file => {
+      const filePath = file.path;
+      const currentPathWithSlash = currentPath + '/';
+      
+      // Vérifier si le fichier est dans le dossier actuel
+      if (filePath.startsWith(currentPathWithSlash)) {
+        const relativePath = filePath.substring(currentPathWithSlash.length);
+        const pathParts = relativePath.split('/');
+        
+        // Retourner seulement les éléments directs (pas les sous-dossiers)
+        return pathParts.length === 1 || pathParts[0] === '';
+      }
+      return false;
+    });
+  };
+
+  // Fonction pour charger le contenu d'un fichier
+  const loadFileContent = async (file) => {
+    // Appeler la fonction de sélection de fichier
+    onFileSelect(file);
   };
 
   const formatFileSize = (bytes) => {
-    if (!bytes) return '';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+    if (!bytes || bytes === 0) return '0 KB';
+    const k = 1024;
+    const sizes = ['KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  const filteredFiles = files.filter(file => {
-    if (!searchQuery) return true;
-    return file.path.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           file.name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
-
-  const groupedFiles = filteredFiles.reduce((acc, file) => {
-    const folderPath = getFolderPath(file.path);
-    if (!acc[folderPath]) {
-      acc[folderPath] = [];
-    }
-    acc[folderPath].push(file);
-    return acc;
-  }, {});
-
-  // Trier les fichiers : dossiers d'abord, puis fichiers
-  Object.keys(groupedFiles).forEach(folderPath => {
-    groupedFiles[folderPath].sort((a, b) => {
-      const aIsFolder = isFolder(a);
-      const bIsFolder = isFolder(b);
-      
-      if (aIsFolder && !bIsFolder) return -1;
-      if (!aIsFolder && bIsFolder) return 1;
-      
-      return a.name.localeCompare(b.name);
-    });
-  });
-
-  const renderFile = (file) => (
-    <motion.div
-      key={file.path}
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      whileHover={{ x: 5 }}
-      className={`flex items-center space-x-3 p-2 rounded-lg cursor-pointer transition-all duration-200 ${
-        selectedFile?.path === file.path
-          ? 'bg-blue-500/20 border border-blue-500/30'
-          : 'hover:bg-white/5'
-      }`}
-      onClick={() => onFileSelect(file)}
-    >
-      <FileIcon filename={file.name} type={file.type} />
-      <div className="flex-1 min-w-0">
-        <div className="text-sm text-white truncate">{file.name}</div>
-        {file.size && (
-          <div className="text-xs text-gray-400">{formatFileSize(file.size)}</div>
-        )}
-      </div>
-    </motion.div>
+  const currentLevelItems = getCurrentLevelItems();
+  const filteredFiles = currentLevelItems.filter(file => 
+    getFileName(file.path).toLowerCase().includes(searchQuery.toLowerCase()) ||
+    file.path.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const renderFolder = (folderPath, folderFiles) => {
-    const folderName = folderPath.split('/').pop() || 'Root';
-    const isExpanded = expandedFolders.has(folderPath);
-    const folderCount = folderFiles.filter(file => isFolder(file)).length;
-    const fileCount = folderFiles.filter(file => isFile(file)).length;
-
-    return (
-      <div key={folderPath} className="mb-2">
-        <div
-          className="flex items-center space-x-2 p-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors"
-          onClick={() => toggleFolder(folderPath)}
-        >
-          <div className={`transform transition-transform ${isExpanded ? 'rotate-90' : ''}`}>
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-          </svg>
-          <span className="text-sm text-white font-medium">{folderName}</span>
-          <span className="text-xs text-gray-400">
-            ({folderCount} dossier{folderCount > 1 ? 's' : ''}, {fileCount} fichier{fileCount > 1 ? 's' : ''})
-          </span>
-        </div>
-        
-        {isExpanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="ml-6 space-y-1"
-          >
-            {folderFiles.map(file => renderFile(file))}
-          </motion.div>
-        )}
-      </div>
-    );
-  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="flex items-center space-x-3">
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-gray-400">Chargement des fichiers...</span>
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Chargement des fichiers...</p>
         </div>
       </div>
     );
@@ -150,11 +107,60 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
 
   return (
     <div className="space-y-4">
+      {/* Header avec contrôles */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setTreeView(!treeView)}
+            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+              treeView 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {treeView ? 'Vue Grille' : 'Vue Arbre'}
+          </button>
+          <button
+            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+            className="px-3 py-1 bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+          >
+            {viewMode === 'grid' ? 'Liste' : 'Grille'}
+          </button>
+        </div>
+        
+        <div className="text-sm text-gray-400">
+          {filteredFiles.length} élément{filteredFiles.length > 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Breadcrumbs */}
+      {breadcrumbs.length > 0 && (
+        <div className="flex items-center space-x-2 text-sm">
+          <button
+            onClick={() => navigateToBreadcrumb(-1)}
+            className="text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            📁 Racine
+          </button>
+          {breadcrumbs.map((crumb, index) => (
+            <div key={index} className="flex items-center space-x-2">
+              <span className="text-gray-500">/</span>
+              <button
+                onClick={() => navigateToBreadcrumb(index)}
+                className="text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                {crumb.name}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="relative">
         <input
           type="text"
-          placeholder="Rechercher un fichier..."
+          placeholder="Rechercher dans les fichiers..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -166,14 +172,93 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
 
       {/* Files List */}
       <div className="space-y-2 max-h-96 overflow-y-auto">
-        {Object.keys(groupedFiles).length === 0 ? (
+        {treeView ? (
+          // Vue arbre
+          <div className="space-y-2">
+            {filteredFiles.map((file, index) => {
+              const isFolderItem = isFolder(file);
+              
+              return (
+                <motion.div
+                  key={file.path}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  className="flex items-center py-2 px-3 hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors"
+                  onClick={() => {
+                    if (isFolderItem) {
+                      // Pour les dossiers, naviguer vers le dossier et montrer ses enfants
+                      navigateToFolder(file.path, getFileName(file.path));
+                    } else {
+                      // Pour les fichiers, charger le contenu et ouvrir l'éditeur
+                      loadFileContent(file);
+                    }
+                  }}
+                >
+                  <FileIcon 
+                    type={isFolderItem ? "tree" : "file"} 
+                    name={getFileName(file.path)} 
+                    size="sm" 
+                    className="mr-3"
+                  />
+                  <span className="text-gray-300 text-sm flex-1">{getFileName(file.path)}</span>
+                  {!isFolderItem && (
+                    <span className="text-gray-500 text-xs">{formatFileSize(file.size || 0)}</span>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          // Vue grille
+          <div className={`grid gap-4 ${
+            viewMode === 'grid' 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+              : 'grid-cols-1'
+          }`}>
+            {filteredFiles.map((file, index) => {
+              const isFolderItem = isFolder(file);
+              
+              return (
+                <motion.div
+                  key={file.path}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => {
+                    if (isFolderItem) {
+                      // Pour les dossiers, naviguer vers le dossier et montrer ses enfants
+                      navigateToFolder(file.path, getFileName(file.path));
+                    } else {
+                      // Pour les fichiers, charger le contenu et ouvrir l'éditeur
+                      loadFileContent(file);
+                    }
+                  }}
+                  className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl cursor-pointer transition-all duration-200 hover:border-blue-500/50 hover:bg-gray-800/70"
+                >
+                  <div className="text-center">
+                    <FileIcon 
+                      type={isFolderItem ? "tree" : "file"} 
+                      name={getFileName(file.path)} 
+                      size="lg" 
+                      className="mx-auto mb-3"
+                    />
+                    <h4 className="text-white font-medium text-sm truncate">{getFileName(file.path)}</h4>
+                    {!isFolderItem && (
+                      <p className="text-gray-400 text-xs mt-1">{formatFileSize(file.size || 0)}</p>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {filteredFiles.length === 0 && (
           <div className="text-center py-8 text-gray-400">
             {searchQuery ? 'Aucun fichier trouvé' : 'Aucun fichier disponible'}
           </div>
-        ) : (
-          Object.entries(groupedFiles).map(([folderPath, folderFiles]) => 
-            renderFolder(folderPath, folderFiles)
-          )
         )}
       </div>
     </div>
