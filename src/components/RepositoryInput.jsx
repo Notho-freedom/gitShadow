@@ -47,10 +47,10 @@ export default function RepositoryInput({ onRepoUrlChange, onFetchRepo, loading,
       }
 
       const data = await response.json();
-      onFetchRepo(data.tree || []);
+      onFetchRepo(data.tree || [], inputValue);
     } catch (err) {
       setError(err.message);
-      onFetchRepo([]);
+      onFetchRepo([], inputValue);
     } finally {
       setLoading(false);
     }

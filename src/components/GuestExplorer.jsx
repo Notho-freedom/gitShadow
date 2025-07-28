@@ -26,16 +26,25 @@ export default function GuestExplorer() {
     setError('');
   };
 
-  const handleFetchRepo = async (files) => {
+  const handleFetchRepo = async (files, repoUrl) => {
     setRepoFiles(files);
     setCurrentView('explorer');
     
+    // Utiliser l'URL passée en paramètre ou selectedRepo
+    const urlToUse = repoUrl || selectedRepo;
+    
+    if (!urlToUse) {
+      console.error('Aucune URL de dépôt fournie');
+      return;
+    }
+    
     // Extraire les informations du dépôt depuis l'URL
-    const urlParts = selectedRepo.split('/');
+    const urlParts = urlToUse.split('/');
     const owner = urlParts[urlParts.length - 2];
     const repo = urlParts[urlParts.length - 1];
     
-    setRepoData({ owner, repo, url: selectedRepo });
+    setRepoData({ owner, repo, url: urlToUse });
+    setSelectedRepo(urlToUse);
     
     // Récupérer les commits
     try {
