@@ -69,28 +69,13 @@ export default function RepositoryInput({ onRepoUrlChange, onFetchRepo, loading,
       transition={{ duration: 0.6 }}
       className="w-full max-w-5xl mx-auto"
     >
-      {/* Header avec titre et description */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        className="text-center mb-8"
-      >
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          Analysez votre dépôt GitHub
-        </h2>
-        <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-          Collez l'URL de votre dépôt GitHub pour générer automatiquement une documentation intelligente
-        </p>
-      </motion.div>
-
       {/* Formulaire principal */}
       <motion.form 
         onSubmit={handleSubmit} 
         className="space-y-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
       >
         <div className="relative group">
           {/* Container avec effet glassmorphism */}
@@ -194,7 +179,7 @@ export default function RepositoryInput({ onRepoUrlChange, onFetchRepo, loading,
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
         className="mt-8"
       >
         <div className="text-center mb-4">
@@ -234,7 +219,7 @@ export default function RepositoryInput({ onRepoUrlChange, onFetchRepo, loading,
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.6 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
         className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
       >
         {[
@@ -246,7 +231,7 @@ export default function RepositoryInput({ onRepoUrlChange, onFetchRepo, loading,
             key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
+            transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
             className="text-center p-6 bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl
                      hover:bg-white/10 transition-all duration-200"
           >
