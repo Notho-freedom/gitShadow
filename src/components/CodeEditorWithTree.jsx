@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import FileIcon from './FileIcon';
-import ResizableLayout from './ResizableLayout';
 
 export default function CodeEditorWithTree({ 
   file, 
@@ -20,13 +19,15 @@ export default function CodeEditorWithTree({
   user
 }) {
   const [showTree, setShowTree] = useState(true);
-  const [showDocumentation, setShowDocumentation] = useState(false);
+  const [treeWidth, setTreeWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [wordWrap, setWordWrap] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [treeStructure, setTreeStructure] = useState([]);
   const [loadingTree, setLoadingTree] = useState(false);
+  const resizeRef = useRef(null);
 
   const getLanguageFromExtension = (filename) => {
     const ext = filename?.split('.').pop()?.toLowerCase();
@@ -98,6 +99,7 @@ export default function CodeEditorWithTree({
     const isFolder = item.isFolder || item.type === 'tree';
 
     if (isFolder) {
+      
       return (
         <div key={item.path} className="select-none">
           <motion.div
@@ -205,178 +207,198 @@ export default function CodeEditorWithTree({
 
   return (
     <div className="flex-1 flex h-full">
-      <ResizableLayout
-        defaultSizes={[280, 1]} // Tree: 280px, Editor: reste
-        minSizes={[200, 400]} // Tailles minimales
-        maxSizes={[500, null]} // Tailles maximales
-        direction="horizontal"
-        className="h-full"
-      >
-        {/* Panneau d'arborescence */}
-        <div className="bg-gray-800/80 backdrop-blur-xl border-r border-gray-700/50 flex flex-col h-full">
-          {/* Header de l'arborescence */}
-          <div className="p-4 border-b border-gray-700/50">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-white">Explorateur</h3>
+      {/* Panneau d'arborescence */}
+      <AnimatePresence>
+        {showTree && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: treeWidth, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-gray-800/80 backdrop-blur-xl border-r border-gray-700/50 flex flex-col"
+            style={{ width: treeWidth }}
+          >
+            {/* Header de l'arborescence */}
+            <div className="p-4 border-b border-gray-700/50">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white">Explorateur</h3>
+                <button
+                  onClick={() => setShowTree(false)}
+                  className="p-1 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
               <button
-                onClick={() => setShowTree(false)}
-                className="p-1 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
+                onClick={onBackToExplorer}
+                className="w-full px-3 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-white text-sm rounded-lg transition-colors flex items-center justify-center space-x-2"
               >
-                ✕
+                ← Retour à l'explorateur
               </button>
             </div>
-            <button
-              onClick={onBackToExplorer}
-              className="w-full px-3 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-white text-sm rounded-lg transition-colors flex items-center justify-center space-x-2"
-            >
-              ← Retour à l'explorateur
-            </button>
-          </div>
 
-          {/* Arborescence des fichiers */}
-          <div className="flex-1 overflow-y-auto p-2">
-            {loadingTree ? (
-              <div className="text-center py-8">
-                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-400 text-sm">Chargement de l'arborescence...</p>
-              </div>
-            ) : treeStructure.length > 0 ? (
-              <div className="space-y-1">
-                {treeStructure.map(item => renderTreeItem(item)).filter(Boolean)}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2">📁</div>
-                <p className="text-gray-400 text-sm">Aucun fichier disponible</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Éditeur principal */}
-        <div className="flex flex-col h-full">
-          {/* Header de l'éditeur */}
-          <div className="bg-gray-800/50 border-b border-gray-700/50 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <FileIcon type="blob" name={file?.name || ''} size="md" />
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">{file?.name || 'Fichier'}</h2>
-                    <p className="text-sm text-gray-400">{file?.path || ''}</p>
-                  </div>
+            {/* Arborescence des fichiers */}
+            <div className="flex-1 overflow-y-auto p-2">
+              {loadingTree ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-gray-400 text-sm">Chargement de l'arborescence...</p>
                 </div>
-              </div>
+              ) : treeStructure.length > 0 ? (
+                <div className="space-y-1">
+                  {treeStructure.map(item => renderTreeItem(item)).filter(Boolean)}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">📁</div>
+                  <p className="text-gray-400 text-sm">Aucun fichier disponible</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
+      {/* Barre de redimensionnement */}
+      {showTree && (
+        <div
+          ref={resizeRef}
+          className="w-1 bg-gray-600 hover:bg-blue-500 cursor-col-resize transition-colors"
+          onMouseDown={() => setIsResizing(true)}
+        />
+      )}
+
+      {/* Éditeur principal */}
+      <div className="flex-1 flex flex-col">
+        {/* Header de l'éditeur */}
+        <div className="bg-gray-800/50 border-b border-gray-700/50 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-3">
+              {!showTree && (
+                <button
+                  onClick={() => setShowTree(true)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                >
+                  📁
+                </button>
+              )}
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setLineNumbers(!lineNumbers)}
-                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    lineNumbers 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                  }`}
-                >
-                  {lineNumbers ? 'Masquer' : 'Afficher'} lignes
-                </button>
-                <button
-                  onClick={() => setWordWrap(!wordWrap)}
-                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                    wordWrap 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                  }`}
-                >
-                  Retour à la ligne
-                </button>
+                <FileIcon type="blob" name={file?.name || ''} size="md" />
+                <div>
+                  <h2 className="text-lg font-semibold text-white">{file?.name || 'Fichier'}</h2>
+                  <p className="text-sm text-gray-400">{file?.path || ''}</p>
+                </div>
               </div>
             </div>
 
-            {/* Barre d'outils */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <span>Ligne {cursorPosition.line}, Colonne {cursorPosition.column}</span>
-                <span>•</span>
-                <span>{formatFileSize(file?.size || 0)}</span>
-                <span>•</span>
-                <span>{getLanguageFromExtension(file?.name || '')}</span>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleCopy}
-                  className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 text-white text-sm rounded-lg transition-colors"
-                >
-                  📋 Copier
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 text-white text-sm rounded-lg transition-colors"
-                >
-                  💾 Télécharger
-                </button>
-                <button
-                  onClick={onGenerateDoc}
-                  disabled={loading}
-                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Génération...</span>
-                    </>
-                  ) : (
-                    <>
-                      📖 Documenter
-                    </>
-                  )}
-                </button>
-              </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setLineNumbers(!lineNumbers)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  lineNumbers 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                {lineNumbers ? 'Masquer' : 'Afficher'} lignes
+              </button>
+              <button
+                onClick={() => setWordWrap(!wordWrap)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  wordWrap 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                Retour à la ligne
+              </button>
             </div>
           </div>
 
-          {/* Zone d'édition */}
-          <div className="flex-1 overflow-hidden">
-            {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-400">Chargement du fichier...</p>
-                </div>
-              </div>
-            ) : content ? (
-              <div className="h-full overflow-auto">
-                <SyntaxHighlighter
-                  language={getLanguageFromExtension(file.name)}
-                  style={tomorrow}
-                  showLineNumbers={lineNumbers}
-                  wrapLines={wordWrap}
-                  customStyle={{
-                    margin: 0,
-                    padding: '1rem',
-                    fontSize: '14px',
-                    lineHeight: '1.5',
-                    backgroundColor: 'transparent'
-                  }}
-                  lineNumberStyle={{
-                    color: '#6b7280',
-                    marginRight: '1rem'
-                  }}
-                >
-                  {content}
-                </SyntaxHighlighter>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="text-4xl mb-4">📄</div>
-                  <p className="text-gray-400">Contenu du fichier non disponible</p>
-                </div>
-              </div>
-            )}
+          {/* Barre d'outils */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-sm text-gray-400">
+              <span>Ligne {cursorPosition.line}, Colonne {cursorPosition.column}</span>
+              <span>•</span>
+              <span>{formatFileSize(file?.size || 0)}</span>
+              <span>•</span>
+              <span>{getLanguageFromExtension(file?.name || '')}</span>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleCopy}
+                className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 text-white text-sm rounded-lg transition-colors"
+              >
+                📋 Copier
+              </button>
+              <button
+                onClick={handleDownload}
+                className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 text-white text-sm rounded-lg transition-colors"
+              >
+                💾 Télécharger
+              </button>
+              <button
+                onClick={onGenerateDoc}
+                disabled={loading}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Génération...</span>
+                  </>
+                ) : (
+                  <>
+                    📖 Documenter
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      </ResizableLayout>
+
+        {/* Zone d'édition */}
+        <div className="flex-1 overflow-hidden">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-400">Chargement du fichier...</p>
+              </div>
+            </div>
+          ) : content ? (
+            <div className="h-full overflow-auto">
+              <SyntaxHighlighter
+                language={getLanguageFromExtension(file.name)}
+                style={tomorrow}
+                showLineNumbers={lineNumbers}
+                wrapLines={wordWrap}
+                customStyle={{
+                  margin: 0,
+                  padding: '1rem',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  backgroundColor: 'transparent'
+                }}
+                lineNumberStyle={{
+                  color: '#6b7280',
+                  marginRight: '1rem'
+                }}
+              >
+                {content}
+              </SyntaxHighlighter>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="text-4xl mb-4">📄</div>
+                <p className="text-gray-400">Contenu du fichier non disponible</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 } 
