@@ -5,11 +5,14 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 import AuthModal from './AuthModal';
+import { useAuth } from './AuthProvider';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const { user, loading, isGuest, logout, createGuestUser } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,6 +37,155 @@ export default function Navbar() {
         element.scrollIntoView({ behavior: 'smooth' });
       }
     }
+  };
+
+  const handleGuestMode = () => {
+    createGuestUser();
+    setIsAuthModalOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsUserMenuOpen(false);
+  };
+
+  const renderUserSection = () => {
+    if (loading) {
+      return (
+        <div className="hidden lg:flex items-center space-x-4">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      );
+    }
+
+    if (user) {
+      return (
+        <div className="hidden lg:flex items-center space-x-4">
+          {/* Avatar et menu utilisateur */}
+          <div className="relative">
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center space-x-2 text-white hover:text-blue-400 transition-colors duration-200"
+            >
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                className="w-8 h-8 rounded-full border-2 border-gray-600 hover:border-blue-400 transition-colors duration-200"
+              />
+              <span className="text-sm font-medium">{user.name}</span>
+              {isGuest && (
+                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">
+                  Invité
+                </span>
+              )}
+              {!isGuest && user.plan && (
+                <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                  user.plan === 'free' ? 'bg-gray-600 text-white' :
+                  user.plan === 'pro' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' :
+                  user.plan === 'enterprise' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' :
+                  'bg-gray-600 text-white'
+                }`}>
+                  {user.plan === 'free' ? 'FREE' :
+                   user.plan === 'pro' ? 'PRO' :
+                   user.plan === 'enterprise' ? 'ENTERPRISE' :
+                   user.plan.toUpperCase()}
+                </span>
+              )}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Menu déroulant utilisateur */}
+            {isUserMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 py-2 z-50"
+              >
+                <div className="px-4 py-2 border-b border-gray-700">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-white font-medium">{user.name}</p>
+                    {!isGuest && user.plan && (
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        user.plan === 'free' ? 'bg-gray-600 text-white' :
+                        user.plan === 'pro' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' :
+                        user.plan === 'enterprise' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' :
+                        'bg-gray-600 text-white'
+                      }`}>
+                        {user.plan === 'free' ? 'FREE' :
+                         user.plan === 'pro' ? 'PRO' :
+                         user.plan === 'enterprise' ? 'ENTERPRISE' :
+                         user.plan.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-400 text-sm">{user.email || 'Aucun email'}</p>
+                  {isGuest && (
+                    <p className="text-yellow-400 text-xs mt-1">
+                      Mode invité - {user.repos?.length || 0}/3 dépôts
+                    </p>
+                  )}
+                  {!isGuest && user.plan === 'free' && (
+                    <p className="text-blue-400 text-xs mt-1">
+                      ✨ Passez au Pro pour débloquer toutes les fonctionnalités
+                    </p>
+                  )}
+                </div>
+                
+                <Link href="/dashboard">
+                  <span
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
+                  >
+                    Dashboard
+                  </span>
+                </Link>
+                
+                {!isGuest && (
+                  <Link href="/pricing">
+                    <span
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
+                    >
+                      Gérer l'abonnement
+                    </span>
+                  </Link>
+                )}
+                
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-red-400 hover:text-red-300 hover:bg-gray-700 transition-colors duration-200"
+                >
+                  Se déconnecter
+                </button>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Utilisateur non connecté
+    return (
+      <div className="hidden lg:flex items-center space-x-4">
+        <button
+          onClick={() => setIsAuthModalOpen(true)}
+          className="text-gray-300 hover:text-white transition-colors duration-300 font-medium"
+        >
+          Connexion
+        </button>
+        <button
+          onClick={() => setIsAuthModalOpen(true)}
+          className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl group overflow-hidden"
+        >
+          <span className="relative z-10">Commencer</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -84,23 +236,8 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* Boutons CTA */}
-            <div className="hidden lg:flex items-center space-x-4">
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="text-gray-300 hover:text-white transition-colors duration-300 font-medium"
-              >
-                Connexion
-              </button>
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl group overflow-hidden"
-              >
-                <span className="relative z-10">Commencer</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              </button>
-            </div>
+            {/* Section utilisateur */}
+            {renderUserSection()}
 
             {/* Menu Mobile */}
             <div className="lg:hidden">
@@ -125,7 +262,8 @@ export default function Navbar() {
               isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
-            <div className="py-4 space-y-2 border-t border-white/10">
+            <div className="bg-black/80 backdrop-blur-xl border-t border-white/10">
+              <div className="py-4 space-y-2">
               {navItems.map((item) => (
                 <div key={item.name}>
                   {item.href === '/' ? (
@@ -150,35 +288,68 @@ export default function Navbar() {
                   )}
                 </div>
               ))}
-              <div className="pt-4 border-t border-white/10 space-y-2">
-                <button
-                  onClick={() => {
-                    setIsAuthModalOpen(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="block w-full text-left text-gray-300 hover:text-white py-2 px-4 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer"
-                >
-                  Connexion
-                </button>
-                <button
-                  onClick={() => {
-                    setIsAuthModalOpen(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="block w-full text-left bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg transition-colors duration-200 cursor-pointer"
-                >
-                  Commencer
-                </button>
-              </div>
+              
+              {user ? (
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <div className="px-4 py-2">
+                    <p className="text-white font-medium">{user.name}</p>
+                    {isGuest && (
+                      <p className="text-yellow-400 text-xs">
+                        Mode invité - {user.repos?.length || 0}/3 dépôts
+                      </p>
+                    )}
+                  </div>
+                  <Link href="/dashboard">
+                    <span
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full text-left text-gray-300 hover:text-white py-2 px-4 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                    >
+                      Dashboard
+                    </span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-left text-red-400 hover:text-red-300 py-2 px-4 rounded-lg hover:bg-white/10 transition-colors duration-200"
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+              ) : (
+                <div className="pt-4 border-t border-white/10 space-y-2">
+                  <button
+                    onClick={() => {
+                      setIsAuthModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-left text-gray-300 hover:text-white py-2 px-4 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer"
+                  >
+                    Connexion
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsAuthModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-left bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg transition-colors duration-200 cursor-pointer"
+                  >
+                    Commencer
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+      </div>
       </nav>
 
       {/* Auth Modal */}
       <AuthModal 
         isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
+        onClose={() => setIsAuthModalOpen(false)}
+        onGuestMode={handleGuestMode}
       />
     </>
   );
