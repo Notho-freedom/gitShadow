@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthProvider';
 import RepositoryInput from './RepositoryInput';
 import CodeViewer from './CodeViewer';
 import DocumentationPanel from './DocumentationPanel';
 import GuestFileExplorer from './GuestFileExplorer';
 import GuestCommitHistory from './GuestCommitHistory';
+import AuthModal from './AuthModal';
 
 export default function GuestExplorer() {
+  const { user, isAuthenticated } = useAuth();
   const [currentView, setCurrentView] = useState('input'); // 'input', 'explorer', 'editor'
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -21,17 +24,18 @@ export default function GuestExplorer() {
   const [commits, setCommits] = useState([]);
   const [repoData, setRepoData] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Afficher la modale d'upgrade après 5 secondes si on est dans la vue explorateur
+  // Afficher la modale d'upgrade après 5 secondes si on est dans la vue explorateur ET que l'utilisateur n'est pas connecté
   useEffect(() => {
-    if (currentView === 'explorer' && commits.length > 0) {
+    if (currentView === 'explorer' && commits.length > 0 && !isAuthenticated) {
       const timer = setTimeout(() => {
         setShowUpgradeModal(true);
       }, 5000);
       
       return () => clearTimeout(timer);
     }
-  }, [currentView, commits]);
+  }, [currentView, commits, isAuthenticated]);
 
   const handleRepoUrlChange = (url) => {
     setSelectedRepo(url);
@@ -255,8 +259,8 @@ export default function GuestExplorer() {
         </div>
       </div>
 
-      {/* Bannière d'upgrade - seulement en mode éditeur */}
-      {currentView === 'editor' && (
+      {/* Bannière d'upgrade - seulement en mode éditeur ET si l'utilisateur n'est pas connecté */}
+      {currentView === 'editor' && !isAuthenticated && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -276,7 +280,7 @@ export default function GuestExplorer() {
             </div>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => window.location.href = '/auth'}
+                onClick={() => setIsAuthModalOpen(true)}
                 className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 text-xs font-medium"
               >
                 Se connecter
@@ -286,6 +290,43 @@ export default function GuestExplorer() {
                 className="px-4 py-2 border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all duration-200 text-xs"
               >
                 Tarifs
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Bannière utilisateur connecté - seulement en mode éditeur ET si l'utilisateur est connecté */}
+      {currentView === 'editor' && isAuthenticated && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-green-500/10 via-blue-500/10 to-green-500/10 border-b border-white/10 px-4 sm:px-6 lg:px-8 py-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-blue-600 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm">Connecté en tant que {user?.name || user?.login}</h3>
+                <p className="text-gray-300 text-xs">Vous avez accès à toutes les fonctionnalités avancées</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => window.location.href = '/dashboard'}
+                className="px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 text-xs font-medium"
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => window.location.href = '/pricing'}
+                className="px-4 py-2 border border-white/20 text-white rounded-lg hover:bg-white/10 transition-all duration-200 text-xs"
+              >
+                Gérer l'abonnement
               </button>
             </div>
           </div>
@@ -600,7 +641,7 @@ export default function GuestExplorer() {
                   <button
                     onClick={() => {
                       setShowUpgradeModal(false);
-                      window.location.href = '/auth';
+                      setIsAuthModalOpen(true);
                     }}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                   >
@@ -629,6 +670,12 @@ export default function GuestExplorer() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
     </div>
   );
 } 

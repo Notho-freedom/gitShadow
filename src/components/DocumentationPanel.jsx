@@ -1,12 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from './AuthProvider';
 
 export default function DocumentationPanel({ fileContent, documentation, setDocumentation, selectedFile, user }) {
+  const { isAuthenticated, user: authUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [docType, setDocType] = useState('comprehensive');
   const [generationsUsed, setGenerationsUsed] = useState(0);
+
+  // Utiliser l'utilisateur authentifié s'il est connecté, sinon utiliser le user passé en props
+  const currentUser = isAuthenticated ? authUser : user;
 
   const docTypes = {
     comprehensive: {
@@ -37,11 +42,17 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
   };
 
   const getGenerationLimit = () => {
-    switch (user?.plan || 'free') {
-      case 'free': return 10;
-      case 'pro': return Infinity;
-      case 'enterprise': return Infinity;
-      default: return 10;
+    if (isAuthenticated) {
+      // Utilisateur connecté - limites selon le plan
+      switch (currentUser?.plan || 'free') {
+        case 'free': return 10;
+        case 'pro': return Infinity;
+        case 'enterprise': return Infinity;
+        default: return 10;
+      }
+    } else {
+      // Mode invité - limite stricte
+      return 3;
     }
   };
 
@@ -62,7 +73,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
     }
 
     const selectedDocType = docTypes[docType];
-    if (selectedDocType.premium && (user?.plan || 'free') === 'free') {
+    if (selectedDocType.premium && (currentUser?.plan || 'free') === 'free') {
       setError('Cette fonctionnalité est réservée aux plans Pro et Entreprise');
       return;
     }
@@ -155,7 +166,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
         </div>
 
         {/* Limite de génération */}
-        {(user?.plan || 'free') === 'free' && (
+        {(currentUser?.plan || 'free') === 'free' && (
           <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-blue-400 text-sm">
@@ -180,8 +191,8 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
               className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {Object.entries(docTypes).map(([key, type]) => (
-                <option key={key} value={key} disabled={type.premium && (user?.plan || 'free') === 'free'}>
-                  {type.label} {type.premium && (user?.plan || 'free') === 'free' ? '(Pro)' : ''}
+                <option key={key} value={key} disabled={type.premium && (currentUser?.plan || 'free') === 'free'}>
+                  {type.label} {type.premium && (currentUser?.plan || 'free') === 'free' ? '(Pro)' : ''}
                 </option>
               ))}
             </select>
@@ -189,7 +200,7 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
 
           <button
             onClick={handleGenerateDoc}
-            disabled={loading || !fileContent || !selectedFile || !canGenerate() || (docTypes[docType].premium && (user?.plan || 'free') === 'free')}
+            disabled={loading || !fileContent || !selectedFile || !canGenerate() || (docTypes[docType].premium && (currentUser?.plan || 'free') === 'free')}
             className="w-full px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 font-medium flex items-center justify-center space-x-2"
           >
             {loading ? (
@@ -266,9 +277,9 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
             <div className="text-xs text-gray-500 space-y-1">
               <p>• Documentation complète avec exemples</p>
               <p>• Résumés rapides pour une vue d'ensemble</p>
-              <p>• Documentation API pour les interfaces {(user?.plan || 'free') === 'free' && '(Pro)'}</p>
-              <p>• Analyse technique avancée {(user?.plan || 'free') === 'free' && '(Pro)'}</p>
-              <p>• Audit de sécurité {(user?.plan || 'free') === 'free' && '(Pro)'}</p>
+              <p>• Documentation API pour les interfaces {(currentUser?.plan || 'free') === 'free' && '(Pro)'}</p>
+              <p>• Analyse technique avancée {(currentUser?.plan || 'free') === 'free' && '(Pro)'}</p>
+              <p>• Audit de sécurité {(currentUser?.plan || 'free') === 'free' && '(Pro)'}</p>
             </div>
           </div>
         )}
