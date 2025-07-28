@@ -9,14 +9,21 @@ export default function GuestCommitHistory({ commits, onCommitSelect, selectedCo
 
   const filteredCommits = commits.filter(commit => {
     if (!searchQuery) return true;
-    return commit.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           commit.author?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           commit.sha?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const message = commit.message || commit.commit?.message || '';
+    const authorName = commit.author?.name || commit.commit?.author?.name || '';
+    const sha = commit.sha || '';
+    
+    return message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           sha.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const displayedCommits = filteredCommits.slice(0, showLimit);
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'Date inconnue';
+    
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
@@ -38,6 +45,8 @@ export default function GuestCommitHistory({ commits, onCommitSelect, selectedCo
   };
 
   const getCommitType = (message) => {
+    if (!message) return 'other';
+    
     const lowerMessage = message.toLowerCase();
     if (lowerMessage.startsWith('feat')) return 'feature';
     if (lowerMessage.startsWith('fix')) return 'fix';
@@ -96,7 +105,8 @@ export default function GuestCommitHistory({ commits, onCommitSelect, selectedCo
           </div>
         ) : (
           displayedCommits.map((commit, index) => {
-            const commitType = getCommitType(commit.message);
+            const message = commit.message || commit.commit?.message || 'Sans message';
+            const commitType = getCommitType(message);
             const isSelected = selectedCommit?.sha === commit.sha;
             
             return (
@@ -127,7 +137,7 @@ export default function GuestCommitHistory({ commits, onCommitSelect, selectedCo
                 </div>
                 
                 <div className="text-sm text-white font-medium mb-1">
-                  {truncateMessage(commit.message)}
+                  {truncateMessage(message)}
                 </div>
                 
                 {commit.author && (
