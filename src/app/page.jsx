@@ -1,14 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import AuthModal from '../components/AuthModal';
 import Logo from '../components/Logo';
+import GuestExplorer from '../components/GuestExplorer';
 
 export default function HomePage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showGuestExplorer, setShowGuestExplorer] = useState(false);
+
+  // Vérifier si on doit afficher l'explorateur invité
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('guest') === 'true') {
+        setShowGuestExplorer(true);
+      }
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
@@ -21,7 +33,20 @@ export default function HomePage() {
         onClose={() => setIsAuthModalOpen(false)} 
       />
 
-      {/* Hero Section */}
+      {/* Guest Explorer */}
+      <AnimatePresence>
+        {showGuestExplorer && (
+          <div className="relative z-30">
+            <GuestExplorer />
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content - Hidden when guest explorer is shown */}
+      <AnimatePresence>
+        {!showGuestExplorer && (
+          <>
+            {/* Hero Section */}
       <section id="hero" className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <motion.div
@@ -41,7 +66,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.button
-                onClick={() => setIsAuthModalOpen(true)}
+                onClick={() => setShowGuestExplorer(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-2xl hover:shadow-3xl group overflow-hidden"
@@ -257,7 +282,7 @@ export default function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  {plan.id === 'enterprise' ? (
+                  {plan.name === 'Entreprise' ? (
                     <Link href="/contact">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -273,7 +298,7 @@ export default function HomePage() {
                     </Link>
                   ) : (
                     <motion.button
-                      onClick={() => setIsAuthModalOpen(true)}
+                      onClick={() => window.location.href = '/auth'}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       className={`w-full py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
@@ -392,7 +417,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.button
-                onClick={() => setIsAuthModalOpen(true)}
+                onClick={() => setShowGuestExplorer(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
@@ -456,6 +481,9 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
