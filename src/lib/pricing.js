@@ -42,7 +42,7 @@ export const pricingPlans = [
       'Pas de fonctionnalités entreprise',
       'Limite de 5 utilisateurs'
     ],
-    stripePriceId: 'price_pro_monthly',
+    stripePriceId: 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q', // ID de test Stripe
     popular: true,
     savings: 'Économisez 20%'
   },
@@ -66,7 +66,7 @@ export const pricingPlans = [
     limitations: [
       'Pas de fonctionnalités entreprise avancées'
     ],
-    stripePriceId: 'price_team_monthly',
+    stripePriceId: 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q', // ID de test Stripe
     popular: false
   },
   {
@@ -87,7 +87,7 @@ export const pricingPlans = [
       'Intégrations personnalisées'
     ],
     limitations: [],
-    stripePriceId: 'price_enterprise_monthly',
+    stripePriceId: null, // Pas d'ID Stripe pour l'entreprise (contact direct)
     popular: false,
     custom: true
   }

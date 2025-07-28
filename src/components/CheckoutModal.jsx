@@ -40,6 +40,15 @@ export default function CheckoutModal({
     setStep('processing');
 
     try {
+      // En mode développement, simuler un checkout réussi
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Mode développement : simulation du checkout');
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Simuler un délai
+        setStep('success');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/payment/create-checkout-session', {
         method: 'POST',
         headers: {
@@ -100,33 +109,35 @@ export default function CheckoutModal({
     const body = encodeURIComponent(`
 Bonjour,
 
-Je souhaite obtenir un devis pour le plan Enterprise de GitShadow.
+Je suis intéressé par le plan Enterprise de GitShadow.
 
-Informations :
-- Nom : ${user?.name || 'Non renseigné'}
-- Email : ${user?.email || 'Non renseigné'}
-- Plan souhaité : Enterprise
-- Besoins spécifiques : [À préciser]
+Informations sur mon entreprise :
+- Nom de l'entreprise : 
+- Nombre d'utilisateurs estimé : 
+- Besoins spécifiques : 
+
+Merci de me recontacter pour discuter des modalités.
 
 Cordialement,
 ${user?.name || 'Utilisateur'}
+${user?.email || ''}
     `);
     
     window.open(`mailto:contact@gitshadow.com?subject=${subject}&body=${body}`, '_blank');
+    onClose();
   };
 
   const handleRetry = () => {
-    setError(null);
     setStep('checkout');
+    setError(null);
+    setSuccess(false);
   };
 
   const handleClose = () => {
-    if (step === 'success') {
-      // Rediriger vers le dashboard après un paiement réussi
-      window.location.href = '/dashboard?success=true';
-    } else {
-      onClose();
-    }
+    setStep('checkout');
+    setError(null);
+    setSuccess(false);
+    onClose();
   };
 
   useEffect(() => {

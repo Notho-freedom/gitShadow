@@ -28,6 +28,16 @@ export async function POST(request) {
       );
     }
 
+    // En mode développement, simuler une session de checkout
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Mode développement : simulation de session de checkout');
+      return NextResponse.json({
+        sessionId: 'cs_test_simulation_' + Date.now(),
+        url: successUrl,
+        success: true
+      });
+    }
+
     let result;
 
     if (customAmount) {
@@ -47,24 +57,39 @@ export async function POST(request) {
       // Paiement standard avec plan
       const plan = getPlanById(planId);
       
-      if (!plan || !plan.stripePriceId) {
+      if (!plan) {
         return NextResponse.json(
-          { error: 'Plan invalide ou non configuré' },
+          { error: `Plan '${planId}' non trouvé` },
           { status: 400 }
         );
       }
 
-      result = await createCheckoutSession({
-        priceId: plan.stripePriceId,
-        customerEmail,
-        successUrl,
-        cancelUrl,
-        metadata: {
-          ...metadata,
-          planId: plan.id,
-          planName: plan.name
-        }
-      });
+      if (!plan.stripePriceId) {
+        return NextResponse.json(
+          { error: `Plan '${plan.name}' non configuré pour les paiements` },
+          { status: 400 }
+        );
+      }
+
+      try {
+        result = await createCheckoutSession({
+          priceId: plan.stripePriceId,
+          customerEmail,
+          successUrl,
+          cancelUrl,
+          metadata: {
+            ...metadata,
+            planId: plan.id,
+            planName: plan.name
+          }
+        });
+      } catch (stripeError) {
+        console.error('Erreur Stripe:', stripeError);
+        return NextResponse.json(
+          { error: `Erreur Stripe: ${stripeError.message}` },
+          { status: 500 }
+        );
+      }
     }
 
     if (result.success) {
@@ -74,7 +99,7 @@ export async function POST(request) {
       });
     } else {
       return NextResponse.json(
-        { error: result.error },
+        { error: result.error || 'Erreur lors de la création de la session' },
         { status: 500 }
       );
     }

@@ -35,10 +35,13 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
       {/* Debug indicator - à supprimer en production */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-4 right-4 z-50 bg-black/80 text-white p-2 rounded text-xs">
+        <div className="fixed top-4 right-4 z-50 bg-black/80 text-white p-2 rounded text-xs max-w-xs">
           <div>Auth: {isAuthenticated ? '✅ Connecté' : '❌ Non connecté'}</div>
           <div>User: {user?.name || 'Aucun'}</div>
           <div>Loading: {loading ? '⏳' : '✅'}</div>
+          <div className="mt-2 text-yellow-400 text-xs">
+            ⚠️ Erreurs AdBlocker normales en dev
+          </div>
         </div>
       )}
 
