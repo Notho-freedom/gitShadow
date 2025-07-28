@@ -108,11 +108,11 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
   return (
     <div className="space-y-4">
       {/* Header avec contrôles */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setTreeView(!treeView)}
-            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+            className={`px-2 py-1 rounded text-xs transition-colors ${
               treeView 
                 ? 'bg-blue-600 text-white' 
                 : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
@@ -122,20 +122,20 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
           </button>
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="px-3 py-1 bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors"
+            className="px-2 py-1 bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded text-xs transition-colors"
           >
             {viewMode === 'grid' ? 'Liste' : 'Grille'}
           </button>
         </div>
         
-        <div className="text-sm text-gray-400">
+        <div className="text-xs text-gray-400">
           {filteredFiles.length} élément{filteredFiles.length > 1 ? 's' : ''}
         </div>
       </div>
 
       {/* Breadcrumbs */}
       {breadcrumbs.length > 0 && (
-        <div className="flex items-center space-x-2 text-sm">
+        <div className="flex items-center space-x-2 text-xs mb-3">
           <button
             onClick={() => navigateToBreadcrumb(-1)}
             className="text-blue-400 hover:text-blue-300 transition-colors"
@@ -157,24 +157,24 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
       )}
 
       {/* Search Bar */}
-      <div className="relative">
+      <div className="relative mb-3">
         <input
           type="text"
           placeholder="Rechercher dans les fichiers..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-1.5 bg-white/5 border border-white/10 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
         />
-        <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
 
       {/* Files List */}
-      <div className="space-y-2 max-h-96 overflow-y-auto">
+      <div className="space-y-1 max-h-96 overflow-y-auto">
         {treeView ? (
           // Vue arbre
-          <div className="space-y-2">
+          <div className="space-y-1">
             {filteredFiles.map((file, index) => {
               const isFolderItem = isFolder(file);
               
@@ -184,7 +184,7 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="flex items-center py-2 px-3 hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors"
+                  className="flex items-center py-1.5 px-2 hover:bg-gray-700/50 rounded cursor-pointer transition-colors"
                   onClick={() => {
                     if (isFolderItem) {
                       // Pour les dossiers, naviguer vers le dossier et montrer ses enfants
@@ -198,10 +198,10 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
                   <FileIcon 
                     type={isFolderItem ? "tree" : "file"} 
                     name={getFileName(file.path)} 
-                    size="sm" 
-                    className="mr-3"
+                    size="xs" 
+                    className="mr-2"
                   />
-                  <span className="text-gray-300 text-sm flex-1">{getFileName(file.path)}</span>
+                  <span className="text-gray-300 text-xs flex-1">{getFileName(file.path)}</span>
                   {!isFolderItem && (
                     <span className="text-gray-500 text-xs">{formatFileSize(file.size || 0)}</span>
                   )}
@@ -211,7 +211,7 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
           </div>
         ) : (
           // Vue grille
-          <div className={`grid gap-4 ${
+          <div className={`grid gap-3 ${
             viewMode === 'grid' 
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
               : 'grid-cols-1'
@@ -235,16 +235,16 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
                       loadFileContent(file);
                     }
                   }}
-                  className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl cursor-pointer transition-all duration-200 hover:border-blue-500/50 hover:bg-gray-800/70"
+                  className="p-3 bg-gray-800/50 border border-gray-700 rounded-lg cursor-pointer transition-all duration-200 hover:border-blue-500/50 hover:bg-gray-800/70"
                 >
                   <div className="text-center">
                     <FileIcon 
                       type={isFolderItem ? "tree" : "file"} 
                       name={getFileName(file.path)} 
-                      size="lg" 
-                      className="mx-auto mb-3"
+                      size="md" 
+                      className="mx-auto mb-2"
                     />
-                    <h4 className="text-white font-medium text-sm truncate">{getFileName(file.path)}</h4>
+                    <h4 className="text-white font-medium text-xs truncate">{getFileName(file.path)}</h4>
                     {!isFolderItem && (
                       <p className="text-gray-400 text-xs mt-1">{formatFileSize(file.size || 0)}</p>
                     )}
@@ -256,7 +256,7 @@ export default function GuestFileExplorer({ files, onFileSelect, selectedFile, l
         )}
 
         {filteredFiles.length === 0 && (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-6 text-gray-400">
             {searchQuery ? 'Aucun fichier trouvé' : 'Aucun fichier disponible'}
           </div>
         )}

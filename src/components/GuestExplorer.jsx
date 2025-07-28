@@ -255,7 +255,7 @@ export default function GuestExplorer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <AnimatePresence mode="wait">
           {currentView === 'input' && (
             <motion.div
@@ -270,12 +270,12 @@ export default function GuestExplorer() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="mb-8"
+                className="mb-12"
               >
-                <h1 className="text-5xl font-bold text-white mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-8 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                   Analysez votre dépôt GitHub
                 </h1>
-                <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
                   Collez l'URL de votre dépôt GitHub pour générer automatiquement une documentation intelligente 
                   et explorer votre code avec l'IA
                 </p>
@@ -297,31 +297,35 @@ export default function GuestExplorer() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6"
             >
               {/* Commits */}
-              <div className="lg:col-span-1">
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-4">Historique des commits</h3>
-                  <GuestCommitHistory
-                    commits={commits}
-                    onCommitSelect={handleCommitSelect}
-                    selectedCommit={selectedCommit}
-                    onShowUpgradeModal={handleShowUpgradeModal}
-                  />
+              <div className="xl:col-span-1">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/10 h-[calc(100vh-16rem)] overflow-hidden flex flex-col shadow-2xl">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-4 flex-shrink-0">Historique des commits</h3>
+                  <div className="flex-1 overflow-y-auto">
+                    <GuestCommitHistory
+                      commits={commits}
+                      onCommitSelect={handleCommitSelect}
+                      selectedCommit={selectedCommit}
+                      onShowUpgradeModal={handleShowUpgradeModal}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Files */}
-              <div className="lg:col-span-2">
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-4">Structure du projet</h3>
-                  <GuestFileExplorer
-                    files={repoFiles}
-                    onFileSelect={handleFileSelect}
-                    selectedFile={selectedFile}
-                    loading={loading}
-                  />
+              <div className="xl:col-span-3">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/10 h-[calc(100vh-16rem)] overflow-hidden flex flex-col shadow-2xl">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-4 flex-shrink-0">Structure du projet</h3>
+                  <div className="flex-1 overflow-y-auto">
+                    <GuestFileExplorer
+                      files={repoFiles}
+                      onFileSelect={handleFileSelect}
+                      selectedFile={selectedFile}
+                      loading={loading}
+                    />
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -334,13 +338,13 @@ export default function GuestExplorer() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-4 gap-6"
+              className="grid grid-cols-1 xl:grid-cols-10 gap-4 lg:gap-6"
             >
-              {/* Navigation des fichiers */}
-              <div className="lg:col-span-1">
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-4">Autres fichiers</h3>
-                  <div className="max-h-96 overflow-y-auto">
+              {/* Navigation des fichiers - Responsive */}
+              <div className="xl:col-span-2 lg:col-span-3 md:col-span-4">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/10 h-[calc(100vh-16rem)] overflow-hidden flex flex-col shadow-2xl">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-4 flex-shrink-0">Autres fichiers</h3>
+                  <div className="flex-1 overflow-y-auto">
                     <GuestFileExplorer
                       files={repoFiles}
                       onFileSelect={handleFileSelect}
@@ -351,41 +355,45 @@ export default function GuestExplorer() {
                 </div>
               </div>
 
-              {/* Code Viewer */}
-              <div className="lg:col-span-2">
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-white">Code source</h3>
+              {/* Code Viewer - Responsive */}
+              <div className="xl:col-span-6 lg:col-span-5 md:col-span-8">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/10 h-[calc(100vh-16rem)] overflow-hidden flex flex-col shadow-2xl">
+                  <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                    <h3 className="text-lg lg:text-xl font-semibold text-white">Code source</h3>
                     <button
                       onClick={handleBackToExplorer}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="text-gray-400 hover:text-white transition-colors text-xs lg:text-sm px-3 py-1.5 bg-white/5 rounded-lg hover:bg-white/10"
                     >
                       ← Retour à l'explorateur
                     </button>
                   </div>
                   {selectedFile && (
-                    <div className="mb-2">
-                      <span className="text-sm text-gray-400">{selectedFile.path}</span>
+                    <div className="mb-3 flex-shrink-0 p-2 bg-white/5 rounded-lg">
+                      <span className="text-xs text-gray-400 break-all font-mono">{selectedFile.path}</span>
                     </div>
                   )}
-                  <CodeViewer
-                    content={fileContent}
-                    file={selectedFile}
-                    loading={loading}
-                  />
+                  <div className="flex-1 overflow-hidden">
+                    <CodeViewer
+                      content={fileContent}
+                      file={selectedFile}
+                      loading={loading}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Documentation */}
-              <div className="lg:col-span-1">
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-4">Documentation générée</h3>
-                  <DocumentationPanel
-                    documentation={documentation}
-                    file={selectedFile ? { ...selectedFile, content: fileContent } : null}
-                    repository={repoData}
-                    user={{ plan: 'free', isGuest: true }}
-                  />
+              {/* Documentation - Responsive */}
+              <div className="xl:col-span-2 lg:col-span-2 md:col-span-12">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-white/10 h-[calc(100vh-16rem)] overflow-hidden flex flex-col shadow-2xl">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-4 flex-shrink-0">Documentation générée</h3>
+                  <div className="flex-1 overflow-hidden">
+                    <DocumentationPanel
+                      documentation={documentation}
+                      file={selectedFile ? { ...selectedFile, content: fileContent } : null}
+                      repository={repoData}
+                      user={{ plan: 'free', isGuest: true }}
+                    />
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -407,78 +415,94 @@ export default function GuestExplorer() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="mt-12 p-8 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 rounded-2xl border border-white/10 backdrop-blur-sm"
+          className="mt-16 p-8 lg:p-12 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 rounded-3xl border border-white/10 backdrop-blur-sm shadow-2xl"
         >
-          <div className="text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center max-w-5xl mx-auto">
+            <div className="mb-8 lg:mb-12">
+              <div className="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 lg:mb-8 shadow-2xl">
+                <svg className="w-10 h-10 lg:w-12 lg:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
+              <h3 className="text-3xl lg:text-4xl font-bold text-white mb-4 lg:mb-6">
                 Débloquez toutes les fonctionnalités
               </h3>
-              <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+              <p className="text-xl lg:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
                 Connectez-vous pour accéder à l'historique complet, aux analyses avancées, 
                 à l'export de documentation et à vos dépôts privés
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">
-              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                <div className="flex items-center space-x-3 mb-2">
-                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-white font-medium">Historique complet des commits</span>
-                </div>
-                <div className="flex items-center space-x-3 mb-2">
-                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-white font-medium">Analyses avancées</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-white font-medium">Export de documentation</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto mb-8 lg:mb-12">
+              <div className="p-6 lg:p-8 bg-white/5 rounded-2xl border border-white/10 shadow-xl">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white font-semibold text-lg">Historique complet des commits</span>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white font-semibold text-lg">Analyses avancées</span>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white font-semibold text-lg">Export de documentation</span>
+                  </div>
                 </div>
               </div>
               
-              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                <div className="flex items-center space-x-3 mb-2">
-                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-white font-medium">Dépôts privés</span>
-                </div>
-                <div className="flex items-center space-x-3 mb-2">
-                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-white font-medium">Collaboration équipe</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-white font-medium">Sauvegarde automatique</span>
+              <div className="p-6 lg:p-8 bg-white/5 rounded-2xl border border-white/10 shadow-xl">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white font-semibold text-lg">Dépôts privés</span>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white font-semibold text-lg">Collaboration équipe</span>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white font-semibold text-lg">Sauvegarde automatique</span>
+                  </div>
                 </div>
               </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <button
                 onClick={() => window.location.href = '/auth'}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold text-lg transform hover:scale-105 shadow-lg hover:shadow-xl"
+                className="px-10 py-5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold text-xl transform hover:scale-105 shadow-2xl hover:shadow-3xl"
               >
                 Se connecter gratuitement
               </button>
               <button
                 onClick={() => window.location.href = '/pricing'}
-                className="px-8 py-4 border-2 border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-300 font-semibold text-lg"
+                className="px-10 py-5 border-2 border-white/20 text-white rounded-2xl hover:bg-white/10 transition-all duration-300 font-semibold text-xl"
               >
                 Voir les tarifs
               </button>
