@@ -72,7 +72,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          owner: repo.owner.login,
+          owner: repo.owner?.login || repo.owner || repo.full_name?.split('/')[0] || 'unknown',
           repo: repo.name,
           accessToken: user.access_token
         })
@@ -367,7 +367,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-white font-semibold truncate">{repo.name}</h3>
-                          <p className="text-gray-400 text-sm">@{repo.owner?.login || repo.owner}</p>
+                          <p className="text-gray-400 text-sm">@{repo.owner?.login || repo.owner || repo.full_name?.split('/')[0] || 'unknown'}</p>
                         </div>
                         {repo.private && (
                           <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">Privé</span>
