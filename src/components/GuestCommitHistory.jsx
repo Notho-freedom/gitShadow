@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 
-export default function GuestCommitHistory({ commits, onCommitSelect, selectedCommit }) {
+export default function GuestCommitHistory({ commits, onCommitSelect, selectedCommit, onShowUpgradeModal }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showLimit, setShowLimit] = useState(5); // Limité à 5 commits
 
@@ -20,6 +20,17 @@ export default function GuestCommitHistory({ commits, onCommitSelect, selectedCo
   });
 
   const displayedCommits = filteredCommits.slice(0, showLimit);
+
+  // Fonction pour gérer le clic sur "Charger plus"
+  const handleLoadMore = () => {
+    if (onShowUpgradeModal) {
+      // Si on a une fonction pour afficher la modale d'upgrade, l'utiliser
+      onShowUpgradeModal();
+    } else {
+      // Sinon, charger 5 commits supplémentaires (comportement par défaut)
+      setShowLimit(prev => Math.min(prev + 5, filteredCommits.length));
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date inconnue';
@@ -164,10 +175,17 @@ export default function GuestCommitHistory({ commits, onCommitSelect, selectedCo
       {filteredCommits.length > showLimit && (
         <div className="text-center pt-4">
           <button
-            onClick={() => setShowLimit(prev => Math.min(prev + 5, filteredCommits.length))}
-            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm"
+            onClick={handleLoadMore}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all duration-200 text-sm font-medium transform hover:scale-105 shadow-lg"
           >
-            Charger plus ({Math.min(5, filteredCommits.length - showLimit)} restants)
+            {onShowUpgradeModal ? (
+              <>
+                <span>🚀</span>
+                <span>Débloquer l'historique complet</span>
+              </>
+            ) : (
+              `Charger plus (${Math.min(5, filteredCommits.length - showLimit)} restants)`
+            )}
           </button>
         </div>
       )}

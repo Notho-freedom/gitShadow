@@ -20,6 +20,18 @@ export default function GuestExplorer() {
   const [repoFiles, setRepoFiles] = useState([]);
   const [commits, setCommits] = useState([]);
   const [repoData, setRepoData] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Afficher la modale d'upgrade après 5 secondes si on est dans la vue explorateur
+  useEffect(() => {
+    if (currentView === 'explorer' && commits.length > 0) {
+      const timer = setTimeout(() => {
+        setShowUpgradeModal(true);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentView, commits]);
 
   const handleRepoUrlChange = (url) => {
     setSelectedRepo(url);
@@ -204,6 +216,11 @@ export default function GuestExplorer() {
     setDocumentation('');
   };
 
+  // Fonction pour afficher la modale d'upgrade
+  const handleShowUpgradeModal = () => {
+    setShowUpgradeModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 pt-20">
       {/* Header */}
@@ -290,6 +307,7 @@ export default function GuestExplorer() {
                     commits={commits}
                     onCommitSelect={handleCommitSelect}
                     selectedCommit={selectedCommit}
+                    onShowUpgradeModal={handleShowUpgradeModal}
                   />
                 </div>
               </div>
@@ -316,8 +334,23 @@ export default function GuestExplorer() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 lg:grid-cols-4 gap-6"
             >
+              {/* Navigation des fichiers */}
+              <div className="lg:col-span-1">
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-white mb-4">Autres fichiers</h3>
+                  <div className="max-h-96 overflow-y-auto">
+                    <GuestFileExplorer
+                      files={repoFiles}
+                      onFileSelect={handleFileSelect}
+                      selectedFile={selectedFile}
+                      loading={false}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Code Viewer */}
               <div className="lg:col-span-2">
                 <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
@@ -343,9 +376,8 @@ export default function GuestExplorer() {
                 </div>
               </div>
 
-              {/* Documentation et Navigation des fichiers */}
-              <div className="lg:col-span-1 space-y-6">
-                {/* Documentation */}
+              {/* Documentation */}
+              <div className="lg:col-span-1">
                 <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                   <h3 className="text-xl font-semibold text-white mb-4">Documentation générée</h3>
                   <DocumentationPanel
@@ -354,19 +386,6 @@ export default function GuestExplorer() {
                     repository={repoData}
                     user={{ plan: 'free', isGuest: true }}
                   />
-                </div>
-
-                {/* Navigation des fichiers */}
-                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-4">Autres fichiers</h3>
-                  <div className="max-h-64 overflow-y-auto">
-                    <GuestFileExplorer
-                      files={repoFiles}
-                      onFileSelect={handleFileSelect}
-                      selectedFile={selectedFile}
-                      loading={false}
-                    />
-                  </div>
                 </div>
               </div>
             </motion.div>
@@ -467,6 +486,114 @@ export default function GuestExplorer() {
           </div>
         </motion.div>
       </div>
+
+      {/* Modale d'upgrade */}
+      <AnimatePresence>
+        {showUpgradeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowUpgradeModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-2xl p-8 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                {/* Icône */}
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+
+                {/* Titre */}
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Débloquez l'historique complet
+                </h3>
+
+                {/* Description */}
+                <p className="text-gray-300 mb-6 leading-relaxed">
+                  Vous ne voyez que les 5 commits les plus récents. 
+                  Connectez-vous pour accéder à l'historique complet et à toutes les fonctionnalités avancées.
+                </p>
+
+                {/* Fonctionnalités */}
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-center space-x-3 text-left">
+                    <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white text-sm">Historique complet des commits</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-left">
+                    <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white text-sm">Analyses techniques avancées</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-left">
+                    <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white text-sm">Export de documentation</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-left">
+                    <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-white text-sm">Dépôts privés</span>
+                  </div>
+                </div>
+
+                {/* Boutons */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={() => {
+                      setShowUpgradeModal(false);
+                      window.location.href = '/auth';
+                    }}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
+                  >
+                    Se connecter gratuitement
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUpgradeModal(false);
+                      window.location.href = '/pricing';
+                    }}
+                    className="flex-1 px-6 py-3 border-2 border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
+                  >
+                    Voir les tarifs
+                  </button>
+                </div>
+
+                {/* Bouton fermer */}
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="mt-4 text-gray-400 hover:text-white transition-colors text-sm"
+                >
+                  Continuer en mode invité
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 } 
