@@ -266,9 +266,9 @@ export default function DocumentationPanel({ fileContent, documentation, setDocu
             <div className="text-xs text-gray-500 space-y-1">
               <p>• Documentation complète avec exemples</p>
               <p>• Résumés rapides pour une vue d'ensemble</p>
-              <p>• Documentation API pour les interfaces {user.plan === 'free' && '(Pro)'}</p>
-              <p>• Analyse technique avancée {user.plan === 'free' && '(Pro)'}</p>
-              <p>• Audit de sécurité {user.plan === 'free' && '(Pro)'}</p>
+              <p>• Documentation API pour les interfaces {(user?.plan || 'free') === 'free' && '(Pro)'}</p>
+              <p>• Analyse technique avancée {(user?.plan || 'free') === 'free' && '(Pro)'}</p>
+              <p>• Audit de sécurité {(user?.plan || 'free') === 'free' && '(Pro)'}</p>
             </div>
           </div>
         )}

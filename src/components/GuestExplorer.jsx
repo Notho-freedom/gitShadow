@@ -352,6 +352,7 @@ export default function GuestExplorer() {
                     documentation={documentation}
                     file={selectedFile ? { ...selectedFile, content: fileContent } : null}
                     repository={repoData}
+                    user={{ plan: 'free', isGuest: true }}
                   />
                 </div>
 
