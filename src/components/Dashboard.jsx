@@ -14,9 +14,11 @@ import SettingsPanel from './SettingsPanel';
 import QuickActions from './QuickActions';
 import NotificationCenter from './NotificationCenter';
 import SearchOverlay from './SearchOverlay';
+import KeyboardShortcuts from './KeyboardShortcuts';
+import ResizableLayout from './ResizableLayout';
 
 export default function Dashboard({ user, onLogout }) {
-  const [activeView, setActiveView] = useState('explorer');
+  const [activeView, setActiveView] = useState('repos');
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
@@ -29,6 +31,7 @@ export default function Dashboard({ user, onLogout }) {
   const [theme, setTheme] = useState('dark');
   const [layout, setLayout] = useState('default'); // default, code-focus, documentation-focus
   const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   // Vérifier si user existe
   if (!user) {
@@ -63,6 +66,72 @@ export default function Dashboard({ user, onLogout }) {
     setFileContent('');
     setCurrentView('explorer');
   }, []);
+
+  // Gestion des actions rapides du sidebar
+  const handleQuickAction = useCallback((actionId) => {
+    switch (actionId) {
+      case 'search':
+        setIsSearchOpen(true);
+        break;
+      case 'new-file':
+        // Logique pour créer un nouveau fichier
+        console.log('Créer un nouveau fichier');
+        break;
+      case 'save':
+        // Logique pour sauvegarder
+        console.log('Sauvegarder les modifications');
+        break;
+      default:
+        break;
+    }
+  }, []);
+
+  // Gestion des raccourcis clavier globaux
+  const handleKeyboardShortcut = useCallback((action) => {
+    switch (action) {
+      case 'repos':
+        setCurrentView('repos');
+        break;
+      case 'explorer':
+        setCurrentView('explorer');
+        break;
+      case 'editor':
+        setCurrentView('editor');
+        break;
+      case 'documentation':
+        setCurrentView('documentation');
+        break;
+      case 'analytics':
+        setCurrentView('analytics');
+        break;
+      case 'collaboration':
+        setCurrentView('collaboration');
+        break;
+      case 'settings':
+        setCurrentView('settings');
+        break;
+      case 'search':
+        setIsSearchOpen(true);
+        break;
+      case 'new-file':
+        console.log('Créer un nouveau fichier');
+        break;
+      case 'save':
+        console.log('Sauvegarder les modifications');
+        break;
+      case 'escape':
+        setIsSearchOpen(false);
+        setIsNotificationOpen(false);
+        break;
+      default:
+        break;
+    }
+  }, []);
+
+  // Synchroniser activeView avec currentView
+  useEffect(() => {
+    setActiveView(currentView);
+  }, [currentView]);
 
   const handleFileSelect = useCallback(async (file) => {
     setSelectedFile(file);
@@ -197,57 +266,70 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   return (
-    <div className="h-screen bg-gray-900 flex overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar
-        activeView={activeView}
-        onViewChange={setActiveView}
-        user={user}
-        selectedRepo={selectedRepo}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Navigation */}
-        <TopNavbar
+    <div className="h-screen bg-gray-900 overflow-hidden">
+      <ResizableLayout
+        defaultSizes={[320, 1]} // Sidebar: 320px, Main: reste
+        minSizes={[250, 600]} // Tailles minimales
+        maxSizes={[500, null]} // Tailles maximales
+        direction="horizontal"
+        className="h-full"
+      >
+        {/* Sidebar */}
+        <Sidebar
+          activeView={activeView}
+          onViewChange={(view) => {
+            setActiveView(view);
+            setCurrentView(view);
+          }}
           user={user}
           selectedRepo={selectedRepo}
-          selectedFile={selectedFile}
-          activeView={currentView}
-          onSearchOpen={() => setIsSearchOpen(true)}
-          onNotificationOpen={() => setIsNotificationOpen(true)}
-          onLogout={onLogout}
-          theme={theme}
-          layout={layout}
-          onLayoutChange={setLayout}
+          collapsed={false} // Désactiver le collapse car on a le redimensionnement
+          onToggleCollapse={() => {}} // Fonction vide
+          notifications={notifications}
+          onQuickAction={handleQuickAction}
         />
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-hidden relative">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentView}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="h-full"
-            >
-              {renderMainContent()}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+        {/* Main Content Area */}
+        <div className="flex flex-col overflow-hidden">
+          {/* Top Navigation */}
+          <TopNavbar
+            user={user}
+            selectedRepo={selectedRepo}
+            selectedFile={selectedFile}
+            activeView={currentView}
+            onSearchOpen={() => setIsSearchOpen(true)}
+            onNotificationOpen={() => setIsNotificationOpen(true)}
+            onLogout={onLogout}
+            theme={theme}
+            layout={layout}
+            onLayoutChange={setLayout}
+          />
 
-        {/* Quick Actions Floating Panel */}
-        <QuickActions
-          activeView={currentView}
-          selectedFile={selectedFile}
-          onGenerateDoc={handleGenerateDocumentation}
-          loading={loading}
-        />
-      </div>
+          {/* Main Content */}
+          <main className="flex-1 overflow-hidden relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentView}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className="h-full"
+              >
+                {renderMainContent()}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+
+          {/* Quick Actions Floating Panel */}
+          <QuickActions
+            activeView={currentView}
+            selectedFile={selectedFile}
+            onGenerateDoc={handleGenerateDocumentation}
+            loading={loading}
+          />
+        </div>
+      </ResizableLayout>
 
       {/* Search Overlay */}
       <SearchOverlay
@@ -264,6 +346,9 @@ export default function Dashboard({ user, onLogout }) {
         onClose={() => setIsNotificationOpen(false)}
         user={user}
       />
+
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcuts onShortcut={handleKeyboardShortcut} />
     </div>
   );
 }

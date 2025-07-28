@@ -88,12 +88,12 @@ export default function TopNavbar({
 
         {/* Plan Badge */}
         <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-          user.plan === 'pro' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-          user.plan === 'enterprise' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+          (user?.plan || 'free') === 'pro' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+          (user?.plan || 'free') === 'enterprise' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
           'bg-gray-500/20 text-gray-400 border border-gray-500/30'
         }`}>
-          {user.plan === 'free' ? 'Gratuit' : 
-           user.plan === 'pro' ? 'Pro' : 'Enterprise'}
+          {(user?.plan || 'free') === 'free' ? 'Gratuit' : 
+           (user?.plan || 'free') === 'pro' ? 'Pro' : 'Enterprise'}
         </div>
       </div>
 

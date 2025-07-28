@@ -38,7 +38,7 @@ export default function RepositoryExplorer({ user, selectedRepo, onRepoSelect, o
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           accessToken: user.access_token,
-          plan: user.plan 
+          plan: user?.plan || 'free' 
         }),
       });
 

@@ -36,7 +36,7 @@ export default function RepositoryList({ user, onRepoSelect, selectedRepo }) {
       let repos = data.repositories || [];
 
       // Filtrer selon le plan utilisateur
-      if (user.plan === 'free') {
+      if ((user?.plan || 'free') === 'free') {
         // Plan gratuit : seulement les dépôts publics, limité à 5
         repos = repos.filter(repo => !repo.private).slice(0, 5);
       }
@@ -268,7 +268,7 @@ export default function RepositoryList({ user, onRepoSelect, selectedRepo }) {
       )}
 
       {/* Limitation plan gratuit */}
-      {user.plan === 'free' && repositories.length >= 5 && (
+              {(user?.plan || 'free') === 'free' && repositories.length >= 5 && (
         <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
             <span className="text-blue-400">ℹ️</span>
