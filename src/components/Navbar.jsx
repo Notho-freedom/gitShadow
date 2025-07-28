@@ -12,7 +12,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { user, loading, isGuest, logout, createGuestUser } = useAuth();
+  const { user, loading, isGuest, logout, createGuestUser, login } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -47,6 +47,26 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     setIsUserMenuOpen(false);
+  };
+
+  // Fonction de test pour simuler une connexion GitHub
+  const simulateGitHubLogin = () => {
+    const mockUser = {
+      id: 123456,
+      login: 'testuser',
+      name: 'Utilisateur Test',
+      email: 'test@example.com',
+      avatar_url: 'https://avatars.githubusercontent.com/u/123456?v=4',
+      plan: 'pro',
+      public_repos: 25,
+      private_repos: 10,
+      followers: 150,
+      following: 50,
+      company: 'Test Company',
+      location: 'Paris, France',
+      created_at: '2020-01-01T00:00:00Z'
+    };
+    login(mockUser, false);
   };
 
   const renderUserSection = () => {
@@ -238,6 +258,19 @@ export default function Navbar() {
 
             {/* Section utilisateur */}
             {renderUserSection()}
+
+            {/* Bouton de test en mode développement */}
+            {process.env.NODE_ENV === 'development' && !user && (
+              <div className="hidden lg:flex items-center ml-4">
+                <button
+                  onClick={simulateGitHubLogin}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded font-medium transition-colors duration-200"
+                  title="Simuler une connexion GitHub (dev uniquement)"
+                >
+                  Test Auth
+                </button>
+              </div>
+            )}
 
             {/* Menu Mobile */}
             <div className="lg:hidden">

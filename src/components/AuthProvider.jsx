@@ -96,10 +96,14 @@ export function AuthProvider({ children }) {
     return guestUser;
   };
 
+  // Calculer isAuthenticated basé sur l'état de l'utilisateur
+  const isAuthenticated = !!user;
+
   const value = {
     user,
     loading,
     isGuest,
+    isAuthenticated, // Ajout de cette propriété
     login,
     logout,
     updateUser,

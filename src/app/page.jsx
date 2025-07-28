@@ -7,10 +7,14 @@ import Navbar from '../components/Navbar';
 import AuthModal from '../components/AuthModal';
 import Logo from '../components/Logo';
 import GuestExplorer from '../components/GuestExplorer';
+import { useAuth } from '../components/AuthProvider';
 
 export default function HomePage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showGuestExplorer, setShowGuestExplorer] = useState(false);
+  
+  // Utiliser l'AuthProvider pour détecter l'état de connexion
+  const { user, isAuthenticated, loading } = useAuth();
 
   // Vérifier si on doit afficher l'explorateur invité
   useEffect(() => {
@@ -19,11 +23,25 @@ export default function HomePage() {
       if (urlParams.get('guest') === 'true') {
         setShowGuestExplorer(true);
       }
+      
+      // Vérifier si on doit afficher la modale d'auth
+      if (urlParams.get('showAuth') === 'true') {
+        setIsAuthModalOpen(true);
+      }
     }
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      {/* Debug indicator - à supprimer en production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 right-4 z-50 bg-black/80 text-white p-2 rounded text-xs">
+          <div>Auth: {isAuthenticated ? '✅ Connecté' : '❌ Non connecté'}</div>
+          <div>User: {user?.name || 'Aucun'}</div>
+          <div>Loading: {loading ? '⏳' : '✅'}</div>
+        </div>
+      )}
+
       {/* Navbar fixe */}
       <Navbar />
 

@@ -10,16 +10,19 @@ import Logo from '../../components/Logo';
 import Navbar from '../../components/Navbar';
 import PricingCard from '../../components/PricingCard';
 import CheckoutModal from '../../components/CheckoutModal';
+import { useAuth } from '../../components/AuthProvider';
 // Import des plans déplacé dans useEffect pour éviter le pré-rendu
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [user, setUser] = useState(null);
   const [plans, setPlans] = useState([]);
+  
+  // Utiliser l'AuthProvider au lieu de localStorage
+  const { user, isAuthenticated, loading } = useAuth();
 
-  // Charger les plans et les données utilisateur
+  // Charger les plans
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -31,18 +34,6 @@ export default function PricingPage() {
         console.error('Erreur lors du chargement des plans:', error);
         setPlans([]);
       }
-
-      // Récupérer les données utilisateur depuis localStorage
-      if (typeof window !== 'undefined') {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) {
-          try {
-            setUser(JSON.parse(savedUser));
-          } catch (error) {
-            console.error('Erreur lors du parsing des données utilisateur:', error);
-          }
-        }
-      }
     };
 
     loadData();
@@ -52,6 +43,14 @@ export default function PricingPage() {
     if (!plan) return;
     
     setSelectedPlan(plan);
+    
+    // Si l'utilisateur n'est pas connecté, afficher la modale de connexion
+    if (!isAuthenticated) {
+      // Rediriger vers la page d'accueil avec une modale de connexion
+      window.location.href = '/?showAuth=true';
+      return;
+    }
+    
     if (!plan.price || plan.price === 0) {
       // Plan gratuit - rediriger vers le dashboard
       window.location.href = '/dashboard';
@@ -68,6 +67,15 @@ export default function PricingPage() {
     setShowCheckout(false);
     setSelectedPlan(null);
   };
+
+  // Afficher un loader pendant le chargement
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
+        <div className="text-white text-xl">Chargement...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
