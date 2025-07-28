@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { atomOneDark, tomorrow, dracula, oneDark, materialDark, nightOwl } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { atomDark, tomorrow, dracula, oneDark, materialDark, nightOwl } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function CodeViewer({ file, content, loading, repo, commit }) {
   const [showLineNumbers, setShowLineNumbers] = useState(true);
@@ -112,7 +112,7 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
   // Thèmes disponibles
   const themes = {
     nightOwl,
-    atomOneDark,
+    atomDark,
     tomorrow,
     dracula,
     oneDark,
@@ -204,7 +204,7 @@ export default function CodeViewer({ file, content, loading, repo, commit }) {
             className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent btn-code"
           >
             <option value="nightOwl">Night Owl</option>
-            <option value="atomOneDark">Atom Dark</option>
+            <option value="atomDark">Atom Dark</option>
             <option value="tomorrow">Tomorrow</option>
             <option value="dracula">Dracula</option>
             <option value="oneDark">One Dark</option>
