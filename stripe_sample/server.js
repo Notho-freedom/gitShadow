@@ -7,6 +7,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const Database = require('./database');
+const { SubscriptionPlansManager } = require('./subscription-plans');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,8 +28,16 @@ const YOUR_DOMAIN = "http://localhost:3000";
 const WEBHOOK_SECRET_SNAPSHOT = process.env.WEBHOOK_SECRET_SNAPSHOT || 'whsec_ZBrup7oEMxq41NGuD6kVfsQ8BiNYvHps';
 const WEBHOOK_SECRET_THIN = process.env.WEBHOOK_SECRET_THIN || 'whsec_Uvfxw888jdlp6ZECH8wxtXyJT77MMWld';
 
-// Initialiser la base de données
+// Initialiser la base de données et le gestionnaire de plans
 const db = new Database();
+const plansManager = new SubscriptionPlansManager();
+
+// Initialiser les plans au démarrage
+plansManager.initializePlans().then(() => {
+  console.log('✅ Plans d\'abonnement initialisés');
+}).catch(error => {
+  console.error('❌ Erreur lors de l\'initialisation des plans:', error);
+});
 
 // Stockage des notifications (en mémoire pour cet exemple)
 let notifications = [];
@@ -70,26 +79,29 @@ io.on('connection', (socket) => {
 });
 
 app.post('/create-checkout-session', async (req, res) => {
-  const prices = await stripe.prices.list({
-    lookup_keys: [req.body.lookup_key],
-    expand: ['data.product'],
-  });
-  const session = await stripe.checkout.sessions.create({
-    billing_address_collection: 'auto',
-    line_items: [
-      {
-        price: prices.data[0].id,
-        // For usage-based billing, don't pass quantity
-        quantity: 1,
+  try {
+    // Utiliser le gestionnaire de plans gitShadow
+    const { lookup_key } = req.body;
+    
+    // Mapper les anciennes clés vers les nouveaux plans
+    let planId = 'pro'; // Plan par défaut
+    if (lookup_key === '{{PRICE_LOOKUP_KEY}}') {
+      planId = 'pro';
+    }
+    
+    // Créer une session de checkout avec le plan approprié
+    const session = await plansManager.createCheckoutSession(
+      planId,
+      null, // customerId
+      `${YOUR_DOMAIN}/?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      `${YOUR_DOMAIN}?canceled=true`
+    );
 
-      },
-    ],
-    mode: 'subscription',
-    success_url: `${YOUR_DOMAIN}/?success=true&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${YOUR_DOMAIN}?canceled=true`,
-  });
-
-  res.redirect(303, session.url);
+    res.redirect(303, session.url);
+  } catch (error) {
+    console.error('Erreur lors de la création de la session de checkout:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de la session de checkout' });
+  }
 });
 
 app.post('/create-portal-session', async (req, res) => {
@@ -180,6 +192,182 @@ app.get('/api/export', async (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Erreur lors de l\'export des données' });
+  }
+});
+
+// API endpoints pour les plans d'abonnement
+app.get('/api/plans', async (req, res) => {
+  try {
+    const plans = plansManager.getAllPlans();
+    res.json(plans);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération des plans' });
+  }
+});
+
+app.get('/api/plans/:planId', async (req, res) => {
+  try {
+    const plan = plansManager.getPlan(req.params.planId);
+    if (plan) {
+      res.json(plan);
+    } else {
+      res.status(404).json({ error: 'Plan non trouvé' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur lors de la récupération du plan' });
+  }
+});
+
+app.post('/api/checkout/:planId', async (req, res) => {
+  try {
+    const { planId } = req.params;
+    const { customerId, successUrl, cancelUrl } = req.body;
+
+    const session = await plansManager.createCheckoutSession(
+      planId,
+      customerId,
+      successUrl,
+      cancelUrl
+    );
+
+    res.json({ sessionId: session.id, url: session.url });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/subscriptions', async (req, res) => {
+  try {
+    const { planId, customerId, trialDays = 0 } = req.body;
+
+    const subscription = await plansManager.createSubscription(
+      planId,
+      customerId,
+      trialDays
+    );
+
+    res.json(subscription);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/subscriptions/:subscriptionId', async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const { newPlanId } = req.body;
+
+    const subscription = await plansManager.updateSubscription(
+      subscriptionId,
+      newPlanId
+    );
+
+    res.json(subscription);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/subscriptions/:subscriptionId/features', async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    
+    // Récupérer l'abonnement depuis Stripe
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Obtenir le plan et ses fonctionnalités
+    const plan = plansManager.getUserPlan(subscription);
+    const features = plan ? plan.features : [];
+
+    res.json({ features, plan });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/check-feature', async (req, res) => {
+  try {
+    const { subscriptionId, feature } = req.body;
+    
+    // Récupérer l'abonnement depuis Stripe
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    
+    // Vérifier l'accès à la fonctionnalité
+    const hasAccess = plansManager.hasFeature(subscription, feature);
+
+    res.json({ hasAccess, feature });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/activate-free-plan', async (req, res) => {
+  try {
+    // Créer un client gratuit dans la base de données
+    const customerData = {
+      id: `free_${Date.now()}`,
+      email: req.body.email || 'free@example.com',
+      name: req.body.name || 'Utilisateur Gratuit',
+      plan: 'gratuit',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      metadata: {
+        planId: 'gratuit',
+        isFreePlan: true
+      }
+    };
+
+    await db.createCustomer(customerData);
+
+    // Envoyer une notification
+    sendNotification('success', 'Plan Gratuit Activé', 'Votre plan gratuit gitShadow a été activé avec succès !', {
+      plan: 'gratuit',
+      customerId: customerData.id
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Plan gratuit activé avec succès',
+      customerId: customerData.id,
+      plan: 'gratuit'
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'activation du plan gratuit:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'activation du plan gratuit' });
+  }
+});
+
+app.post('/api/contact-enterprise', async (req, res) => {
+  try {
+    const { name, email, company, message } = req.body;
+    
+    // Enregistrer la demande de contact dans la base de données
+    const contactData = {
+      id: `contact_${Date.now()}`,
+      name,
+      email,
+      company,
+      message,
+      plan: 'entreprise',
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+
+    // Ici vous pourriez envoyer un email ou enregistrer dans une base de données
+    console.log('Demande de contact Entreprise:', contactData);
+
+    // Envoyer une notification
+    sendNotification('info', 'Demande Entreprise', `Nouvelle demande de contact pour le plan Entreprise de ${name}`, {
+      contact: contactData
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Votre demande a été envoyée. Nous vous contacterons dans les plus brefs délais.'
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi de la demande de contact:', error);
+    res.status(500).json({ error: 'Erreur lors de l\'envoi de la demande' });
   }
 });
 

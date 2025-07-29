@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import NotificationSystem from './NotificationSystem';
 import Dashboard from './Dashboard';
+import SubscriptionPlans from './SubscriptionPlans';
 
 const ProductDisplay = () => (
   <section>
@@ -58,6 +59,7 @@ export default function App() {
   let [sessionId, setSessionId] = useState('');
   let [showNotifications, setShowNotifications] = useState(false);
   let [showDashboard, setShowDashboard] = useState(false);
+  let [showPlans, setShowPlans] = useState(false);
 
   useEffect(() => {
     // Check to see if this is a redirect back from Checkout
@@ -79,11 +81,19 @@ export default function App() {
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
     setShowDashboard(false);
+    setShowPlans(false);
   };
 
   const toggleDashboard = () => {
     setShowDashboard(!showDashboard);
     setShowNotifications(false);
+    setShowPlans(false);
+  };
+
+  const togglePlans = () => {
+    setShowPlans(!showPlans);
+    setShowNotifications(false);
+    setShowDashboard(false);
   };
 
   if (showNotifications) {
@@ -112,6 +122,19 @@ export default function App() {
     );
   }
 
+  if (showPlans) {
+    return (
+      <div className="app-container">
+        <div className="notification-toggle">
+          <button onClick={togglePlans} className="back-button">
+            ← Retour à l'application
+          </button>
+        </div>
+        <SubscriptionPlans />
+      </div>
+    );
+  }
+
   if (!success && message === '') {
     return (
       <div className="app-container">
@@ -121,6 +144,9 @@ export default function App() {
           </button>
           <button onClick={toggleDashboard} className="dashboard-button">
             📊 Tableau de bord
+          </button>
+          <button onClick={togglePlans} className="plans-button">
+            📦 Plans d'abonnement
           </button>
         </div>
         <ProductDisplay />
@@ -136,6 +162,9 @@ export default function App() {
           <button onClick={toggleDashboard} className="dashboard-button">
             📊 Tableau de bord
           </button>
+          <button onClick={togglePlans} className="plans-button">
+            📦 Plans d'abonnement
+          </button>
         </div>
         <SuccessDisplay sessionId={sessionId} />
       </div>
@@ -149,6 +178,9 @@ export default function App() {
           </button>
           <button onClick={toggleDashboard} className="dashboard-button">
             📊 Tableau de bord
+          </button>
+          <button onClick={togglePlans} className="plans-button">
+            📦 Plans d'abonnement
           </button>
         </div>
         <Message message={message} />

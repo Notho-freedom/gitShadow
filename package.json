@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup-payments": "node setup-payments.js"
+    "setup-payments": "node setup-payments.js",
+    "test-payments": "node test-payments.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

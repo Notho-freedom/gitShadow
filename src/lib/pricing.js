@@ -19,6 +19,7 @@ export const pricingPlans = [
       'Pas de collaboration en équipe'
     ],
     stripePriceId: null,
+    lookupKey: null,
     popular: false
   },
   {
@@ -42,7 +43,8 @@ export const pricingPlans = [
       'Pas de fonctionnalités entreprise',
       'Limite de 5 utilisateurs'
     ],
-    stripePriceId: process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q',
+    stripePriceId: 'price_1RqJLI4AxuUKnAS0dbZL5O9E', // Nouveau ID créé
+    lookupKey: 'gitshadow_pro_monthly', // Lookup key créé
     popular: true,
     savings: 'Économisez 20%'
   },
@@ -66,7 +68,8 @@ export const pricingPlans = [
     limitations: [
       'Pas de fonctionnalités entreprise avancées'
     ],
-    stripePriceId: process.env.STRIPE_PRICE_TEAM_MONTHLY || 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q',
+    stripePriceId: 'price_1RqJLK4AxuUKnAS0SYwlpZe9', // Nouveau ID créé
+    lookupKey: 'gitshadow_team_monthly', // Lookup key créé
     popular: false
   },
   {
@@ -88,6 +91,7 @@ export const pricingPlans = [
     ],
     limitations: [],
     stripePriceId: null, // Pas d'ID Stripe pour l'entreprise (contact direct)
+    lookupKey: null,
     popular: false,
     custom: true
   }
@@ -98,13 +102,17 @@ export const annualPlans = pricingPlans.map(plan => ({
   price: plan.price ? Math.round(plan.price * 10) : 0, // 2 mois gratuits
   interval: 'year',
   stripePriceId: plan.stripePriceId ? 
-    (plan.id === 'pro' ? process.env.STRIPE_PRICE_PRO_YEARLY : process.env.STRIPE_PRICE_TEAM_YEARLY) || plan.stripePriceId.replace('monthly', 'yearly') : 
+    (plan.id === 'pro' ? 'price_1RqJLJ4AxuUKnAS0YPfCwI0n' : 'price_1RqJLK4AxuUKnAS019HJUl0G') : // Nouveaux IDs annuels
+    null,
+  lookupKey: plan.lookupKey ? 
+    (plan.id === 'pro' ? 'gitshadow_pro_yearly' : 'gitshadow_team_yearly') : 
     null,
   savings: plan.price && plan.price > 0 ? 'Économisez 20%' : null
 }));
 
+// Fonctions utilitaires
 export const getPlanById = (id) => {
-  return pricingPlans.find(plan => plan.id === id) || pricingPlans[0];
+  return pricingPlans.find(plan => plan.id === id) || annualPlans.find(plan => plan.id === id);
 };
 
 export const getPlanFeatures = (planId) => {
@@ -118,43 +126,16 @@ export const getPlanLimitations = (planId) => {
 };
 
 export const formatPrice = (price, currency = 'EUR') => {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: currency
-  }).format(price);
+  if (price === 0) return 'Gratuit';
+  return `${price}€`;
 };
 
 export const getPlanLimits = (planId) => {
   const limits = {
-    free: {
-      repos: 3,
-      files: 100,
-      users: 1,
-      storage: '1GB',
-      apiCalls: 1000
-    },
-    pro: {
-      repos: -1, // illimité
-      files: -1,
-      users: 5,
-      storage: '10GB',
-      apiCalls: 10000
-    },
-    team: {
-      repos: -1,
-      files: -1,
-      users: 20,
-      storage: '50GB',
-      apiCalls: 50000
-    },
-    enterprise: {
-      repos: -1,
-      files: -1,
-      users: -1,
-      storage: '500GB',
-      apiCalls: -1
-    }
+    free: { repos: 3, files: 100, users: 1 },
+    pro: { repos: -1, files: -1, users: 5 }, // -1 = illimité
+    team: { repos: -1, files: -1, users: 20 },
+    enterprise: { repos: -1, files: -1, users: -1 }
   };
-  
   return limits[planId] || limits.free;
 }; 

@@ -15,46 +15,50 @@
 
 ### 2. Configuration Stripe Dashboard
 
-#### A. Créer les Produits et Prix
+#### A. Créer les Produits et Prix avec Lookup Keys
 
 1. **Allez sur [Stripe Dashboard](https://dashboard.stripe.com/products)**
-2. **Créez les produits suivants :**
+2. **Créez les produits suivants avec leurs lookup keys :**
 
    **Plan Pro Mensuel :**
    - Nom : `GitShadow Pro - Mensuel`
    - Prix : `19.00 EUR`
    - Intervalle : `Mensuel`
+   - **Lookup Key :** `gitshadow_pro_monthly`
    - Copiez l'ID de prix généré
 
    **Plan Pro Annuel :**
    - Nom : `GitShadow Pro - Annuel`
    - Prix : `190.00 EUR` (2 mois gratuits)
    - Intervalle : `Annuel`
+   - **Lookup Key :** `gitshadow_pro_yearly`
    - Copiez l'ID de prix généré
 
    **Plan Team Mensuel :**
    - Nom : `GitShadow Team - Mensuel`
    - Prix : `49.00 EUR`
    - Intervalle : `Mensuel`
+   - **Lookup Key :** `gitshadow_team_monthly`
    - Copiez l'ID de prix généré
 
    **Plan Team Annuel :**
    - Nom : `GitShadow Team - Annuel`
    - Prix : `490.00 EUR` (2 mois gratuits)
    - Intervalle : `Annuel`
+   - **Lookup Key :** `gitshadow_team_yearly`
    - Copiez l'ID de prix généré
 
-#### B. Configurer les Webhooks
+#### B. Configurer les Webhooks (2 endpoints)
 
 1. **Allez sur [Stripe Webhooks](https://dashboard.stripe.com/webhooks)**
 2. **Ajoutez les endpoints suivants :**
 
-   **Endpoint Principal :**
-   - URL : `https://git-shadow.vercel.app/webhook/`
-   - Événements : `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+   **Endpoint Principal (Snapshot) :**
+   - URL : `https://git-shadow.vercel.app/api/payment/webhook`
+   - Événements : `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.trial_will_end`, `customer.subscription.trial_ended`, `invoice.payment_succeeded`, `invoice.payment_failed`, `entitlements.active_entitlement_summary.updated`
 
    **Endpoint Thin :**
-   - URL : `https://git-shadow.vercel.app/webhook/thin/`
+   - URL : `https://git-shadow.vercel.app/api/payment/webhook`
    - Événements : `checkout.session.completed`
 
 3. **Copiez les Signing Secrets** de chaque webhook
@@ -72,6 +76,7 @@ STRIPE_PRICE_TEAM_YEARLY=price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q
 
 # Remplacez par vos vrais Signing Secrets
 STRIPE_WEBHOOK_SECRET=whsec_ZBrup7oEMxq41NGuD6kVfsQ8BiNYvHps
+STRIPE_WEBHOOK_THIN_SECRET=whsec_Uvfxw888jdlp6ZECH8wxtXyJT77MMWld
 ```
 
 ### 3. Configuration du Développement Local
@@ -141,18 +146,18 @@ STRIPE_SECRET_KEY=sk_live_your_live_key
 
 - Configurez les webhooks avec vos URLs de production
 - Utilisez les Signing Secrets de production
-- Testez avec `stripe listen --forward-to your-production-url/webhook`
+- Testez avec `stripe listen --forward-to your-production-url/api/payment/webhook`
 
 ### 6. Dépannage
 
 #### Erreurs Courantes
 
 1. **"No such price" :**
-   - Vérifiez que les IDs de prix existent dans votre dashboard Stripe
+   - Vérifiez que les lookup keys existent dans votre dashboard Stripe
    - Assurez-vous que les prix sont actifs
 
 2. **"Webhook signature verification failed" :**
-   - Vérifiez le Signing Secret dans vos variables d'environnement
+   - Vérifiez les Signing Secrets dans vos variables d'environnement
    - Assurez-vous que le webhook est correctement configuré
 
 3. **"Stripe is not available" :**
@@ -187,6 +192,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # ❌ JAMAIS côté client
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_WEBHOOK_THIN_SECRET=whsec_...
 ```
 
 ### 8. Support

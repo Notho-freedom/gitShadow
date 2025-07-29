@@ -1,37 +1,43 @@
 import Stripe from 'stripe';
 
-// Configuration Stripe côté serveur
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+// Initialiser Stripe avec la clé secrète
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-12-18.acacia',
 });
 
-// Configuration Stripe côté client
-export const getStripe = () => {
-  if (typeof window !== 'undefined') {
-    return window.Stripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-  }
-  return null;
-};
-
 // Validation des clés Stripe
 export const validateStripeKeys = () => {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  const secretKey = process.env.STRIPE_SECRET_KEY;
   
-  if (!secretKey || !publishableKey) {
-    throw new Error('Clés Stripe manquantes dans les variables d\'environnement');
+  if (!publishableKey) {
+    console.error('❌ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY manquante');
+    return false;
   }
   
-  if (!secretKey.startsWith('sk_') || !publishableKey.startsWith('pk_')) {
-    throw new Error('Format de clé Stripe invalide');
+  if (!secretKey) {
+    console.error('❌ STRIPE_SECRET_KEY manquante');
+    return false;
   }
   
+  if (!publishableKey.startsWith('pk_')) {
+    console.error('❌ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY invalide');
+    return false;
+  }
+  
+  if (!secretKey.startsWith('sk_')) {
+    console.error('❌ STRIPE_SECRET_KEY invalide');
+    return false;
+  }
+  
+  console.log('✅ Clés Stripe valides');
   return true;
 };
 
-// Créer une session de paiement
+// Créer une session de checkout avec priceId ou lookupKey
 export const createCheckoutSession = async ({
   priceId,
+  lookupKey,
   customerEmail,
   successUrl,
   cancelUrl,
@@ -41,70 +47,73 @@ export const createCheckoutSession = async ({
   mode = 'subscription'
 }) => {
   try {
-    validateStripeKeys();
-    
-    if (!priceId) {
-      throw new Error('ID de prix requis');
-    }
-    
-    if (!customerEmail) {
-      throw new Error('Email client requis');
-    }
-    
-    if (!successUrl || !cancelUrl) {
-      throw new Error('URLs de succès et d\'annulation requises');
+    // Valider les clés Stripe
+    if (!validateStripeKeys()) {
+      throw new Error('Configuration Stripe invalide');
     }
 
+    let price;
+
+    if (lookupKey) {
+      // Utiliser lookup_key (méthode du sample)
+      const prices = await stripe.prices.list({
+        lookup_keys: [lookupKey],
+        expand: ['data.product'],
+      });
+
+      if (!prices.data.length) {
+        throw new Error(`Prix non trouvé pour la clé: ${lookupKey}`);
+      }
+
+      price = prices.data[0];
+      console.log(`✅ Prix trouvé via lookup_key: ${price.id} pour ${lookupKey}`);
+    } else if (priceId) {
+      // Utiliser priceId direct
+      price = await stripe.prices.retrieve(priceId);
+      console.log(`✅ Prix trouvé via priceId: ${price.id}`);
+    } else {
+      throw new Error('priceId ou lookupKey requis');
+    }
+
+    // Créer la session de checkout
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      billing_address_collection: billingAddressCollection,
       line_items: [
         {
-          price: priceId,
+          price: price.id,
           quantity: 1,
         },
       ],
       mode: mode,
       success_url: successUrl,
       cancel_url: cancelUrl,
-      customer_email: customerEmail,
-      metadata: {
-        ...metadata,
-        source: 'gitshadow',
-        timestamp: new Date().toISOString()
-      },
       allow_promotion_codes: allowPromotionCodes,
-      billing_address_collection: billingAddressCollection,
-      subscription_data: mode === 'subscription' ? {
-        metadata: {
-          ...metadata,
-          source: 'gitshadow'
-        }
-      } : undefined,
-      payment_intent_data: mode === 'payment' ? {
-        metadata: {
-          ...metadata,
-          source: 'gitshadow'
-        }
-      } : undefined,
-      automatic_tax: {
-        enabled: true,
-      },
-      tax_id_collection: {
-        enabled: true,
-      },
-      consent_collection: {
-        terms_of_service: 'required',
+      customer_email: customerEmail,
+      metadata: metadata,
+      subscription_data: {
+        metadata: metadata,
+        trial_period_days: 14, // Essai gratuit de 14 jours
       },
     });
 
-    return { success: true, sessionId: session.id, url: session.url };
+    console.log(`✅ Session de checkout créée: ${session.id}`);
+    
+    return {
+      success: true,
+      sessionId: session.id,
+      url: session.url
+    };
+
   } catch (error) {
-    console.error('Erreur lors de la création de la session de paiement:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la création de la session:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 };
 
-// Créer une session de paiement pour un montant personnalisé
+// Créer une session de checkout personnalisée (pour Enterprise)
 export const createCustomCheckoutSession = async ({
   amount,
   currency = 'eur',
@@ -116,22 +125,14 @@ export const createCustomCheckoutSession = async ({
   productDescription = 'Plan personnalisé GitShadow'
 }) => {
   try {
-    validateStripeKeys();
-    
-    if (!amount || amount <= 0) {
-      throw new Error('Montant invalide');
-    }
-    
-    if (!customerEmail) {
-      throw new Error('Email client requis');
-    }
-    
-    if (!successUrl || !cancelUrl) {
-      throw new Error('URLs de succès et d\'annulation requises');
+    // Valider les clés Stripe
+    if (!validateStripeKeys()) {
+      throw new Error('Configuration Stripe invalide');
     }
 
+    // Créer la session de checkout avec montant personnalisé
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      billing_address_collection: 'required',
       line_items: [
         {
           price_data: {
@@ -140,7 +141,7 @@ export const createCustomCheckoutSession = async ({
               name: productName,
               description: productDescription,
             },
-            unit_amount: Math.round(amount * 100), // Stripe utilise les centimes
+            unit_amount: amount * 100, // Stripe utilise les centimes
           },
           quantity: 1,
         },
@@ -149,264 +150,183 @@ export const createCustomCheckoutSession = async ({
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: customerEmail,
-      metadata: {
-        ...metadata,
-        source: 'gitshadow',
-        type: 'custom',
-        timestamp: new Date().toISOString()
-      },
-      allow_promotion_codes: true,
-      billing_address_collection: 'required',
-      automatic_tax: {
-        enabled: true,
-      },
-      tax_id_collection: {
-        enabled: true,
-      },
+      metadata: metadata,
     });
 
-    return { success: true, sessionId: session.id, url: session.url };
+    console.log(`✅ Session de checkout personnalisée créée: ${session.id}`);
+    
+    return {
+      success: true,
+      sessionId: session.id,
+      url: session.url
+    };
+
   } catch (error) {
-    console.error('Erreur lors de la création de la session de paiement personnalisée:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la création de la session personnalisée:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 };
 
-// Récupérer les informations d'un client
+// Récupérer un client
 export const getCustomer = async (customerId) => {
   try {
-    validateStripeKeys();
-    
-    if (!customerId) {
-      throw new Error('ID client requis');
-    }
-    
     const customer = await stripe.customers.retrieve(customerId);
-    return { success: true, customer };
+    return customer;
   } catch (error) {
-    console.error('Erreur lors de la récupération du client:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la récupération du client:', error);
+    throw error;
   }
 };
 
 // Créer ou récupérer un client
 export const createOrRetrieveCustomer = async (email, metadata = {}) => {
   try {
-    validateStripeKeys();
-    
-    if (!email) {
-      throw new Error('Email requis');
-    }
-    
-    // Chercher un client existant
+    // Chercher un client existant par email
     const existingCustomers = await stripe.customers.list({
       email: email,
       limit: 1,
     });
 
     if (existingCustomers.data.length > 0) {
-      return { success: true, customer: existingCustomers.data[0] };
+      console.log(`✅ Client existant trouvé: ${existingCustomers.data[0].id}`);
+      return existingCustomers.data[0];
     }
 
     // Créer un nouveau client
     const customer = await stripe.customers.create({
       email: email,
-      metadata: {
-        ...metadata,
-        source: 'gitshadow',
-        created_at: new Date().toISOString()
-      }
+      metadata: metadata,
     });
 
-    return { success: true, customer };
+    console.log(`✅ Nouveau client créé: ${customer.id}`);
+    return customer;
+
   } catch (error) {
-    console.error('Erreur lors de la création/récupération du client:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la création/récupération du client:', error);
+    throw error;
   }
 };
 
 // Récupérer les abonnements d'un client
 export const getCustomerSubscriptions = async (customerId) => {
   try {
-    validateStripeKeys();
-    
-    if (!customerId) {
-      throw new Error('ID client requis');
-    }
-    
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'all',
       expand: ['data.default_payment_method'],
     });
-    
-    return { success: true, subscriptions: subscriptions.data };
+    return subscriptions.data;
   } catch (error) {
-    console.error('Erreur lors de la récupération des abonnements:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la récupération des abonnements:', error);
+    throw error;
   }
 };
 
 // Annuler un abonnement
 export const cancelSubscription = async (subscriptionId, cancelAtPeriodEnd = true) => {
   try {
-    validateStripeKeys();
-    
-    if (!subscriptionId) {
-      throw new Error('ID d\'abonnement requis');
-    }
-    
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: cancelAtPeriodEnd,
     });
-    return { success: true, subscription };
+    return subscription;
   } catch (error) {
-    console.error('Erreur lors de l\'annulation de l\'abonnement:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de l\'annulation de l\'abonnement:', error);
+    throw error;
   }
 };
 
 // Réactiver un abonnement
 export const reactivateSubscription = async (subscriptionId) => {
   try {
-    validateStripeKeys();
-    
-    if (!subscriptionId) {
-      throw new Error('ID d\'abonnement requis');
-    }
-    
     const subscription = await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: false,
     });
-    return { success: true, subscription };
+    return subscription;
   } catch (error) {
-    console.error('Erreur lors de la réactivation de l\'abonnement:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la réactivation de l\'abonnement:', error);
+    throw error;
   }
 };
 
 // Mettre à jour un abonnement
 export const updateSubscription = async (subscriptionId, updates) => {
   try {
-    validateStripeKeys();
-    
-    if (!subscriptionId) {
-      throw new Error('ID d\'abonnement requis');
-    }
-    
     const subscription = await stripe.subscriptions.update(subscriptionId, updates);
-    return { success: true, subscription };
+    return subscription;
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'abonnement:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la mise à jour de l\'abonnement:', error);
+    throw error;
   }
 };
 
 // Récupérer l'historique des paiements
 export const getPaymentHistory = async (customerId, limit = 100) => {
   try {
-    validateStripeKeys();
-    
-    if (!customerId) {
-      throw new Error('ID client requis');
-    }
-    
-    const payments = await stripe.paymentIntents.list({
-      customer: customerId,
-      limit: limit,
-    });
-    
     const invoices = await stripe.invoices.list({
       customer: customerId,
       limit: limit,
+      expand: ['data.payment_intent'],
     });
-    
-    return { 
-      success: true, 
-      payments: payments.data,
-      invoices: invoices.data
-    };
+    return invoices.data;
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'historique des paiements:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la récupération de l\'historique:', error);
+    throw error;
   }
 };
 
-// Créer un portail client
+// Créer une session du portail client
 export const createCustomerPortalSession = async (customerId, returnUrl) => {
   try {
-    validateStripeKeys();
-    
-    if (!customerId) {
-      throw new Error('ID client requis');
-    }
-    
-    if (!returnUrl) {
-      throw new Error('URL de retour requise');
-    }
-    
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: returnUrl,
-      configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID,
     });
-    return { success: true, url: session.url };
+    return session;
   } catch (error) {
-    console.error('Erreur lors de la création du portail client:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la création de la session portail:', error);
+    throw error;
   }
 };
 
 // Créer un remboursement
 export const createRefund = async (paymentIntentId, amount, reason = 'requested_by_customer') => {
   try {
-    validateStripeKeys();
-    
-    if (!paymentIntentId) {
-      throw new Error('ID de paiement requis');
-    }
-    
     const refund = await stripe.refunds.create({
       payment_intent: paymentIntentId,
-      amount: amount ? Math.round(amount * 100) : undefined,
+      amount: amount,
       reason: reason,
     });
-    
-    return { success: true, refund };
+    return refund;
   } catch (error) {
-    console.error('Erreur lors de la création du remboursement:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la création du remboursement:', error);
+    throw error;
   }
 };
 
 // Récupérer les événements Stripe
 export const getStripeEvents = async (limit = 100, types = []) => {
   try {
-    validateStripeKeys();
-    
     const events = await stripe.events.list({
       limit: limit,
       types: types.length > 0 ? types : undefined,
     });
-    
-    return { success: true, events: events.data };
+    return events.data;
   } catch (error) {
-    console.error('Erreur lors de la récupération des événements:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la récupération des événements:', error);
+    throw error;
   }
 };
 
-// Valider une signature webhook
+// Valider la signature d'un webhook
 export const validateWebhookSignature = (body, signature, secret) => {
   try {
-    if (!body || !signature || !secret) {
-      throw new Error('Paramètres de validation manquants');
-    }
-    
     const event = stripe.webhooks.constructEvent(body, signature, secret);
     return { success: true, event };
   } catch (error) {
-    console.error('Erreur de validation de signature webhook:', error);
+    console.error('❌ Erreur de validation de signature webhook:', error);
     return { success: false, error: error.message };
   }
 };
@@ -414,25 +334,21 @@ export const validateWebhookSignature = (body, signature, secret) => {
 // Créer un coupon
 export const createCoupon = async (couponData) => {
   try {
-    validateStripeKeys();
-    
     const coupon = await stripe.coupons.create(couponData);
-    return { success: true, coupon };
+    return coupon;
   } catch (error) {
-    console.error('Erreur lors de la création du coupon:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la création du coupon:', error);
+    throw error;
   }
 };
 
 // Récupérer un coupon
 export const getCoupon = async (couponId) => {
   try {
-    validateStripeKeys();
-    
     const coupon = await stripe.coupons.retrieve(couponId);
-    return { success: true, coupon };
+    return coupon;
   } catch (error) {
-    console.error('Erreur lors de la récupération du coupon:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Erreur lors de la récupération du coupon:', error);
+    throw error;
   }
 }; 

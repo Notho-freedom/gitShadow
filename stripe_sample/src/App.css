@@ -140,6 +140,28 @@ button:hover {
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
 }
 
+.plans-button {
+  background: #fd7e14;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(253, 126, 20, 0.3);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plans-button:hover {
+  background: #e8690b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(253, 126, 20, 0.4);
+}
+
 .back-button {
   background: #6c757d;
   color: white;

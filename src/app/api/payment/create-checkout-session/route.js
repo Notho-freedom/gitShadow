@@ -54,7 +54,7 @@ export async function POST(request) {
         );
       }
 
-      if (!plan.stripePriceId) {
+      if (!plan.lookupKey) {
         return NextResponse.json(
           { error: `Plan '${plan.name}' non configuré pour les paiements` },
           { status: 400 }
@@ -63,7 +63,7 @@ export async function POST(request) {
 
       try {
         result = await createCheckoutSession({
-          priceId: plan.stripePriceId,
+          lookupKey: plan.lookupKey, // Utiliser la lookup key
           customerEmail,
           successUrl,
           cancelUrl,

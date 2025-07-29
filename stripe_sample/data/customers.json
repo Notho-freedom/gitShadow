@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "free_1753817297216",
+    "email": "test@example.com",
+    "name": "Test User",
+    "status": "active",
+    "metadata": {
+      "planId": "gratuit",
+      "isFreePlan": true
+    },
+    "lastUpdated": "2025-07-29T19:28:17.305Z"
+  }
+]
