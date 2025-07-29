@@ -40,15 +40,6 @@ export default function CheckoutModal({
     setStep('processing');
 
     try {
-      // En mode développement, simuler un checkout réussi
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Mode développement : simulation du checkout');
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Simuler un délai
-        setStep('success');
-        setLoading(false);
-        return;
-      }
-
       const response = await fetch('/api/payment/create-checkout-session', {
         method: 'POST',
         headers: {

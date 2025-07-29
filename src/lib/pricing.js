@@ -42,7 +42,7 @@ export const pricingPlans = [
       'Pas de fonctionnalités entreprise',
       'Limite de 5 utilisateurs'
     ],
-    stripePriceId: 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q', // ID de test Stripe
+    stripePriceId: process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q',
     popular: true,
     savings: 'Économisez 20%'
   },
@@ -66,7 +66,7 @@ export const pricingPlans = [
     limitations: [
       'Pas de fonctionnalités entreprise avancées'
     ],
-    stripePriceId: 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q', // ID de test Stripe
+    stripePriceId: process.env.STRIPE_PRICE_TEAM_MONTHLY || 'price_1OqX8X2eZvKYlo2C9Q9Q9Q9Q',
     popular: false
   },
   {
@@ -97,7 +97,9 @@ export const annualPlans = pricingPlans.map(plan => ({
   ...plan,
   price: plan.price ? Math.round(plan.price * 10) : 0, // 2 mois gratuits
   interval: 'year',
-  stripePriceId: plan.stripePriceId ? plan.stripePriceId.replace('monthly', 'yearly') : null,
+  stripePriceId: plan.stripePriceId ? 
+    (plan.id === 'pro' ? process.env.STRIPE_PRICE_PRO_YEARLY : process.env.STRIPE_PRICE_TEAM_YEARLY) || plan.stripePriceId.replace('monthly', 'yearly') : 
+    null,
   savings: plan.price && plan.price > 0 ? 'Économisez 20%' : null
 }));
 

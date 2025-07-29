@@ -28,16 +28,6 @@ export async function POST(request) {
       );
     }
 
-    // En mode développement, simuler une session de checkout
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Mode développement : simulation de session de checkout');
-      return NextResponse.json({
-        sessionId: 'cs_test_simulation_' + Date.now(),
-        url: successUrl,
-        success: true
-      });
-    }
-
     let result;
 
     if (customAmount) {
