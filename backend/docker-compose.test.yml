@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # API Gateway Ultra-Robuste
+  api-gateway:
+    build: 
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=test-secret-key
+      - PYTHON_SERVICE_URL=http://python-service:3002
+    depends_on:
+      - redis
+      - postgres
+      - python-service
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+
+  # Service Python Ultra-Robuste
+  python-service:
+    build:
+      context: ./python-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - PYTHONPATH=/app
+      - PORT=3002
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=gitshadow
+      - POSTGRES_USER=gitshadow
+      - POSTGRES_PASSWORD=gitshadow123
+    volumes:
+      - ./python-service:/app
+      - python_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=gitshadow
+      - POSTGRES_USER=gitshadow
+      - POSTGRES_PASSWORD=gitshadow123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+
+  # Cache Redis
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  python_logs:
+
+networks:
+  gitshadow-network:
+    driver: bridge 

@@ -1,0 +1,89 @@
+# FastAPI et dépendances web
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Parsing et analyse de code
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+astroid==3.0.1
+pylint==3.0.3
+
+# Requêtes HTTP et async
+httpx==0.25.2
+aiohttp==3.9.1
+asyncio-mqtt==0.16.1
+
+# Base de données et cache
+redis==5.0.1
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+sqlalchemy==2.0.23
+alembic==1.13.0
+
+# Monitoring et métriques
+prometheus-client==0.19.0
+structlog==23.2.0
+psutil==5.9.6
+memory-profiler==0.61.0
+
+# Sécurité et authentification
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+PyJWT==2.8.0
+
+# Tests et qualité
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-httpx==0.25.0
+pytest-cov==4.1.0
+coverage==7.3.2
+
+# IA et analyse sémantique
+numpy==1.24.3
+pandas==2.1.3
+scikit-learn==1.3.2
+
+# Utilitaires de développement
+python-dotenv==1.0.0
+click==8.1.7
+rich==13.7.0
+tqdm==4.66.1
+
+# Documentation et génération
+sphinx==7.2.6
+sphinx-rtd-theme==1.3.0
+myst-parser==2.0.0
+
+# Performance et optimisation
+orjson==3.9.10
+ujson==5.8.0
+msgpack==1.0.7
+
+# Validation et schémas
+jsonschema==4.20.0
+cerberus==1.3.5
+
+# Logging avancé
+loguru==0.7.2
+colorama==0.4.6
+
+# Utilitaires système
+watchdog==3.0.0
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Compression et sérialisation
+lz4==4.3.2
+zstandard==0.22.0
+
+# Réseau et communication
+websockets==12.0
+aiofiles==23.2.1
+
+# Validation de code
+bandit==1.7.5
+safety==2.3.5 

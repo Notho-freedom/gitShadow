@@ -1,0 +1,402 @@
+version: '3.8'
+
+services:
+  # API Gateway Ultra-Robuste
+  api-gateway:
+    build: 
+      context: ./backend/gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - PYTHON_SERVICE_URL=http://python-service:3002
+      - JS_SERVICE_URL=http://js-service:3004
+      - JAVA_SERVICE_URL=http://java-service:3003
+      - RUST_SERVICE_URL=http://rust-service:3005
+      - WEB_SERVICE_URL=http://web-service:3006
+      - AI_SERVICE_URL=http://ai-service:3007
+      - ANALYTICS_SERVICE_URL=http://analytics-service:3008
+    depends_on:
+      - redis
+      - postgres
+      - python-service
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Service Python Ultra-Robuste
+  python-service:
+    build:
+      context: ./backend/python-service
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - PYTHONPATH=/app
+      - PORT=3002
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=gitshadow
+      - POSTGRES_USER=gitshadow
+      - POSTGRES_PASSWORD=gitshadow123
+    volumes:
+      - ./backend/python-service:/app
+      - python_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Service JavaScript/TypeScript
+  js-service:
+    build:
+      context: ./backend/js-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./backend/js-service:/app
+      - js_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Service Java
+  java-service:
+    build:
+      context: ./backend/java-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      - SPRING_PROFILES_ACTIVE=production
+      - SERVER_PORT=3003
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./backend/java-service:/app
+      - java_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Service Rust/C/C++
+  rust-service:
+    build:
+      context: ./backend/rust-service
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      - RUST_LOG=info
+      - PORT=3005
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./backend/rust-service:/app
+      - rust_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Service Web (HTML/CSS/SCSS)
+  web-service:
+    build:
+      context: ./backend/web-service
+      dockerfile: Dockerfile
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=production
+      - PORT=3006
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./backend/web-service:/app
+      - web_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Service IA/ML
+  ai-service:
+    build:
+      context: ./backend/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "3007:3007"
+    environment:
+      - PYTHONPATH=/app
+      - PORT=3007
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./backend/ai-service:/app
+      - ai_models:/app/models
+      - ai_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+
+  # Service Analytics
+  analytics-service:
+    build:
+      context: ./backend/analytics-service
+      dockerfile: Dockerfile
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=production
+      - PORT=3008
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - INFLUXDB_URL=http://influxdb:8086
+    volumes:
+      - ./backend/analytics-service:/app
+      - analytics_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=gitshadow
+      - POSTGRES_USER=gitshadow
+      - POSTGRES_PASSWORD=gitshadow123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Cache Redis
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Base de données InfluxDB pour les métriques
+  influxdb:
+    image: influxdb:2.7-alpine
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=gitshadow
+      - DOCKER_INFLUXDB_INIT_BUCKET=metrics
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    ports:
+      - "8086:8086"
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Load Balancer Nginx
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./backend/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - api-gateway
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Monitoring Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./backend/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Monitoring Grafana
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./backend/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./backend/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+volumes:
+  postgres_data:
+  redis_data:
+  influxdb_data:
+  prometheus_data:
+  grafana_data:
+  python_logs:
+  js_logs:
+  java_logs:
+  rust_logs:
+  web_logs:
+  ai_logs:
+  analytics_logs:
+  ai_models:
+
+networks:
+  gitshadow-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

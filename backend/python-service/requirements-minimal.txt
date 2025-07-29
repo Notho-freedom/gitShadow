@@ -1,0 +1,23 @@
+# FastAPI et dépendances web
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# Base de données et cache
+redis==5.0.1
+psycopg2-binary==2.9.9
+
+# Monitoring et métriques
+prometheus-client==0.19.0
+structlog==23.2.0
+
+# Sécurité et authentification
+PyJWT==2.8.0
+
+# Tests
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
+
+# Utilitaires
+python-dotenv==1.0.0 
