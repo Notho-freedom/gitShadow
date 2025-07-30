@@ -22,8 +22,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Copy simplified version
-COPY src/main-simple.ts src/main.ts
+# Overwrite main.ts with simplified version
+RUN cp src/main-simple.ts src/main.ts
 
 # Expose port
 EXPOSE 3004

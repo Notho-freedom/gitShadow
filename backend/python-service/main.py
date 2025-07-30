@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any, Union
 import ast
 import asyncio
@@ -51,12 +51,33 @@ structlog.configure(
 
 logger = structlog.get_logger()
 
-# Métriques Prometheus
-REQUEST_COUNT = Counter('documentation_requests_total', 'Total documentation requests', ['endpoint', 'status'])
-REQUEST_DURATION = Histogram('documentation_request_duration_seconds', 'Request duration in seconds', ['endpoint'])
-ACTIVE_REQUESTS = Gauge('documentation_active_requests', 'Number of active requests')
-CACHE_HITS = Counter('documentation_cache_hits_total', 'Total cache hits')
-CACHE_MISSES = Counter('documentation_cache_misses_total', 'Total cache misses')
+# Métriques Prometheus - Initialisation sécurisée
+def get_prometheus_metrics():
+    """Retourne les métriques Prometheus avec gestion des doublons"""
+    try:
+        return {
+            'request_count': Counter('documentation_requests_total', 'Total documentation requests', ['endpoint', 'status']),
+            'request_duration': Histogram('documentation_request_duration_seconds', 'Request duration in seconds', ['endpoint']),
+            'active_requests': Gauge('documentation_active_requests', 'Number of active requests'),
+            'cache_hits': Counter('documentation_cache_hits_total', 'Total cache hits'),
+            'cache_misses': Counter('documentation_cache_misses_total', 'Total cache misses')
+        }
+    except ValueError as e:
+        if "Duplicated timeseries" in str(e):
+            # Si les métriques existent déjà, on les récupère
+            from prometheus_client import REGISTRY
+            return {
+                'request_count': REGISTRY.get_sample_value('documentation_requests_total'),
+                'request_duration': REGISTRY.get_sample_value('documentation_request_duration_seconds'),
+                'active_requests': REGISTRY.get_sample_value('documentation_active_requests'),
+                'cache_hits': REGISTRY.get_sample_value('documentation_cache_hits_total'),
+                'cache_misses': REGISTRY.get_sample_value('documentation_cache_misses_total')
+            }
+        else:
+            raise e
+
+# Initialisation des métriques
+metrics = get_prometheus_metrics()
 
 app = FastAPI(
     title="GitShadow Python Documentation Service - Ultra Robust",
@@ -109,7 +130,8 @@ class DocumentationRequest(BaseModel):
     include_dependencies: bool = Field(default=True, description="Analyser les dépendances")
     quality_threshold: float = Field(default=0.8, description="Seuil de qualité minimum")
     
-    @validator('doc_type')
+    @field_validator('doc_type')
+    @classmethod
     def validate_doc_type(cls, v):
         allowed_types = ['comprehensive', 'minimal', 'api', 'tutorial', 'reference']
         if v not in allowed_types:
@@ -182,9 +204,9 @@ class IntelligentCache:
         try:
             data = await self.redis.get(key)
             if data:
-                CACHE_HITS.inc()
+                metrics['cache_hits'].inc()
                 return json.loads(data)
-            CACHE_MISSES.inc()
+            metrics['cache_misses'].inc()
             return None
         except Exception as e:
             logger.error(f"Erreur cache get: {e}")
@@ -551,7 +573,7 @@ async def metrics():
 async def analyze_code(request: DocumentationRequest):
     """Analyse avancée du code Python"""
     start_time = time.time()
-    ACTIVE_REQUESTS.inc()
+    metrics['active_requests'].inc()
     
     try:
         # Parse le code avec AST
@@ -588,8 +610,8 @@ async def analyze_code(request: DocumentationRequest):
         )
         
         duration = time.time() - start_time
-        REQUEST_DURATION.observe(duration)
-        REQUEST_COUNT.labels(endpoint="analyze", status="success").inc()
+        metrics['request_duration'].observe(duration)
+        metrics['request_count'].labels(endpoint="analyze", status="success").inc()
         
         logger.info("Analyse terminée", 
                    filename=request.filename, 
@@ -600,14 +622,14 @@ async def analyze_code(request: DocumentationRequest):
         return analysis
         
     except SyntaxError as e:
-        REQUEST_COUNT.labels(endpoint="analyze", status="error").inc()
+        metrics['request_count'].labels(endpoint="analyze", status="error").inc()
         raise HTTPException(status_code=400, detail=f"Erreur de syntaxe: {str(e)}")
     except Exception as e:
-        REQUEST_COUNT.labels(endpoint="analyze", status="error").inc()
+        metrics['request_count'].labels(endpoint="analyze", status="error").inc()
         logger.error("Erreur lors de l'analyse", error=str(e), traceback=traceback.format_exc())
         raise HTTPException(status_code=500, detail="Erreur interne du serveur")
     finally:
-        ACTIVE_REQUESTS.dec()
+        metrics['active_requests'].dec()
 
 @app.post("/generate", response_model=DocumentationResponse)
 async def generate_documentation(
@@ -616,7 +638,7 @@ async def generate_documentation(
 ):
     """Génération de documentation ultra-robuste"""
     start_time = time.time()
-    ACTIVE_REQUESTS.inc()
+    metrics['active_requests'].inc()
     
     try:
         # Vérifier le cache
@@ -679,8 +701,8 @@ async def generate_documentation(
         background_tasks.add_task(store_documentation, request, response)
         
         duration = time.time() - start_time
-        REQUEST_DURATION.observe(duration)
-        REQUEST_COUNT.labels(endpoint="generate", status="success").inc()
+        metrics['request_duration'].observe(duration)
+        metrics['request_count'].labels(endpoint="generate", status="success").inc()
         
         logger.info("Documentation générée", 
                    filename=request.filename, 
@@ -690,11 +712,11 @@ async def generate_documentation(
         return response
         
     except Exception as e:
-        REQUEST_COUNT.labels(endpoint="generate", status="error").inc()
+        metrics['request_count'].labels(endpoint="generate", status="error").inc()
         logger.error("Erreur lors de la génération", error=str(e), traceback=traceback.format_exc())
         raise HTTPException(status_code=500, detail="Erreur lors de la génération")
     finally:
-        ACTIVE_REQUESTS.dec()
+        metrics['active_requests'].dec()
 
 # Fonctions utilitaires avancées
 def extract_functions_advanced(tree: ast.AST) -> List[Dict[str, Any]]:
