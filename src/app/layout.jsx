@@ -4,6 +4,33 @@ import { AuthProvider } from '../components/AuthProvider';
 export const metadata = {
   title: 'gitShadow - AI Documentation Generator',
   description: 'Generate smart documentation from your Git repository with AI',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
+  openGraph: {
+    title: 'gitShadow - AI Documentation Generator',
+    description: 'Generate smart documentation from your Git repository with AI',
+    url: 'https://gitshadow.com',
+    siteName: 'gitShadow',
+    images: [
+      {
+        url: '/cover.png',
+        width: 1200,
+        height: 630,
+        alt: 'gitShadow - AI Documentation Generator',
+      },
+    ],
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'gitShadow - AI Documentation Generator',
+    description: 'Generate smart documentation from your Git repository with AI',
+    images: ['/cover.png'],
+  },
 };
 
 export default function RootLayout({ children }) {
