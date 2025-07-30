@@ -15,10 +15,12 @@ services:
       - REDIS_PORT=6379
       - JWT_SECRET=test-secret-key
       - PYTHON_SERVICE_URL=http://python-service:3002
+      - JS_SERVICE_URL=http://js-service:3004
     depends_on:
       - redis
       - postgres
       - python-service
+      - js-service
     networks:
       - gitshadow-network
     restart: unless-stopped
@@ -42,6 +44,37 @@ services:
     volumes:
       - ./python-service:/app
       - python_logs:/app/logs
+    networks:
+      - gitshadow-network
+    restart: unless-stopped
+
+  # Service JavaScript/TypeScript Ultra-Robuste
+  js-service:
+    build:
+      context: ./js-service
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=gitshadow
+      - POSTGRES_USER=gitshadow
+      - POSTGRES_PASSWORD=gitshadow123
+      - LOG_LEVEL=info
+      - CORS_ORIGIN=http://localhost:3000
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+    volumes:
+      - ./js-service:/app
+      - js_logs:/app/logs
+    depends_on:
+      - redis
+      - postgres
     networks:
       - gitshadow-network
     restart: unless-stopped
@@ -77,6 +110,7 @@ volumes:
   postgres_data:
   redis_data:
   python_logs:
+  js_logs:
 
 networks:
   gitshadow-network:

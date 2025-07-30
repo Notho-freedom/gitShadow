@@ -479,7 +479,23 @@ pip install -r requirements.txt
 
 ## Référence Complète
 
-{chr(10).join([f"### {f['name']}\n\n{f['docstring'] or 'Documentation manquante'}\n" for f in analysis.functions])}
+"""
+        reference_doc = ""
+        for f in analysis.functions:
+            reference_doc += f"### {f['name']}\n\n{f['docstring'] or 'Documentation manquante'}\n"
+        return f"""# Reference - {filename}
+
+## Index
+
+### Fonctions
+{chr(10).join([f"- [{f['name']}](#{f['name']})" for f in analysis.functions])}
+
+### Classes
+{chr(10).join([f"- [{c['name']}](#{c['name']})" for c in analysis.classes])}
+
+## Référence Complète
+
+{reference_doc}
 """
 
 generator = AdvancedDocumentationGenerator()
